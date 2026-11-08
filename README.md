@@ -61,6 +61,13 @@ Java 21이 필요합니다.
 - 목록 화면의 물건 이름 옆에 댓글 수 표시
 - 댓글 테이블 하나를 두 게시판이 같이 사용 (`FOUNDITEMID` / `LOSTITEMID` 중 하나에만 값이 들어가도록 CHECK 제약)
 
+## 검색
+
+- 헤더·홈 화면의 검색창 → 통합 검색 화면 (`/search?q=`): 두 게시판에서 최신 5건씩과 전체 건수, 「すべて見る」로 각 게시판 목록 이동
+- 게시판 목록에서는 검색어(`?q=`)와 노선·역·카테고리 필터, 정렬, 페이지 이동을 함께 사용 (「検索をやめる」로 검색어만 해제)
+- 제목(날짜·노선·역·카테고리·물건 이름 포함)과 본문에서 찾음. 공백(전각 포함)으로 나눈 단어는 모두 포함하는 글만 (최대 5단어)
+- 대소문자 구분 없음, `%` `_` 는 와일드카드가 아니라 글자 그대로 검색 (LIKE 이스케이프)
+
 ## 회원가입·로그인
 
 - 회원가입: ID, 비밀번호, 氏名, ニックネーム(선택, 비우면 氏名), 生年月日, 電話番号, 개인정보 취급 동의
@@ -84,15 +91,17 @@ src/main/java/com/example/jrfind
 ├─ JrFindApplication.java
 ├─ config/       SecurityConfig (로그인·CSRF), WebMvcConfig (업로드 이미지·로고 경로)
 ├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
-│                MemberController, LoginMemberAdvice (헤더용 로그인 정보), VerifiedItems (비밀번호 확인 상태 · 세션)
+│                SearchController (통합 검색), MemberController, LoginMemberAdvice (헤더용 로그인 정보),
+│                VerifiedItems (비밀번호 확인 상태 · 세션)
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
 │                Member, SignupForm, LoginMember, Category, Station
-├─ repository/   JrfindRepository, LostItemRepository, CommentRepository, MemberRepository (+ JdbcTemplate 구현)
+├─ repository/   JrfindRepository, LostItemRepository, CommentRepository, MemberRepository (+ JdbcTemplate 구현),
+│                KeywordCondition (검색어 SQL 조건)
 └─ service/      JrfindService, LostItemService, CommentService, MemberService, ImageStorage, PasswordAttemptLimiter
 src/main/resources
 ├─ schema.sql, data.sql
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm (見つけた)
-│                lostList, lostDetail, lostForm (探しています), login, signup, error,
+│                lostList, lostDetail, lostForm (探しています), search, login, signup, error,
 │                fragments/header, fragments/comments (두 상세 화면 공통 댓글 영역)
 └─ logo/
 ```
@@ -100,5 +109,4 @@ src/main/resources
 ## 앞으로 추가할 기능
 
 - 마이페이지 (내가 쓴 글, 개인정보 수정)
-- 검색
 - 지도·노선도, 분실물 센터 안내

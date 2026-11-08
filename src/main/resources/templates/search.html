@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>JR-Find | 検索</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
+        .container { width: 90%; max-width: 1200px; margin: 40px auto; display: flex; gap: 40px; align-items: flex-start; }
+        .search-section { flex: 3; min-width: 0; }
+        .side-section { flex: 1; margin-top: 60px; }
+
+        /* 제목 */
+        .search-title-area { border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .search-title { font-size: 24px; }
+        .search-title b { color: #e63946; }
+        .search-hint { margin-top: 8px; font-size: 13px; color: #888; }
+
+        /* 게시판별 결과 */
+        .result-section { margin-top: 40px; }
+        .result-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 8px; border-bottom: 1px solid #555; }
+        .result-head h3 { font-size: 18px; }
+        .result-count { margin-left: 6px; font-size: 15px; color: #e63946; }
+        .more-link { font-size: 13px; color: #555; text-decoration: none; }
+        .more-link:hover { text-decoration: underline; }
+
+        /* 목록 (게시판 목록 화면과 같은 모양) */
+        .result-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .result-table th { padding: 8px 5px; border-bottom: 1px solid #ddd; font-size: 13px; font-weight: normal; color: #888; }
+        .result-table td { padding: 14px 10px; border-bottom: 1px solid #eee; font-size: 14px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .td-center { text-align: center; }
+        .hover-row { cursor: pointer; }
+        .hover-row:hover { background-color: #fafafa; }
+        .row-resolved td { color: #aaa; }
+        .station-unknown { color: #aaa; }
+        .category { color: #888; font-size: 12px; }
+        .divider { margin: 0 5px; color: #ddd; }
+        .item-name { font-weight: bold; color: #333; }
+        .comment-count { margin-left: 4px; color: #e63946; font-size: 12px; font-weight: bold; }
+        .badge-resolved { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 10px; background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: bold; vertical-align: middle; }
+        .result-empty { padding: 40px 0; text-align: center; font-size: 14px; color: #bbb; border-bottom: 1px solid #eee; }
+
+        /* 검색어 없음 */
+        .no-keyword { padding: 80px 0; text-align: center; font-size: 15px; color: #888; line-height: 1.8; }
+
+        /* 사이드바 */
+        .sidebar-card { border: 1px solid #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 25px; }
+        .sidebar-card p { font-size: 15px; color: #444; margin-bottom: 20px; }
+        .board-link { display: block; width: 100%; padding: 12px; background-color: #f0f0f0; color: #333; text-decoration: none; font-weight: bold; border-radius: 6px; transition: background 0.2s; }
+        .board-link:hover { background-color: #e5e5e5; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: mainHeader}"></div>
+
+    <div class="container">
+        <main class="search-section">
+            <!-- 검색어 없이 들어온 경우 -->
+            <th:block th:if="${keyword == null}">
+                <div class="search-title-area">
+                    <h2 class="search-title">検索</h2>
+                </div>
+                <p class="no-keyword">
+                    キーワードを入力してください。<br>
+                    物の名前、駅名、路線名、カテゴリーなどで探せます。
+                </p>
+            </th:block>
+
+            <th:block th:if="${keyword != null}">
+                <div class="search-title-area">
+                    <h2 class="search-title">「<b th:text="${keyword}">財布</b>」の検索結果</h2>
+                    <p class="search-hint">タイトルと本文から探します。スペースで区切ると、すべての言葉を含む投稿を表示します。</p>
+                </div>
+
+                <!-- 見つけた 게시판 -->
+                <section class="result-section" id="foundResults">
+                    <div class="result-head">
+                        <h3>見つけた<span class="result-count" th:text="|${foundCount}件|">0件</span></h3>
+                        <a class="more-link" th:if="${foundCount > 0}" th:href="@{/items(q=${keyword})}">すべて見る &gt;</a>
+                    </div>
+                    <p class="result-empty" th:if="${foundItems.isEmpty()}">見つかった投稿はありません。</p>
+                    <table class="result-table" th:unless="${foundItems.isEmpty()}">
+                        <colgroup>
+                            <col style="width: 12%;"> <col style="width: 13%;"> <col style="width: 13%;"> <col style="width: auto;"> <col style="width: 15%;"> <col style="width: 15%;">
+                        </colgroup>
+                        <thead>
+                            <tr><th>日付</th><th>路線</th><th>駅</th><th>忘れ物</th><th>作成者</th><th>作成日</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="item : ${foundItems}" class="hover-row"
+                                th:onclick="|location.href='@{/items/{id}(id=${item.id})}'|">
+                                <td class="td-center" th:text="${item.foundDate}"></td>
+                                <td th:text="${item.lineName}" th:title="${item.lineName}"></td>
+                                <td th:text="${item.stationName}" th:title="${item.stationName}"></td>
+                                <td>
+                                    <span class="category" th:text="${item.categoryName}"></span><span class="divider">|</span>
+                                    <span class="item-name" th:text="${item.itemName}" th:title="${item.itemName}"></span>
+                                    <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span>
+                                </td>
+                                <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
+                                <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- 探しています 게시판 -->
+                <section class="result-section" id="lostResults">
+                    <div class="result-head">
+                        <h3>探しています<span class="result-count" th:text="|${lostCount}件|">0件</span></h3>
+                        <a class="more-link" th:if="${lostCount > 0}" th:href="@{/lost-items(q=${keyword})}">すべて見る &gt;</a>
+                    </div>
+                    <p class="result-empty" th:if="${lostItems.isEmpty()}">見つかった投稿はありません。</p>
+                    <table class="result-table" th:unless="${lostItems.isEmpty()}">
+                        <colgroup>
+                            <col style="width: 12%;"> <col style="width: 13%;"> <col style="width: 13%;"> <col style="width: auto;"> <col style="width: 15%;"> <col style="width: 15%;">
+                        </colgroup>
+                        <thead>
+                            <tr><th>なくした日</th><th>路線</th><th>駅</th><th>忘れ物</th><th>作成者</th><th>作成日</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="item : ${lostItems}" class="hover-row"
+                                th:classappend="${item.resolved} ? 'row-resolved'"
+                                th:onclick="|location.href='@{/lost-items/{id}(id=${item.id})}'|">
+                                <td class="td-center" th:text="${item.lostDate}"></td>
+                                <td th:text="${item.lineName}" th:title="${item.lineName}"></td>
+                                <td th:if="${item.stationName != null}" th:text="${item.stationName}" th:title="${item.stationName}"></td>
+                                <td th:unless="${item.stationName != null}" class="station-unknown">不明</td>
+                                <td>
+                                    <span class="badge-resolved" th:if="${item.resolved}">見つかりました</span>
+                                    <span class="category" th:text="${item.categoryName}"></span><span class="divider">|</span>
+                                    <span class="item-name" th:text="${item.itemName}" th:title="${item.itemName}"></span>
+                                    <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span>
+                                </td>
+                                <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
+                                <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </th:block>
+        </main>
+
+        <aside class="side-section">
+            <div class="sidebar-card">
+                <p>忘れ物を拾われましたか？</p>
+                <a th:href="@{/items}" class="board-link">見つけた 掲示板</a>
+            </div>
+            <div class="sidebar-card">
+                <p>忘れ物をお探しですか？</p>
+                <a th:href="@{/lost-items}" class="board-link">探しています 掲示板</a>
+            </div>
+        </aside>
+    </div>
+</body>
+</html>

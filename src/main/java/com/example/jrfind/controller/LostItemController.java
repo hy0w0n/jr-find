@@ -49,13 +49,16 @@ public class LostItemController {
 			@RequestParam(name = "line", required = false) String line,
 			@RequestParam(name = "station", required = false) String station,
 			@RequestParam(name = "category", required = false) String category,
+			@RequestParam(name = "q", required = false) String keyword, // 검색어 (제목·본문)
 			@RequestParam(name = "sort", required = false, defaultValue = "latest") String sort,
 			@RequestParam(name = "page", required = false, defaultValue = "1") int page) {
-		int totalItems = service.getTotalCount(line, station, category);
+		keyword = SearchKeyword.normalize(keyword);
+		int totalItems = service.getTotalCount(line, station, category, keyword);
 		int totalPages = (int) Math.ceil((double) totalItems / LostItemService.PAGE_SIZE);
 		int currentPage = Math.max(1, Math.min(page, totalPages));
 
-		model.addAttribute("items", service.getItems(line, station, category, sort, currentPage));
+		model.addAttribute("items", service.getItems(line, station, category, keyword, sort, currentPage));
+		model.addAttribute("totalItems", totalItems);
 		model.addAttribute("currentPage", currentPage);
 		model.addAttribute("totalPages", totalPages);
 
@@ -63,6 +66,7 @@ public class LostItemController {
 		model.addAttribute("currentLine", line);
 		model.addAttribute("currentStation", station);
 		model.addAttribute("currentCategory", category);
+		model.addAttribute("currentKeyword", keyword);
 		model.addAttribute("currentSort", sort);
 		addMasterData(model);
 		return "lostList";

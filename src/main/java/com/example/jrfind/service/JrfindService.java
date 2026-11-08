@@ -52,14 +52,19 @@ public class JrfindService {
         return repository.findAllStations();
     }
 
-    // 게시글 목록 조회 (필터, 정렬, 페이징 적용)
-    public List<FoundItem> getItems(String line, String station, String category, String sort, int page) {
-        return repository.findAll(line, station, category, sort, page, PAGE_SIZE);
+    // 게시글 목록 조회 (필터, 검색어, 정렬, 페이징 적용)
+    public List<FoundItem> getItems(String line, String station, String category, String keyword, String sort, int page) {
+        return repository.findAll(line, station, category, keyword, sort, page, PAGE_SIZE);
     }
 
     // 전체 게시글 개수 조회 (페이징 계산용)
-    public int getTotalCount(String line, String station, String category) {
-        return repository.count(line, station, category);
+    public int getTotalCount(String line, String station, String category, String keyword) {
+        return repository.count(line, station, category, keyword);
+    }
+
+    // 검색어에 맞는 최신 글 limit 건 (통합 검색 화면용)
+    public List<FoundItem> searchLatest(String keyword, int limit) {
+        return repository.findAll(null, null, null, keyword, "latest", 1, limit);
     }
 
     // 게시글 저장 로직 (파일 처리 포함)

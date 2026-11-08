@@ -95,6 +95,11 @@
 			color: #999;
 			cursor: not-allowed;
 		}
+        /* 검색어 조건 */
+        .keyword-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding: 10px 15px; background: #f7f7f7; border-radius: 6px; font-size: 14px; color: #555; }
+        .keyword-bar b { color: #e63946; }
+        .keyword-clear { margin-left: auto; background: none; border: none; font-size: 13px; font-family: inherit; color: #888; text-decoration: underline; cursor: pointer; }
+        .keyword-clear:hover { color: #333; }
         /* 댓글 수 */
         .comment-count { margin-left: 4px; color: #e63946; font-size: 12px; font-weight: bold; }
     </style>
@@ -111,6 +116,12 @@
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3C2.44772 3 2 3.44772 2 4V10C2 10.5523 2.44772 11 3 11H10C10.5523 11 11 10.5523 11 10V4C11 3.44772 10.5523 3 10 3H3ZM4 9V5H9V9H4ZM3 13C2.44772 13 2 13.4477 2 14V20C2 20.5523 2.44772 21 3 21H10C10.5523 21 11 20.5523 11 20V14C11 13.4477 10.5523 13 10 13H3ZM4 19V15H9V19H4ZM13 4C13 3.44772 13.4477 3 14 3H21C21.5523 3 22 3.44772 22 4V10C22 10.5523 21.5523 11 21 11H14C13.4477 11 13 10.5523 13 10V4ZM15 5V9H20V5H15ZM14 13C13.4477 13 13 13.4477 13 14V20C13 20.5523 13.4477 21 14 21H21C21.5523 21 22 20.5523 22 20V14C22 13.4477 21.5523 13 21 13H14ZM15 19V15H20V19H15Z"></path></svg>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11V5H5V11H19ZM19 13H5V19H19V13ZM4 3H20C20.5523 3 21 3.44772 21 4V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3Z"></path></svg>
                 </div>
+            </div>
+
+            <!-- 검색어로 찾은 경우 (헤더 검색 → 통합 검색 → 「すべて見る」) -->
+            <div class="keyword-bar" th:if="${currentKeyword != null}">
+                <span>「<b th:text="${currentKeyword}">キーワード</b>」の検索結果 <span th:text="${totalItems}">0</span>件</span>
+                <button type="button" class="keyword-clear" onclick="clearKeyword()">検索をやめる</button>
             </div>
 
             <table class="lost-table">
@@ -168,7 +179,8 @@
 				<tbody>
 				    <tr th:if="${items == null or items.isEmpty()}">
 				        <td colspan="6" style="padding: 100px 0; color: #ccc; text-align: center;">
-				            登録されている落とし物はありません。
+				            <th:block th:if="${currentKeyword == null}">登録されている落とし物はありません。</th:block>
+				            <th:block th:unless="${currentKeyword == null}">条件に一致する投稿はありません。</th:block>
 				        </td>
 				    </tr>
 
@@ -244,7 +256,9 @@
 	    try {
 	        const navEntries = performance.getEntriesByType("navigation");
 	        if (navEntries.length > 0 && navEntries[0].type === 'reload') {
-	            window.location.href = '/items';
+	            // 검색어는 남긴다
+	            const q = new URLSearchParams(window.location.search).get('q');
+	            window.location.href = q ? '/items?q=' + encodeURIComponent(q) : '/items';
 	        }
 	    } catch (e) {
 	        console.log("Navigation API not supported");
@@ -263,6 +277,7 @@
 	    const serverLine = /*[[${currentLine}]]*/ "";
 	    const serverStation = /*[[${currentStation}]]*/ "";
 	    const serverCategory = /*[[${currentCategory}]]*/ "";
+	    let keyword = /*[[${currentKeyword}]]*/ "";
 	    
 	    // 기본값은 'reg_desc' (작성일 내림차순)
 	    const serverSort = /*[[${currentSort}]]*/ "reg_desc"; 
@@ -342,7 +357,14 @@
 	        const sort = newSort !== null ? newSort : (urlParams.get('sort') || 'reg_desc');
 	        const page = newPage !== null ? newPage : (urlParams.get('page') || 1);
 
-	        location.href = `/items?line=${encodeURIComponent(line)}&station=${encodeURIComponent(station)}&category=${encodeURIComponent(category)}&sort=${sort}&page=${page}`;
+	        const q = keyword ? `&q=${encodeURIComponent(keyword)}` : '';
+	        location.href = `/items?line=${encodeURIComponent(line)}&station=${encodeURIComponent(station)}&category=${encodeURIComponent(category)}&sort=${sort}&page=${page}${q}`;
+	    }
+
+	    // 검색어만 지우고 나머지 조건(노선·역·카테고리·정렬)은 유지
+	    function clearKeyword() {
+	        keyword = '';
+	        goPage(null, null, null, null, 1);
 	    }
 
 	    // [수정] 정렬 토글 로직 분리

@@ -58,12 +58,12 @@ public class JdbcLostItemRepository implements LostItemRepository {
 	}
 
 	@Override
-	public List<LostItem> findAll(String line, String station, String category, String sort, int page, int size) {
+	public List<LostItem> findAll(String line, String station, String category, String keyword, String sort, int page, int size) {
 		// 댓글 수 포함
 		StringBuilder sql = new StringBuilder("SELECT l.*, (SELECT count(*) FROM Post_Comment c WHERE c.LostItemId = l.ID AND c.DEL_FLG = FALSE) AS CommentCount"
 				+ " FROM Lost_Item l WHERE DEL_FLG = FALSE");
 		List<Object> params = new ArrayList<>();
-		appendFilters(sql, params, line, station, category);
+		appendFilters(sql, params, line, station, category, keyword);
 
 		// 정해진 값 외에는 SQL 에 넣지 않는다
 		if ("date_asc".equals(sort)) {
@@ -88,16 +88,16 @@ public class JdbcLostItemRepository implements LostItemRepository {
 	}
 
 	@Override
-	public int count(String line, String station, String category) {
+	public int count(String line, String station, String category, String keyword) {
 		StringBuilder sql = new StringBuilder("SELECT count(*) FROM Lost_Item WHERE DEL_FLG = FALSE");
 		List<Object> params = new ArrayList<>();
-		appendFilters(sql, params, line, station, category);
+		appendFilters(sql, params, line, station, category, keyword);
 
 		return jdbcTemplate.queryForObject(sql.toString(), Integer.class, params.toArray());
 	}
 
 	// 목록/개수 조회 공통 필터 (값이 있는 조건만 추가)
-	private void appendFilters(StringBuilder sql, List<Object> params, String line, String station, String category) {
+	private void appendFilters(StringBuilder sql, List<Object> params, String line, String station, String category, String keyword) {
 		if (line != null && !line.isEmpty()) {
 			sql.append(" AND LineName = ?");
 			params.add(line);
@@ -110,6 +110,7 @@ public class JdbcLostItemRepository implements LostItemRepository {
 			sql.append(" AND CategoryName = ?");
 			params.add(category);
 		}
+		KeywordCondition.append(sql, params, keyword);
 	}
 
 	@Override

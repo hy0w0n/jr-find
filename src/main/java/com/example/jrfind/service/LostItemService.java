@@ -29,12 +29,17 @@ public class LostItemService {
 		this.imageStorage = imageStorage;
 	}
 
-	public List<LostItem> getItems(String line, String station, String category, String sort, int page) {
-		return repository.findAll(line, station, category, sort, page, PAGE_SIZE);
+	public List<LostItem> getItems(String line, String station, String category, String keyword, String sort, int page) {
+		return repository.findAll(line, station, category, keyword, sort, page, PAGE_SIZE);
 	}
 
-	public int getTotalCount(String line, String station, String category) {
-		return repository.count(line, station, category);
+	public int getTotalCount(String line, String station, String category, String keyword) {
+		return repository.count(line, station, category, keyword);
+	}
+
+	// 검색어에 맞는 최신 글 limit 건 (통합 검색 화면용)
+	public List<LostItem> searchLatest(String keyword, int limit) {
+		return repository.findAll(null, null, null, keyword, "latest", 1, limit);
 	}
 
 	// 삭제됐거나 없으면 null

@@ -119,14 +119,14 @@ public class JdbcJrfindRepository implements JrfindRepository {
     }
 
     @Override
-    public List<FoundItem> findAll(String line, String station, String category, String sort, int page, int size) {
+    public List<FoundItem> findAll(String line, String station, String category, String keyword, String sort, int page, int size) {
         // 1. 기본 SQL 및 파라미터 리스트 생성 (댓글 수 포함)
         StringBuilder sql = new StringBuilder("SELECT f.*, (SELECT count(*) FROM Post_Comment c WHERE c.FoundItemId = f.ID AND c.DEL_FLG = FALSE) AS CommentCount"
                 + " FROM Found_Item f WHERE DEL_FLG = FALSE");
         List<Object> params = new ArrayList<>();
 
         // 2. 동적 필터링 조건 추가
-        appendFilters(sql, params, line, station, category);
+        appendFilters(sql, params, line, station, category, keyword);
 
         // 3. 정렬 조건 추가
         // sort 파라미터 값에 따라 분기 처리 (정해진 값 외에는 SQL에 넣지 않음)
@@ -154,16 +154,16 @@ public class JdbcJrfindRepository implements JrfindRepository {
     }
 
     @Override
-    public int count(String line, String station, String category) {
+    public int count(String line, String station, String category, String keyword) {
         StringBuilder sql = new StringBuilder("SELECT count(*) FROM Found_Item WHERE DEL_FLG = FALSE");
         List<Object> params = new ArrayList<>();
-        appendFilters(sql, params, line, station, category);
+        appendFilters(sql, params, line, station, category, keyword);
 
         return jdbcTemplate.queryForObject(sql.toString(), Integer.class, params.toArray());
     }
 
     // 목록/개수 조회 공통 필터 (값이 있는 조건만 추가)
-    private void appendFilters(StringBuilder sql, List<Object> params, String line, String station, String category) {
+    private void appendFilters(StringBuilder sql, List<Object> params, String line, String station, String category, String keyword) {
         if (line != null && !line.isEmpty()) {
             sql.append(" AND LineName = ?");
             params.add(line);
@@ -176,6 +176,7 @@ public class JdbcJrfindRepository implements JrfindRepository {
             sql.append(" AND CategoryName = ?");
             params.add(category);
         }
+        KeywordCondition.append(sql, params, keyword);
     }
 
     @Override
