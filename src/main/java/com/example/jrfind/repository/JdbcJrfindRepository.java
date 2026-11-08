@@ -130,15 +130,16 @@ public class JdbcJrfindRepository implements JrfindRepository {
 
         // 3. 정렬 조건 추가
         // sort 파라미터 값에 따라 분기 처리 (정해진 값 외에는 SQL에 넣지 않음)
+        // 날짜·일시가 같은 글이 있어도 페이지마다 순서가 바뀌지 않도록 마지막에 ID 로도 정렬한다
         if ("date_asc".equals(sort)) {
-            sql.append(" ORDER BY FoundDate ASC");       // 발견일 오름차순 (과거 -> 최신)
+            sql.append(" ORDER BY FoundDate ASC, ID ASC");       // 발견일 오름차순 (과거 -> 최신)
         } else if ("date_desc".equals(sort)) {
-            sql.append(" ORDER BY FoundDate DESC");      // 발견일 내림차순 (최신 -> 과거)
+            sql.append(" ORDER BY FoundDate DESC, ID DESC");     // 발견일 내림차순 (최신 -> 과거)
         } else if ("reg_asc".equals(sort)) {
-            sql.append(" ORDER BY RegistrationDate ASC"); // 작성일 오름차순 (옛날 글 먼저)
+            sql.append(" ORDER BY RegistrationDate ASC, ID ASC"); // 작성일 오름차순 (옛날 글 먼저)
         } else {
             // "reg_desc" 이거나 "latest" 혹은 null 일 경우 기본값: 작성일 내림차순 (최신 글 먼저)
-            sql.append(" ORDER BY RegistrationDate DESC");
+            sql.append(" ORDER BY RegistrationDate DESC, ID DESC");
         }
 
         // 4. 페이징 처리 (LIMIT, OFFSET)

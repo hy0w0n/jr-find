@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -185,6 +186,33 @@ class SearchControllerTest {
 			.andExpect(model().attribute("totalItems", all))
 			.andExpect(model().attribute("currentKeyword", (Object) null))
 			.andExpect(content().string(not(containsString("の検索結果"))));
+	}
+
+	@Test
+	void 작성_일시나_날짜가_같은_글도_페이지를_넘기면_빠짐없이_한_번씩_나온다() throws Exception {
+		// 같은 일시에 등록된 글 (예전 데이터를 옮겨 왔을 때 실제로 있었던 경우)
+		LocalDateTime sameTime = LocalDateTime.of(2026, 1, 20, 12, 0);
+		LoginMember owner = newMember();
+		for (int i = 0; i < 20; i++) {
+			jdbcTemplate.update("INSERT INTO FOUND_ITEM (TITLE, FOUNDDATE, LINENAME, STATIONNAME, CATEGORYNAME, ITEMNAME, CONTENTS, AUTHOR, REGISTRATIONDATE)"
+					+ " VALUES ('[2026-01-08][山手線][新宿][その他] 傘', '2026-01-08', '山手線', '新宿', 'その他', '傘', ?, '匿名の天使001', ?)",
+				marker, sameTime);
+			jdbcTemplate.update("INSERT INTO LOST_ITEM (TITLE, LOSTDATE, LINENAME, STATIONNAME, CATEGORYNAME, ITEMNAME, CONTENTS, AUTHOR, MEMBERID, REGISTRATIONDATE)"
+					+ " VALUES ('[2026-01-12][山手線][渋谷][その他] 傘', '2026-01-12', '山手線', '渋谷', 'その他', '傘', ?, ?, ?, ?)",
+				marker, owner.getNickname(), owner.getId(), sameTime);
+		}
+
+		for (String board : List.of("/items", "/lost-items")) {
+			for (String sort : List.of("latest", "reg_asc", "date_desc", "date_asc")) {
+				List<Long> ids = new ArrayList<>();
+				for (int page = 1; page <= 2; page++) {
+					List<?> items = (List<?>) mockMvc.perform(get(board).param("q", marker).param("sort", sort).param("page", String.valueOf(page)))
+						.andReturn().getModelAndView().getModel().get("items");
+					items.forEach(item -> ids.add(item instanceof FoundItem f ? f.getId() : ((LostItem) item).getId()));
+				}
+				assertThat(ids).as(board + " " + sort).hasSize(20).doesNotHaveDuplicates();
+			}
+		}
 	}
 
 	// ---------- 도우미 ----------

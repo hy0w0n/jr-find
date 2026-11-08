@@ -66,14 +66,15 @@ public class JdbcLostItemRepository implements LostItemRepository {
 		appendFilters(sql, params, line, station, category, keyword);
 
 		// 정해진 값 외에는 SQL 에 넣지 않는다
+		// 날짜·일시가 같은 글이 있어도 페이지마다 순서가 바뀌지 않도록 마지막에 ID 로도 정렬한다
 		if ("date_asc".equals(sort)) {
-			sql.append(" ORDER BY LostDate ASC");
+			sql.append(" ORDER BY LostDate ASC, ID ASC");
 		} else if ("date_desc".equals(sort)) {
-			sql.append(" ORDER BY LostDate DESC");
+			sql.append(" ORDER BY LostDate DESC, ID DESC");
 		} else if ("reg_asc".equals(sort)) {
-			sql.append(" ORDER BY RegistrationDate ASC");
+			sql.append(" ORDER BY RegistrationDate ASC, ID ASC");
 		} else {
-			sql.append(" ORDER BY RegistrationDate DESC"); // 기본값: 최신 글 먼저
+			sql.append(" ORDER BY RegistrationDate DESC, ID DESC"); // 기본값: 최신 글 먼저
 		}
 
 		sql.append(" LIMIT ? OFFSET ?");
