@@ -7,12 +7,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.example.jrfind.service.MemberService;
 
 @Configuration
 public class SecurityConfig {
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, MemberService memberService) throws Exception {
+		LoginAttemptGuard loginAttemptGuard = new LoginAttemptGuard(memberService);
 		http
 			// 探しています 게시판의 작성·수정·삭제, 댓글(두 게시판), 마이페이지는 회원만 가능
 			// (로그인 전이면 로그인 화면으로 보내고, 로그인 후 원래 화면으로 돌아옴)
@@ -27,11 +31,14 @@ public class SecurityConfig {
 					.authenticated()
 				.anyRequest().permitAll())
 			// 로그인 화면은 직접 만든 /login (GET), 로그인 처리(POST /login)는 Spring Security 가 담당
+			// 연속으로 틀리면 잠시 로그인을 막는다 (LoginAttemptGuard: 잠금 확인은 필터, 횟수 기록은 성공·실패 처리)
 			.formLogin(form -> form
 				.loginPage("/login")
 				.usernameParameter("loginId")
 				.passwordParameter("password")
-				.failureUrl("/login?error"))
+				.successHandler(loginAttemptGuard)
+				.failureHandler(loginAttemptGuard))
+			.addFilterBefore(loginAttemptGuard, UsernamePasswordAuthenticationFilter.class)
 			.logout(logout -> logout
 				.logoutSuccessUrl("/"))
 			// 로그인이 필요한 화면에 로그인 없이 들어오면 안내 문구가 있는 로그인 화면으로

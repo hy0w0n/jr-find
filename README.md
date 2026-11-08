@@ -73,6 +73,7 @@ Java 21이 필요합니다.
 - 회원가입: ID, 비밀번호, 氏名, ニックネーム(선택, 비우면 氏名), 生年月日, 電話番号, 개인정보 취급 동의
 - 입력 오류는 항목별로 표시하고 입력값은 유지 (ID 중복, 비밀번호 확인 불일치 포함)
 - 로그인·로그아웃은 Spring Security 폼 로그인 사용. 로그인 실패 시 ID와 비밀번호 중 무엇이 틀렸는지 구분하지 않음
+- 연속으로 틀리면 잠시 로그인을 제한하고 안내 문구 표시 (기준은 아래 「보안 처리」)
 
 ## 마이페이지 (`/mypage`, 회원만)
 
@@ -95,6 +96,11 @@ Java 21이 필요합니다.
 - 모든 POST 요청에 CSRF 토큰 확인 (폼은 hidden 값, fetch 는 헤더로 전송)
 - 수정·삭제 권한은 서버에서 검사: 회원 글은 작성자 본인, 비회원 글은 "비밀번호 확인을 통과한 세션", 댓글은 쓴 본인 (화면 JS 검사만으로 막지 않음)
 - 비밀번호 5회 연속 실패 시 5분간 잠금 (4자리 비밀번호 무차별 대입 방지)
+- 로그인 연속 실패 제한 (잠긴 동안은 맞는 비밀번호도 확인하지 않음)
+  - 같은 접속 IP 에서 같은 ID 로 5회 틀리면 그 IP 에서 그 ID 의 로그인을 5분간 막음
+  - ID 를 바꿔 가며 틀려도 같은 IP 에서 20회가 되면 그 IP 의 로그인을 5분간 막음 (자기 계정에 로그인해도 이 횟수는 지워지지 않음)
+  - ID 만으로 잠그지 않고 접속 IP 와 묶어서 세므로, 다른 사람이 일부러 틀려도 다른 곳의 주인은 계속 로그인할 수 있음
+  - 없는 ID 도 똑같이 세고 똑같이 잠그므로 잠금 여부로 ID 가 있는지 알 수 없음
 - 업로드 파일은 파일 앞부분(매직 넘버)으로 실제 이미지인지 확인하고, 원본 파일명 대신 서버에서 만든 이름으로 저장 (경로 조작 방지)
 - 입력값은 서버에서도 다시 검증 (Bean Validation + 노선·역·카테고리 실존 여부)
 - 세션 쿠키 `HttpOnly`, `SameSite=Lax`, URL에 세션 ID 노출 안 함
@@ -104,7 +110,8 @@ Java 21이 필요합니다.
 ```
 src/main/java/com/example/jrfind
 ├─ JrFindApplication.java
-├─ config/       SecurityConfig (로그인·CSRF), WebMvcConfig (업로드 이미지·로고 경로)
+├─ config/       SecurityConfig (로그인·CSRF), LoginAttemptGuard (로그인 연속 실패 제한),
+│                WebMvcConfig (업로드 이미지·로고 경로)
 ├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
 │                SearchController (통합 검색), MemberController, MyPageController (마이페이지),
 │                MapController (駅マップ), LoginMemberAdvice (헤더용 로그인 정보),
@@ -128,7 +135,6 @@ src/main/resources
 
 ## 앞으로 개선할 점
 
-- 로그인 화면의 연속 실패 제한 (현재는 비회원 글 비밀번호, 마이페이지 비밀번호 확인에만 적용)
 - 회원 탈퇴, ID·비밀번호 찾기
 - 게시글 사진을 바꾸거나 지울 때 이전 이미지 파일 정리
 - 기획 단계의 발전 기능: 1:1 채팅, 역 인근 위치 선택, 사진 여러 장 첨부

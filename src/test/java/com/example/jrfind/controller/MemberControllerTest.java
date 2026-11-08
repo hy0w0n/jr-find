@@ -19,12 +19,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -133,6 +135,96 @@ class MemberControllerTest {
 			.andExpect(unauthenticated());
 	}
 
+	// ---------- 로그인 연속 실패 제한 ----------
+	// 테스트끼리 횟수가 섞이지 않도록 매번 다른 ID 와 접속 IP 를 쓴다
+
+	@Test
+	void 같은_ID로_5번_틀리면_맞는_비밀번호로도_로그인할_수_없다() throws Exception {
+		String loginId = signup();
+		String ip = newIp();
+
+		for (int i = 1; i <= 4; i++) {
+			mockMvc.perform(loginRequest(loginId, "wrong1234", ip))
+				.andExpect(redirectedUrl("/login?error"));
+		}
+		mockMvc.perform(loginRequest(loginId, "wrong1234", ip))
+			.andExpect(unauthenticated())
+			.andExpect(redirectedUrl("/login?locked"));
+		mockMvc.perform(loginRequest(loginId, PASSWORD, ip))
+			.andExpect(unauthenticated())
+			.andExpect(redirectedUrl("/login?locked"));
+
+		mockMvc.perform(get("/login").param("locked", ""))
+			.andExpect(content().string(containsString("一時的にログインを制限しています")));
+	}
+
+	@Test
+	void 다른_곳에서_접속한_주인은_잠기지_않는다() throws Exception {
+		String loginId = signup();
+		String attackerIp = newIp();
+		for (int i = 1; i <= 5; i++) {
+			mockMvc.perform(loginRequest(loginId, "wrong1234", attackerIp));
+		}
+
+		mockMvc.perform(loginRequest(loginId, PASSWORD, newIp()))
+			.andExpect(authenticated().withUsername(loginId))
+			.andExpect(redirectedUrl("/"));
+	}
+
+	@Test
+	void 로그인에_성공하면_틀린_횟수가_지워진다() throws Exception {
+		String loginId = signup();
+		String ip = newIp();
+		for (int i = 1; i <= 4; i++) {
+			mockMvc.perform(loginRequest(loginId, "wrong1234", ip));
+		}
+		mockMvc.perform(loginRequest(loginId, PASSWORD, ip))
+			.andExpect(authenticated());
+
+		for (int i = 1; i <= 4; i++) {
+			mockMvc.perform(loginRequest(loginId, "wrong1234", ip))
+				.andExpect(redirectedUrl("/login?error"));
+		}
+		mockMvc.perform(loginRequest(loginId, PASSWORD, ip))
+			.andExpect(authenticated());
+	}
+
+	@Test
+	void ID를_바꿔_가며_20번_틀리면_그_IP에서는_로그인할_수_없다() throws Exception {
+		String loginId = signup();
+		String ip = newIp();
+
+		// 없는 ID 도 똑같이 센다 (잠금 여부로 ID 가 있는지 알 수 없게)
+		for (int i = 1; i <= 19; i++) {
+			mockMvc.perform(loginRequest("nobody_" + i + "_" + loginId, PASSWORD, ip))
+				.andExpect(redirectedUrl("/login?error"));
+		}
+		// 자기 계정에 로그인해도 IP 단위 횟수는 지워지지 않는다
+		mockMvc.perform(loginRequest(loginId, PASSWORD, ip))
+			.andExpect(authenticated());
+		mockMvc.perform(loginRequest("nobody_20_" + loginId, PASSWORD, ip))
+			.andExpect(redirectedUrl("/login?locked"));
+		mockMvc.perform(loginRequest(loginId, PASSWORD, ip))
+			.andExpect(unauthenticated())
+			.andExpect(redirectedUrl("/login?locked"));
+
+		mockMvc.perform(loginRequest(loginId, PASSWORD, newIp()))
+			.andExpect(authenticated());
+	}
+
+	@Test
+	void 로그인하면_원래_가려던_화면으로_돌아간다() throws Exception {
+		String loginId = signup();
+
+		MockHttpSession session = (MockHttpSession) mockMvc.perform(get("/mypage"))
+			.andExpect(redirectedUrl("/login?required"))
+			.andReturn().getRequest().getSession();
+
+		mockMvc.perform(loginRequest(loginId, PASSWORD, newIp()).session(session))
+			.andExpect(authenticated())
+			.andExpect(redirectedUrl("http://localhost/mypage?continue"));
+	}
+
 	// ---------- 회원 글 ----------
 
 	@Test
@@ -213,6 +305,23 @@ class MemberControllerTest {
 		String loginId = newLoginId();
 		mockMvc.perform(signupRequest("loginId", loginId)).andExpect(redirectedUrl("/login?registered"));
 		return loginId;
+	}
+
+	// 접속 IP 를 지정한 로그인 요청 (POST /login)
+	private MockHttpServletRequestBuilder loginRequest(String loginId, String password, String ip) {
+		return post("/login")
+			.param("loginId", loginId)
+			.param("password", password)
+			.with(csrf())
+			.with(request -> {
+				request.setRemoteAddr(ip);
+				return request;
+			});
+	}
+
+	private String newIp() {
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+		return "10." + random.nextInt(256) + "." + random.nextInt(256) + "." + random.nextInt(1, 255);
 	}
 
 	private LoginMember loginMember(String loginId) {

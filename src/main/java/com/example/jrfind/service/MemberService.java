@@ -15,11 +15,13 @@ import com.example.jrfind.domain.ProfileForm;
 import com.example.jrfind.domain.SignupForm;
 import com.example.jrfind.repository.MemberRepository;
 
-// 회원가입, 로그인 시 회원 조회 (Spring Security 가 loadUserByUsername 을 호출한다), 회원정보·비밀번호 변경
+// 회원가입, 로그인 시 회원 조회 (Spring Security 가 loadUserByUsername 을 호출한다), 로그인 연속 실패 제한, 회원정보·비밀번호 변경
 @Service
 public class MemberService implements UserDetailsService {
 	// 비회원 작성자명(匿名の天使 001 등)과 헷갈리지 않도록 회원 닉네임으로는 쓸 수 없게 한다
 	public static final String RESERVED_NAME_PREFIX = "匿名の天使";
+	private static final int LOGIN_ID_MAX_LENGTH = 20; // SignupForm 의 ID 규칙
+	private static final int LOGIN_IP_MAX_FAILURES = 20;
 
 	private final MemberRepository repository;
 	private final PasswordEncoder passwordEncoder;
@@ -108,6 +110,40 @@ public class MemberService implements UserDetailsService {
 
 	private String attemptKey(Long memberId) {
 		return "member:" + memberId;
+	}
+
+	// 로그인 연속 실패 제한 (LoginAttemptGuard 에서 호출)
+	// - 같은 접속 IP 에서 같은 ID 로 5번 틀리면 그 IP 에서 그 ID 의 로그인을 5분간 막는다.
+	//   ID 만으로 막으면 남이 일부러 틀려서 주인의 로그인을 막을 수 있으므로 접속 IP 와 묶어서 센다.
+	// - ID 를 바꿔 가며 틀려도 같은 IP 에서 LOGIN_IP_MAX_FAILURES 번이면 그 IP 의 로그인을 5분간 막는다.
+	// 없는 ID 도 똑같이 세고 똑같이 잠그므로, 잠금 여부로 ID 가 있는지 알 수 없다.
+	public boolean isLoginLocked(String loginId, String clientIp) {
+		return attemptLimiter.isLocked(loginKey(loginId, clientIp)) || attemptLimiter.isLocked(loginIpKey(clientIp));
+	}
+
+	// 이번 실패로 잠기면 true
+	public boolean recordLoginFailure(String loginId, String clientIp) {
+		boolean idLocked = attemptLimiter.recordFailure(loginKey(loginId, clientIp));
+		boolean ipLocked = attemptLimiter.recordFailure(loginIpKey(clientIp), LOGIN_IP_MAX_FAILURES);
+		return idLocked || ipLocked;
+	}
+
+	// IP 단위 횟수는 남겨 둔다 (자기 계정에 로그인해서 횟수를 지우고 다시 시도하지 못하도록)
+	public void recordLoginSuccess(String loginId, String clientIp) {
+		attemptLimiter.reset(loginKey(loginId, clientIp));
+	}
+
+	private String loginKey(String loginId, String clientIp) {
+		String id = (loginId == null) ? "" : loginId;
+		// 가입할 수 있는 ID 는 20자까지. 그보다 긴 값은 없는 ID 이므로 잘라서 하나로 센다 (아주 긴 값으로 기록이 커지지 않게)
+		if (id.length() > LOGIN_ID_MAX_LENGTH) {
+			id = id.substring(0, LOGIN_ID_MAX_LENGTH + 1);
+		}
+		return "login:" + id + "@" + clientIp;
+	}
+
+	private String loginIpKey(String clientIp) {
+		return "login-ip:" + clientIp;
 	}
 
 	public void changePassword(Long memberId, String newPassword) {
