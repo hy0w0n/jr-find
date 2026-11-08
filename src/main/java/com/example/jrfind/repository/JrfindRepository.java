@@ -15,6 +15,7 @@ public interface JrfindRepository {
 
 	// 등록 화면에서 보낸 노선·역·카테고리가 실제로 있는 값인지 확인
 	boolean existsStation(String line, String station);
+	boolean existsLine(String line);
 	boolean existsCategory(String categoryName);
 
 	void save(FoundItem item);

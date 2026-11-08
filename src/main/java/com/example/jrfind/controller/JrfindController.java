@@ -9,8 +9,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -100,7 +98,7 @@ public class JrfindController {
             Model model) {
         // 서버 측 입력 검증 (화면 JS 검증을 거치지 않고 직접 보낸 요청 대비)
         if (bindingResult.hasErrors()) {
-            return showRegisterForm(model, firstErrorMessage(bindingResult));
+            return showRegisterForm(model, FormErrors.firstMessage(bindingResult));
         }
         // 비회원은 수정·삭제용 4자리 비밀번호 필수
         if (loginMember == null && (password == null || !password.matches("\\d{4}"))) {
@@ -187,7 +185,7 @@ public class JrfindController {
         requireModifiable(item, loginMember);
 
         if (bindingResult.hasErrors()) {
-            return showEditForm(model, item, firstErrorMessage(bindingResult));
+            return showEditForm(model, item, FormErrors.firstMessage(bindingResult));
         }
 
         try {
@@ -249,14 +247,5 @@ public class JrfindController {
         if (!canModify(item, loginMember)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
-    }
-
-    private String firstErrorMessage(BindingResult bindingResult) {
-        ObjectError error = bindingResult.getAllErrors().get(0);
-        // 날짜에 문자를 넣는 등 형 변환 실패
-        if (error instanceof FieldError fieldError && fieldError.isBindingFailure()) {
-            return "入力形式が正しくありません。";
-        }
-        return error.getDefaultMessage();
     }
 }

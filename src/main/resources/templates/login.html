@@ -40,6 +40,10 @@
         <div class="message message-info" th:if="${param.registered}">
             会員登録が完了しました。ログインしてください。
         </div>
+        <!-- 로그인이 필요한 화면(探しています 투고 등)에서 넘어온 경우. 로그인하면 원래 화면으로 돌아간다 -->
+        <div class="message message-info" th:if="${param.required}">
+            この機能を利用するにはログインが必要です。
+        </div>
 
         <!-- POST /login 은 Spring Security 가 처리 (SecurityConfig) -->
         <form id="loginForm" th:action="@{/login}" method="post" novalidate>

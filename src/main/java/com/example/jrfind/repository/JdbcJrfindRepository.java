@@ -46,6 +46,13 @@ public class JdbcJrfindRepository implements JrfindRepository {
     }
 
     @Override
+    public boolean existsLine(String line) {
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM station WHERE linename = ?", Integer.class, line);
+        return count != null && count > 0;
+    }
+
+    @Override
     public boolean existsCategory(String categoryName) {
         Integer count = jdbcTemplate.queryForObject(
             "SELECT count(*) FROM category WHERE categoryname = ?", Integer.class, categoryName);

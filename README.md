@@ -1,8 +1,9 @@
 # JR Find
 
-도쿄 JR 역에서 주운 분실물을 공유하는 게시판 웹 애플리케이션입니다. (화면 언어: 일본어)
+도쿄 JR 역의 분실물 게시판 웹 애플리케이션입니다. (화면 언어: 일본어)
 
-로그인 없이도 글을 올릴 수 있고(작성할 때 정한 4자리 비밀번호로 수정·삭제), 회원은 로그인한 계정으로 글을 올리고 비밀번호 없이 수정·삭제합니다.
+- **見つけた** 게시판: 주운 물건을 알리는 게시판. 로그인 없이도 글을 올릴 수 있고(작성할 때 정한 4자리 비밀번호로 수정·삭제), 회원은 로그인한 계정으로 글을 올리고 비밀번호 없이 수정·삭제합니다.
+- **探しています** 게시판: 잃어버린 물건을 찾는 게시판. 회원만 글을 쓸 수 있습니다.
 
 ## 기술 스택
 
@@ -42,6 +43,15 @@ Java 21이 필요합니다.
 - 비회원 글: 작성자 이름 자동 부여 (`匿名の天使 001` 형식), 4자리 비밀번호 확인 후 수정·삭제
 - 회원 글: 닉네임으로 표시, 작성자 본인만 수정·삭제 (삭제는 모두 논리 삭제)
 
+## 探しています 게시판
+
+- 목록·상세는 누구나 볼 수 있고, 작성·수정·삭제는 회원만 가능 (로그인 전이면 안내 문구와 함께 로그인 화면으로 이동하고, 로그인 후 원래 화면으로 돌아옴)
+- 글쓰기 전에 주의사항(사기·절도 경고)을 확인해야 작성 가능 (서버에서도 확인 여부 검사)
+- 잃어버린 역을 모르면 「駅がわからない」 선택 가능 (제목에는 `駅不明`으로 표시)
+- 작성자는 물건을 찾으면 「見つかりました」로 표시 (목록·상세에 표시, 해제 가능)
+- 목록 필터·정렬·페이지네이션, 사진 첨부는 見つけた 게시판과 같음
+- 입력 오류로 화면이 다시 표시돼도 입력값 유지
+
 ## 회원가입·로그인
 
 - 회원가입: ID, 비밀번호, 氏名, ニックネーム(선택, 비우면 氏名), 生年月日, 電話番号, 개인정보 취급 동의
@@ -64,20 +74,20 @@ Java 21이 필요합니다.
 src/main/java/com/example/jrfind
 ├─ JrFindApplication.java
 ├─ config/       SecurityConfig (로그인·CSRF), WebMvcConfig (업로드 이미지·로고 경로)
-├─ controller/   JrfindController, MemberController, LoginMemberAdvice (헤더용 로그인 정보),
-│                VerifiedItems (비밀번호 확인 상태 · 세션)
-├─ domain/       FoundItem, FoundItemForm, Member, SignupForm, LoginMember, Category, Station
-├─ repository/   JrfindRepository, MemberRepository (+ JdbcTemplate 구현)
-└─ service/      JrfindService, MemberService, ImageStorage, PasswordAttemptLimiter
+├─ controller/   JrfindController (見つけた), LostItemController (探しています), MemberController,
+│                LoginMemberAdvice (헤더용 로그인 정보), VerifiedItems (비밀번호 확인 상태 · 세션)
+├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Member, SignupForm, LoginMember, Category, Station
+├─ repository/   JrfindRepository, LostItemRepository, MemberRepository (+ JdbcTemplate 구현)
+└─ service/      JrfindService, LostItemService, MemberService, ImageStorage, PasswordAttemptLimiter
 src/main/resources
 ├─ schema.sql, data.sql
-├─ templates/    home, ItemList, itemDetail, registerForm, editForm, login, signup, error, fragments/header
+├─ templates/    home, ItemList, itemDetail, registerForm, editForm (見つけた)
+│                lostList, lostDetail, lostForm (探しています), login, signup, error, fragments/header
 └─ logo/
 ```
 
 ## 앞으로 추가할 기능
 
-- 探しています(분실물을 찾는) 게시판
 - 마이페이지 (내가 쓴 글, 개인정보 수정)
 - 댓글
 - 검색
