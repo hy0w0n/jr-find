@@ -95,6 +95,8 @@
 			color: #999;
 			cursor: not-allowed;
 		}
+        /* 댓글 수 */
+        .comment-count { margin-left: 4px; color: #e63946; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -189,7 +191,8 @@
 				            
 				            <span style="font-weight: bold; color: #333;" 
 				                  th:text="${item.itemName}" 
-				                  th:title="${item.itemName}"></span> </td>
+				                  th:title="${item.itemName}"></span>
+				            <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span></td>
 				        
 				        <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
 				        

@@ -59,7 +59,9 @@ public class JdbcLostItemRepository implements LostItemRepository {
 
 	@Override
 	public List<LostItem> findAll(String line, String station, String category, String sort, int page, int size) {
-		StringBuilder sql = new StringBuilder("SELECT * FROM Lost_Item WHERE DEL_FLG = FALSE");
+		// 댓글 수 포함
+		StringBuilder sql = new StringBuilder("SELECT l.*, (SELECT count(*) FROM Post_Comment c WHERE c.LostItemId = l.ID AND c.DEL_FLG = FALSE) AS CommentCount"
+				+ " FROM Lost_Item l WHERE DEL_FLG = FALSE");
 		List<Object> params = new ArrayList<>();
 		appendFilters(sql, params, line, station, category);
 
@@ -78,7 +80,11 @@ public class JdbcLostItemRepository implements LostItemRepository {
 		params.add(size);
 		params.add((page - 1) * size);
 
-		return jdbcTemplate.query(sql.toString(), lostItemRowMapper(), params.toArray());
+		return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
+			LostItem item = lostItemRowMapper().mapRow(rs, rowNum);
+			item.setCommentCount(rs.getInt("CommentCount"));
+			return item;
+		}, params.toArray());
 	}
 
 	@Override

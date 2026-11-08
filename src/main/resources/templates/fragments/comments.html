@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--
+  댓글 영역 (見つけた / 探しています 상세 화면 공통)
+  postUrl      : 게시글 주소 (예: /items/3)
+  postMemberId : 게시글을 쓴 회원 ID (비회원 글이면 null). 이 회원의 댓글에 「投稿者」 표시
+  모델에 comments(댓글 목록)가 필요하다. commentError / commentDraft 는 댓글 등록에 실패했을 때만 들어온다.
+-->
+<section th:fragment="commentSection(postUrl, postMemberId)" id="comments" class="comment-section">
+    <style>
+        .comment-section { margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; scroll-margin-top: 110px; }
+        .comment-heading { font-size: 15px; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .comment-heading-count { color: #e63946; margin-left: 4px; }
+        .comment-empty { padding: 25px 10px; font-size: 14px; color: #aaa; border-bottom: 1px solid #eee; }
+
+        .comment-list { list-style: none; margin: 0; padding: 0; }
+        .comment-item { padding: 18px 10px; border-bottom: 1px solid #eee; }
+        .comment-author { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 6px; }
+        .comment-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; background: #fdecee; color: #e63946; font-size: 11px; font-weight: bold; vertical-align: middle; }
+        .comment-text { font-size: 14px; line-height: 1.7; color: #444; white-space: pre-wrap; word-break: break-all; }
+        .comment-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; color: #999; }
+        .comment-meta form { display: inline; }
+        .comment-delete { background: none; border: none; padding: 0; font-size: 12px; font-family: inherit; color: #999; text-decoration: underline; cursor: pointer; }
+        .comment-delete:hover { color: #e63946; }
+
+        /* 입력창 (등록 버튼은 입력창 안쪽 오른쪽 아래) */
+        .comment-form { margin-top: 20px; }
+        .comment-error { margin-bottom: 8px; font-size: 13px; color: #e63946; }
+        .comment-error:empty { display: none; }
+        .comment-wrapper { position: relative; width: 100%; }
+        .comment-textarea { width: 100%; height: 120px; padding: 15px; padding-bottom: 50px; border: 1px solid #ddd; border-radius: 4px; resize: none; font-size: 14px; font-family: inherit; outline: none; }
+        .comment-textarea::placeholder { color: #aaa; }
+        .comment-textarea:focus { border-color: #aaa; }
+        .comment-length { position: absolute; bottom: 22px; left: 15px; font-size: 12px; color: #aaa; }
+        .comment-btn { position: absolute; bottom: 15px; right: 15px; background-color: #fff; border: 1px solid #ccc; border-radius: 20px; padding: 6px 25px; font-size: 14px; font-family: inherit; color: #555; cursor: pointer; transition: all 0.2s; }
+        .comment-btn:hover { background-color: #f9f9f9; border-color: #bbb; }
+
+        /* 로그인 전 */
+        .comment-login { margin-top: 20px; padding: 25px 15px; border: 1px dashed #ddd; border-radius: 4px; text-align: center; font-size: 14px; color: #888; }
+        .comment-login a { display: inline-block; margin-left: 10px; padding: 6px 22px; border: 1px solid #ccc; border-radius: 20px; color: #555; text-decoration: none; transition: all 0.2s; }
+        .comment-login a:hover { background-color: #f9f9f9; border-color: #bbb; }
+    </style>
+
+    <h3 class="comment-heading">コメント<span class="comment-heading-count" th:text="${#lists.size(comments)}">0</span></h3>
+
+    <p class="comment-empty" th:if="${#lists.isEmpty(comments)}">まだコメントはありません。</p>
+
+    <ul class="comment-list" th:unless="${#lists.isEmpty(comments)}">
+        <li class="comment-item" th:each="comment : ${comments}" th:id="|comment-${comment.id}|">
+            <div class="comment-author">
+                <span th:text="${comment.author}">ニックネーム</span>
+                <span class="comment-badge" th:if="${postMemberId != null and comment.memberId == postMemberId}">投稿者</span>
+            </div>
+            <div class="comment-text" th:text="${comment.contents}">コメント</div>
+            <div class="comment-meta">
+                <span th:text="${#temporals.format(comment.registrationDate, 'yyyy-MM-dd HH:mm')}"></span>
+                <!-- 쓴 본인에게만 표시 (권한은 서버에서도 다시 확인) -->
+                <form th:if="${loginMember != null and comment.memberId == loginMember.id}"
+                      th:action="@{|${postUrl}/comments/${comment.id}/delete|}" method="post"
+                      onsubmit="return confirm('コメントを削除しますか？');">
+                    <button type="submit" class="comment-delete">削除</button>
+                </form>
+            </div>
+        </li>
+    </ul>
+
+    <!-- 작성 (로그인한 회원만) -->
+    <form th:if="${loginMember != null}" th:action="@{|${postUrl}/comments|}" method="post"
+          class="comment-form" id="commentForm" novalidate>
+        <div class="comment-error" id="commentError" th:text="${commentError}"></div>
+        <div class="comment-wrapper">
+            <textarea name="contents" id="commentContents" class="comment-textarea" maxlength="500"
+                      placeholder="コメントを入力してください" th:text="${commentDraft}"></textarea>
+            <span class="comment-length"><span id="commentLength">0</span> / 500</span>
+            <button type="submit" class="comment-btn">登録</button>
+        </div>
+    </form>
+    <div th:unless="${loginMember != null}" class="comment-login">
+        コメントを書くにはログインが必要です。
+        <!-- 로그인 후 이 게시글의 댓글 위치로 돌아온다 -->
+        <a th:href="@{|${postUrl}/comments|}">ログイン</a>
+    </div>
+
+    <script th:if="${loginMember != null}">
+        (() => {
+            const form = document.getElementById('commentForm');
+            const textarea = document.getElementById('commentContents');
+            const length = document.getElementById('commentLength');
+            const error = document.getElementById('commentError');
+
+            const updateLength = () => { length.innerText = textarea.value.length; };
+            textarea.addEventListener('input', updateLength);
+            updateLength();
+
+            // 빈 댓글은 보내지 않는다 (서버에서도 다시 확인)
+            form.addEventListener('submit', (e) => {
+                if (textarea.value.trim() === '') {
+                    e.preventDefault();
+                    error.innerText = 'コメントを入力してください。';
+                    textarea.focus();
+                }
+            });
+        })();
+    </script>
+</section>
+</html>

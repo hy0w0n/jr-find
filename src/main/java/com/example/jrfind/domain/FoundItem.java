@@ -19,6 +19,7 @@ public class FoundItem {
     private Boolean delFlg;
     private LocalDateTime modifiedDate;
     private Long memberId; // 회원 글의 작성자 ID (비회원 글이면 null)
+    private int commentCount; // 목록 화면에서만 채움
 
 	public Long getId() {
 		return id;
@@ -109,5 +110,11 @@ public class FoundItem {
     }
     public void setMemberId(Long memberId) {
         this.memberId = memberId;
+    }
+    public int getCommentCount() {
+        return commentCount;
+    }
+    public void setCommentCount(int commentCount) {
+        this.commentCount = commentCount;
     }
 }

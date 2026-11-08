@@ -18,9 +18,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile; // 파일 받기
 import org.springframework.web.server.ResponseStatusException;
 
+import com.example.jrfind.domain.Board;
 import com.example.jrfind.domain.FoundItem; // 도메인 객체
 import com.example.jrfind.domain.FoundItemForm;
 import com.example.jrfind.domain.LoginMember;
+import com.example.jrfind.service.CommentService;
 import com.example.jrfind.service.InvalidPostException;
 import com.example.jrfind.service.JrfindService;
 import com.example.jrfind.service.JrfindService.PasswordCheck;
@@ -33,10 +35,12 @@ public class JrfindController {
 	private final JrfindService service;
 	// 비밀번호 확인을 통과한 비회원 게시글 (세션별)
 	private final VerifiedItems verifiedItems;
+	private final CommentService commentService;
 
-	public JrfindController(JrfindService service, VerifiedItems verifiedItems) {
+	public JrfindController(JrfindService service, VerifiedItems verifiedItems, CommentService commentService) {
 		this.service = service;
 		this.verifiedItems = verifiedItems;
+		this.commentService = commentService;
 	}
 
     // 1. 홈 화면 연결: http://localhost:8080/
@@ -126,6 +130,7 @@ public class JrfindController {
         model.addAttribute("item", item);
         // 회원 글이면 작성자 본인에게만 수정·삭제 버튼을 보여준다
         model.addAttribute("isOwner", isOwner(item, loginMember));
+        model.addAttribute("comments", commentService.getComments(Board.FOUND, id));
         return "itemDetail"; // templates/itemDetail.html 호출
     }
 

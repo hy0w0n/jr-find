@@ -19,6 +19,7 @@ public class LostItem {
 	private boolean resolved; // 찾았음 (작성자가 표시)
 	private LocalDateTime registrationDate;
 	private LocalDateTime modifiedDate;
+	private int commentCount; // 목록 화면에서만 채움
 
 	public Long getId() {
 		return id;
@@ -103,5 +104,11 @@ public class LostItem {
 	}
 	public void setModifiedDate(LocalDateTime modifiedDate) {
 		this.modifiedDate = modifiedDate;
+	}
+	public int getCommentCount() {
+		return commentCount;
+	}
+	public void setCommentCount(int commentCount) {
+		this.commentCount = commentCount;
 	}
 }

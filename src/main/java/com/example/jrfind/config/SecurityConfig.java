@@ -14,11 +14,14 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
-			// 探しています 게시판의 작성·수정·삭제는 회원만 가능 (로그인 전이면 로그인 화면으로 보내고, 로그인 후 원래 화면으로 돌아옴)
+			// 探しています 게시판의 작성·수정·삭제와 댓글(두 게시판)은 회원만 가능
+			// (로그인 전이면 로그인 화면으로 보내고, 로그인 후 원래 화면으로 돌아옴)
 			// 그 외 화면은 로그인 없이 볼 수 있다.
-			// 게시글 수정·삭제 권한(작성자 본인 / 4자리 비밀번호 확인)은 각 컨트롤러에서 확인한다.
+			// 게시글·댓글 수정·삭제 권한(작성자 본인 / 4자리 비밀번호 확인)은 각 컨트롤러에서 확인한다.
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/lost-items/new", "/lost-items/*/edit", "/lost-items/*/delete", "/lost-items/*/resolve")
+					.authenticated()
+				.requestMatchers("/items/*/comments/**", "/lost-items/*/comments/**")
 					.authenticated()
 				.anyRequest().permitAll())
 			// 로그인 화면은 직접 만든 /login (GET), 로그인 처리(POST /login)는 Spring Security 가 담당

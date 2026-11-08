@@ -120,8 +120,9 @@ public class JdbcJrfindRepository implements JrfindRepository {
 
     @Override
     public List<FoundItem> findAll(String line, String station, String category, String sort, int page, int size) {
-        // 1. 기본 SQL 및 파라미터 리스트 생성
-        StringBuilder sql = new StringBuilder("SELECT * FROM Found_Item WHERE DEL_FLG = FALSE");
+        // 1. 기본 SQL 및 파라미터 리스트 생성 (댓글 수 포함)
+        StringBuilder sql = new StringBuilder("SELECT f.*, (SELECT count(*) FROM Post_Comment c WHERE c.FoundItemId = f.ID AND c.DEL_FLG = FALSE) AS CommentCount"
+                + " FROM Found_Item f WHERE DEL_FLG = FALSE");
         List<Object> params = new ArrayList<>();
 
         // 2. 동적 필터링 조건 추가
@@ -145,7 +146,11 @@ public class JdbcJrfindRepository implements JrfindRepository {
         params.add(size);
         params.add((page - 1) * size);
 
-        return jdbcTemplate.query(sql.toString(), foundItemRowMapper(), params.toArray());
+        return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
+            FoundItem item = foundItemRowMapper().mapRow(rs, rowNum);
+            item.setCommentCount(rs.getInt("CommentCount"));
+            return item;
+        }, params.toArray());
     }
 
     @Override

@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.example.jrfind.domain.Board;
 import com.example.jrfind.domain.LoginMember;
 import com.example.jrfind.domain.LostItem;
 import com.example.jrfind.domain.LostItemForm;
+import com.example.jrfind.service.CommentService;
 import com.example.jrfind.service.InvalidPostException;
 import com.example.jrfind.service.JrfindService;
 import com.example.jrfind.service.LostItemService;
@@ -33,10 +35,12 @@ public class LostItemController {
 	private final LostItemService service;
 	// 노선·역·카테고리 드롭다운 데이터
 	private final JrfindService masterService;
+	private final CommentService commentService;
 
-	public LostItemController(LostItemService service, JrfindService masterService) {
+	public LostItemController(LostItemService service, JrfindService masterService, CommentService commentService) {
 		this.service = service;
 		this.masterService = masterService;
+		this.commentService = commentService;
 	}
 
 	@GetMapping
@@ -69,6 +73,7 @@ public class LostItemController {
 		LostItem item = findItemOrThrow(id);
 		model.addAttribute("item", item);
 		model.addAttribute("isOwner", isOwner(item, loginMember));
+		model.addAttribute("comments", commentService.getComments(Board.LOST, id));
 		return "lostDetail";
 	}
 

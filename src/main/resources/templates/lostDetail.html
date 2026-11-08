@@ -147,6 +147,9 @@
                     </button>
                 </div>
             </div>
+
+            <!-- 댓글 (fragments/comments.html) -->
+            <section th:replace="~{fragments/comments :: commentSection(|/lost-items/${item.id}|, ${item.memberId})}"></section>
         </main>
 
         <aside class="side-section">

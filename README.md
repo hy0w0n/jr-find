@@ -4,6 +4,7 @@
 
 - **見つけた** 게시판: 주운 물건을 알리는 게시판. 로그인 없이도 글을 올릴 수 있고(작성할 때 정한 4자리 비밀번호로 수정·삭제), 회원은 로그인한 계정으로 글을 올리고 비밀번호 없이 수정·삭제합니다.
 - **探しています** 게시판: 잃어버린 물건을 찾는 게시판. 회원만 글을 쓸 수 있습니다.
+- 두 게시판 모두 회원은 댓글을 달 수 있습니다. (감사 인사, "분실물 센터에 맡겼어요" 같은 후속 소식)
 
 ## 기술 스택
 
@@ -52,6 +53,14 @@ Java 21이 필요합니다.
 - 목록 필터·정렬·페이지네이션, 사진 첨부는 見つけた 게시판과 같음
 - 입력 오류로 화면이 다시 표시돼도 입력값 유지
 
+## 댓글 (두 게시판 공통)
+
+- 댓글은 누구나 볼 수 있고, 작성은 회원만 가능 (로그인 전이면 「ログイン」 링크 → 로그인 후 그 게시글의 댓글 위치로 돌아옴)
+- 댓글을 쓴 본인만 삭제 가능 (논리 삭제). 게시글 작성자가 쓴 댓글에는 「投稿者」 표시
+- 최대 500자, 빈 댓글은 화면과 서버 양쪽에서 막고, 오류가 나도 입력한 내용은 유지
+- 목록 화면의 물건 이름 옆에 댓글 수 표시
+- 댓글 테이블 하나를 두 게시판이 같이 사용 (`FOUNDITEMID` / `LOSTITEMID` 중 하나에만 값이 들어가도록 CHECK 제약)
+
 ## 회원가입·로그인
 
 - 회원가입: ID, 비밀번호, 氏名, ニックネーム(선택, 비우면 氏名), 生年月日, 電話番号, 개인정보 취급 동의
@@ -62,7 +71,7 @@ Java 21이 필요합니다.
 
 - 비밀번호(회원·비회원 글 모두)는 BCrypt 해시로 저장하고, 화면(HTML)에는 내보내지 않음
 - 모든 POST 요청에 CSRF 토큰 확인 (폼은 hidden 값, fetch 는 헤더로 전송)
-- 수정·삭제 권한은 서버에서 검사: 회원 글은 작성자 본인, 비회원 글은 "비밀번호 확인을 통과한 세션" (화면 JS 검사만으로 막지 않음)
+- 수정·삭제 권한은 서버에서 검사: 회원 글은 작성자 본인, 비회원 글은 "비밀번호 확인을 통과한 세션", 댓글은 쓴 본인 (화면 JS 검사만으로 막지 않음)
 - 비밀번호 5회 연속 실패 시 5분간 잠금 (4자리 비밀번호 무차별 대입 방지)
 - 업로드 파일은 파일 앞부분(매직 넘버)으로 실제 이미지인지 확인하고, 원본 파일명 대신 서버에서 만든 이름으로 저장 (경로 조작 방지)
 - 입력값은 서버에서도 다시 검증 (Bean Validation + 노선·역·카테고리 실존 여부)
@@ -74,21 +83,22 @@ Java 21이 필요합니다.
 src/main/java/com/example/jrfind
 ├─ JrFindApplication.java
 ├─ config/       SecurityConfig (로그인·CSRF), WebMvcConfig (업로드 이미지·로고 경로)
-├─ controller/   JrfindController (見つけた), LostItemController (探しています), MemberController,
-│                LoginMemberAdvice (헤더용 로그인 정보), VerifiedItems (비밀번호 확인 상태 · 세션)
-├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Member, SignupForm, LoginMember, Category, Station
-├─ repository/   JrfindRepository, LostItemRepository, MemberRepository (+ JdbcTemplate 구현)
-└─ service/      JrfindService, LostItemService, MemberService, ImageStorage, PasswordAttemptLimiter
+├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
+│                MemberController, LoginMemberAdvice (헤더용 로그인 정보), VerifiedItems (비밀번호 확인 상태 · 세션)
+├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
+│                Member, SignupForm, LoginMember, Category, Station
+├─ repository/   JrfindRepository, LostItemRepository, CommentRepository, MemberRepository (+ JdbcTemplate 구현)
+└─ service/      JrfindService, LostItemService, CommentService, MemberService, ImageStorage, PasswordAttemptLimiter
 src/main/resources
 ├─ schema.sql, data.sql
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm (見つけた)
-│                lostList, lostDetail, lostForm (探しています), login, signup, error, fragments/header
+│                lostList, lostDetail, lostForm (探しています), login, signup, error,
+│                fragments/header, fragments/comments (두 상세 화면 공통 댓글 영역)
 └─ logo/
 ```
 
 ## 앞으로 추가할 기능
 
 - 마이페이지 (내가 쓴 글, 개인정보 수정)
-- 댓글
 - 검색
 - 지도·노선도, 분실물 센터 안내
