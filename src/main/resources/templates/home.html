@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR-Find | Home</title>
+    <style>
+        /* 기본 스타일 초기화 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #fff; color: #333; height: 100vh; display: flex; flex-direction: column; }
+
+        /* 상단 네비게이션 (우측 정렬) */
+        .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 20px 5%; gap: 20px; }
+        .nav-icon { 
+			width: 45px;         /* 원의 가로 크기 */
+		    height: 45px;        /* 원의 세로 크기 */
+		    border: 1px solid #333; /* 검정색 테두리 */
+		    border-radius: 50%;  /* 테두리를 원형으로 만듦 */
+		    display: flex;
+		    align-items: center;
+		    justify-content: center;
+		    padding: 8px;        /* 아이콘과 테두리 사이의 간격 */
+		    transition: all 0.2s;
+		}
+        .nav-icon:hover { background-color: #f0f0f0; }
+		.nav-icon svg {width: 24px; height: 24px;}
+        .login-btn { padding: 8px 25px; border-radius: 25px; border: 1px solid #333; background: #fff; cursor: pointer; font-size: 15px; font-weight: 500; transition: background 0.2s; }
+        .login-btn:hover { background: #f5f5f5; }
+
+        /* 중앙 메인 콘텐츠 */
+        .main-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 10vh; }
+        
+        /* 로고 영역 */
+		.main-logo { 
+            width: 400px; 
+            margin-bottom: 30px; /* 간격 조금 줄임 */
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .main-logo img {
+            width: 100%;
+            height: auto; /* 비율 유지 */
+            /* filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));  원한다면 그림자 추가 */
+        }
+
+        /* 검색창 영역 */
+        .search-wrapper { position: relative; width: 600px; margin-bottom: 40px; }
+        .search-input { width: 100%; padding: 18px 60px 18px 30px; border-radius: 40px; border: 1px solid #333; font-size: 18px; outline: none; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .search-btn { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: none; border: none; cursor: pointer; padding: 0; }
+
+        /* 버튼 그룹 */
+        .btn-group { display: flex; gap: 30px; }
+        .action-btn { width: 220px; padding: 18px; border-radius: 15px; border: 1px solid #333; background: #fff; font-size: 18px; font-weight: bold; text-decoration: none; color: #333; text-align: center; transition: all 0.2s; }
+        .action-btn:hover { background: #333; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <header class="top-nav">
+        <div class="nav-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.8995L16.9497 15.9497C19.6834 13.2161 19.6834 8.78392 16.9497 6.05025C14.2161 3.31658 9.78392 3.31658 7.05025 6.05025C4.31658 8.78392 4.31658 13.2161 7.05025 15.9497L12 20.8995ZM12 23.7279L5.63604 17.364C2.12132 13.8492 2.12132 8.15076 5.63604 4.63604C9.15076 1.12132 14.8492 1.12132 18.364 4.63604C21.8787 8.15076 21.8787 13.8492 18.364 17.364L12 23.7279ZM12 13C13.1046 13 14 12.1046 14 11C14 9.89543 13.1046 9 12 9C10.8954 9 10 9.89543 10 11C10 12.1046 10.8954 13 12 13ZM12 15C9.79086 15 8 13.2091 8 11C8 8.79086 9.79086 7 12 7C14.2091 7 16 8.79086 16 11C16 13.2091 14.2091 15 12 15Z"></path></svg>
+        </div>
+        <div class="nav-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22C4 17.5817 7.58172 14 12 14C16.4183 14 20 17.5817 20 22H18C18 18.6863 15.3137 16 12 16C8.68629 16 6 18.6863 6 22H4ZM12 13C8.685 13 6 10.315 6 7C6 3.685 8.685 1 12 1C15.315 1 18 3.685 18 7C18 10.315 15.315 13 12 13ZM12 11C14.21 11 16 9.21 16 7C16 4.79 14.21 3 12 3C9.79 3 8 4.79 8 7C8 9.21 9.79 11 12 11Z"></path></svg>
+        </div>
+        <button class="login-btn">ログイン</button>
+    </header>
+
+    <main class="main-container">
+		<a th:href="@{/}" class="main-logo">
+			<img th:src="@{/logo/logo3_1.png}" alt="JR Find Logo">
+		</a>
+
+        <div class="search-wrapper">
+            <input type="text" class="search-input" placeholder="何をお探しですか？">
+            <button class="search-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>
+            </button>
+        </div>
+
+        <div class="btn-group">
+            <a th:href="@{/items}" class="action-btn">見つけた！</a>
+            <a href="#" class="action-btn">探しています</a>
+        </div>
+    </main>
+
+</body>
+</html>

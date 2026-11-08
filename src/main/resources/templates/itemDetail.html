@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>JR-Find | 詳細</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
+        
+        /* 레이아웃 */
+        .container { width: 90%; max-width: 1200px; margin: 40px auto; display: flex; gap: 40px; align-items: flex-start; }
+        .content-section { flex: 3; }
+        .side-section { flex: 1; margin-top: 60px; } 
+
+        /* 헤더 스타일 */
+        .post-header {
+            border-top: 2px solid #555;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        .post-title-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 10px;
+            border-bottom: 1px solid #555;
+            background: #fff;
+        }
+        .board-label {
+            font-weight: normal;
+            font-size: 14px;
+            color: #333;
+            padding-right: 15px;
+            margin-right: 15px;
+            border-right: 1px solid #ccc;
+            white-space: nowrap;
+        }
+        .post-title-text {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        /* 작성자/날짜 줄 */
+        .post-meta-bar {
+            background-color: #f2f2f2;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* 본문 영역 */
+        .post-body {
+            padding: 40px 10px;
+            min-height: 200px;
+            border-bottom: 1px solid #eee;
+        }
+        .post-text {
+            white-space: pre-wrap; 
+            line-height: 1.8;
+            font-size: 15px;
+            margin-bottom: 30px;
+        }
+        .post-image-area {
+            text-align: center; 
+            margin-top: 20px;
+        }
+        .post-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+
+        /* 버튼 그룹 스타일 */
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        /* 왼쪽 목록 버튼 */
+        .btn-list-wrapper {
+            display: inline-flex;
+            align-items: center;
+            background-color: #777;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 2px;
+            transition: background 0.2s;
+            height: 40px;
+        }
+        .btn-list-wrapper:hover { background-color: #555; }
+        
+        .btn-list-icon { padding: 0 12px; display: flex; align-items: center; }
+        .btn-list-divider { width: 1px; height: 60%; background-color: #999; }
+        .btn-list-text { padding: 0 20px 0 15px; font-weight: bold; font-size: 14px; }
+        .list-svg { width: 20px; height: 20px; fill: #fff; }
+
+        /* 오른쪽 액션 버튼들 */
+        .right-btns { display: flex; gap: 10px; }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #e5e5e5;
+            color: #444;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-action:hover { background-color: #d0d0d0; }
+        .action-svg { width: 18px; height: 18px; fill: #555; }
+
+        /* =========================================
+           [수정] 댓글 영역 스타일 (버튼 안쪽 배치)
+           ========================================= */
+        .comment-section {
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        
+        .comment-wrapper {
+            position: relative; /* 자식 요소 절대 위치 기준점 */
+            width: 100%;
+        }
+
+        .comment-textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            padding-bottom: 50px; /* 버튼 공간 확보 */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: none;
+            font-size: 14px;
+            outline: none;
+        }
+        .comment-textarea::placeholder { color: #aaa; }
+        .comment-textarea:focus { border-color: #aaa; }
+
+        .comment-btn {
+            position: absolute; /* 부모 기준 절대 위치 */
+            bottom: 15px;       /* 아래에서 15px */
+            right: 15px;        /* 오른쪽에서 15px */
+            
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 6px 25px;
+            font-size: 14px;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .comment-btn:hover {
+            background-color: #f9f9f9;
+            border-color: #bbb;
+        }
+
+        /* 사이드바 및 기타 스타일 */
+        .sidebar-card { border: 1px solid #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 25px; background: #fff; }
+        .sidebar-card p { font-size: 15px; color: #444; margin-bottom: 20px; }
+        .write-btn-link { display: block; width: 100%; padding: 12px; background-color: #f0f0f0; color: #e63946; text-decoration: none; font-weight: bold; border-radius: 6px; transition: background 0.2s; }
+        .write-btn-link:hover { background-color: #e5e5e5; }
+        .btn-gray { background-color: #f0f0f0; color: #333; }
+        
+        /* 분실물 센터 안내 */
+        .info-card {
+            border: 1px solid #d1e7dd;
+            background-color: #f0fdf4;
+            border-radius: 15px; 
+            padding: 30px 20px;
+            text-align: left;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .info-title { 
+            font-size: 16px; font-weight: bold; margin-bottom: 20px; text-align: center; 
+            border-bottom: 1px solid #d1e7dd; padding-bottom: 10px; color: #0f5132;
+        }
+        .info-list { list-style: none; font-size: 14px; line-height: 2.2; color: #1e4620; }
+        .info-list li { display: flex; justify-content: space-between; border-bottom: 1px dotted #d1e7dd; }
+        .info-tel { font-weight: bold; color: #198754; } 
+        .info-note { font-size: 12px; color: #5a7c65; margin-top: 15px; text-align: center; line-height: 1.4; }
+		
+		/* =========================================
+		   [추가] 비밀번호 확인 모달 스타일
+		   ========================================= */
+		.modal-overlay {
+		    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+		    background: rgba(0, 0, 0, 0.4);
+		    display: none; justify-content: center; align-items: center; z-index: 9999;
+		}
+
+		.modal-box {
+		    background: white; width: 400px; padding: 40px 30px;
+		    border-radius: 20px;
+		    text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+		    display: flex; flex-direction: column; align-items: center;
+		}
+
+		/* 아이콘 (파란색) */
+		.modal-icon-svg { 
+		    width: 60px; height: 60px; 
+		    fill: #6ea8fe; 
+		    margin-bottom: 20px;
+		}
+
+		/* [요청사항 반영] 제목: 크고 굵게 */
+		.modal-title-text { 
+		    font-size: 22px; 
+		    font-weight: bold; 
+		    color: #333; 
+		    margin-bottom: 10px;
+		}
+
+		/* [요청사항 반영] 설명: 작고 회색 */
+		.modal-desc-text { 
+		    font-size: 14px; 
+		    color: #999; 
+		    margin-bottom: 25px; 
+		    line-height: 1.5;
+		}
+
+		/* 비밀번호 입력창 스타일 */
+		.modal-input-pw {
+		    width: 80%;
+		    padding: 12px;
+		    font-size: 24px;
+		    letter-spacing: 8px; /* 글자 간격 넓게 */
+		    text-align: center;
+		    border: 1px solid #ddd;
+		    border-radius: 12px;
+		    outline: none;
+		    background-color: #f9f9f9;
+		    margin-bottom: 10px;
+		    transition: border 0.2s;
+		}
+		.modal-input-pw:focus {
+		    border-color: #6ea8fe;
+		    background-color: #fff;
+		}
+
+		/* 에러 메시지 */
+		.modal-error {
+		    color: #ff4d4d; 
+		    font-size: 13px; 
+		    /*height: 20px; */
+			min-height: 20px;
+		    margin-bottom: 15px;
+		    display: none; /* 평소엔 숨김 */
+			line-height: 1.4;
+		}
+
+		/* 버튼 그룹 */
+		.modal-btn-group {
+		    display: flex; width: 100%; gap: 10px;
+		}
+		.modal-btn {
+		    flex: 1; padding: 12px; border: none; border-radius: 12px;
+		    font-size: 16px; font-weight: bold; cursor: pointer;
+		    transition: background 0.2s;
+		}
+		.modal-btn-cancel { background-color: #e0e0e0; color: #333; }
+		.modal-btn-cancel:hover { background-color: #d0d0d0; }
+
+		.modal-btn-ok { background-color: #6ea8fe; color: white; }
+		.modal-btn-ok:hover { background-color: #5a95e5; }
+		
+		.modal-btn-delete {
+			background-color: rgb(255, 128, 128);
+			    color: white;
+			    transition: background-color 0.2s;
+		}
+		.modal-btn-delete:hover {
+		    background-color: #ff4d4d; /* 좀 더 어두운 빨간색 */
+		}
+		
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: mainHeader}"></div>
+
+    <div class="container">
+        <main class="content-section">
+            
+            <div class="post-header">
+                <div class="post-title-row">
+                    <span class="board-label">見つけた 掲示板</span>
+                    <span class="post-title-text" th:text="${item.title}"></span>
+                </div>
+				<div class="post-meta-bar">
+				    <span th:text="${item.author}"></span>
+				    
+				    <div>
+				        <span th:text="${#temporals.format(item.registrationDate, 'yyyy.MM.dd HH:mm')}"></span>
+				        <span th:if="${item.modifiedDate != null}" style="color: #999; margin-left: 5px; font-size: 12px;">(編集済み)</span>
+				    </div>
+				</div>
+            </div>
+
+            <div class="post-body">
+                <div class="post-text" th:text="${item.contents}">
+                    내용이 들어갑니다.
+                </div>
+                
+                <div class="post-image-area" th:if="${item.imgPath != null}">
+                    <img th:src="|/images/${item.imgPath}|" class="post-image" alt="Uploaded Image">
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <a th:href="@{/items}" class="btn-list-wrapper">
+                    <div class="btn-list-icon">
+                        <svg class="list-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 4H21V6H8V4ZM3 3.5H6V6.5H3V3.5ZM3 10.5H6V13.5H3V10.5ZM3 17.5H6V20.5H3V17.5ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"></path></svg>
+                    </div>
+                    <div class="btn-list-divider"></div>
+                    <div class="btn-list-text">一覧</div>
+                </a>
+
+                <div class="right-btns">
+                    <button type="button" class="btn-action" onclick="openPwModal('edit')">
+                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.41421 15.89L16.5563 5.74785L15.1421 4.33363L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6473L14.435 2.21231C14.8256 1.82179 15.4587 1.82179 15.8492 2.21231L18.6777 5.04074C19.0682 5.43126 19.0682 6.06443 18.6777 6.45495L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z"></path></svg>
+                        編集
+                    </button>
+                    
+                    <button type="button" class="btn-action" onclick="openPwModal('delete')">
+                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg>
+                        削除
+                    </button>
+                    
+                    <button type="button" class="btn-action" onclick="alert('リンクをコピーしました！(予定)')">
+                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.1202 17.0228L8.92129 14.7324C8.19135 15.5125 7.15261 16 6 16C3.79086 16 2 14.2091 2 12C2 9.79086 3.79086 8 6 8C7.15255 8 8.19125 8.48746 8.92118 9.26746L13.1202 6.97713C13.0417 6.66441 13 6.33707 13 6C13 3.79086 14.7909 2 17 2C19.2091 2 21 3.79086 21 6C21 8.20914 19.2091 10 17 10C15.8474 10 14.8087 9.51251 14.0787 8.73246L9.87977 11.0228C9.9583 11.3355 10 11.6629 10 12C10 12.3371 9.95831 12.6644 9.87981 12.9771L14.0788 15.2675C14.8087 14.4875 15.8474 14 17 14C19.2091 14 21 15.7909 21 18C21 20.2091 19.2091 22 17 22C14.7909 22 13 20.2091 13 18C13 17.6629 13.0417 17.3355 13.1202 17.0228ZM6 14C7.10457 14 8 13.1046 8 12C8 10.8954 7.10457 10 6 10C4.89543 10 4 10.8954 4 12C4 13.1046 4.89543 14 6 14ZM17 8C18.1046 8 19 7.10457 19 6C19 4.89543 18.1046 4 17 4C15.8954 4 15 4.89543 15 6C15 7.10457 15.8954 8 17 8ZM17 20C18.1046 20 19 19.1046 19 18C19 16.8954 18.1046 16 17 16C15.8954 16 15 16.8954 15 18C15 19.1046 15.8954 20 17 20Z"></path></svg>
+                        シェア
+                    </button>
+                </div>
+            </div>
+            
+            <div class="comment-section">
+                 <div class="comment-wrapper">
+                     <textarea class="comment-textarea" placeholder="コメントを入力してください"></textarea>
+                     <button class="comment-btn">登録</button>
+                 </div>
+            </div>
+
+        </main>
+
+        <aside class="side-section">
+            <div class="sidebar-card">
+                <p>忘れ物を拾われましたか？</p>
+                <a th:href="@{/items/new}" class="write-btn-link">投稿する</a>
+            </div>
+            <div class="sidebar-card">
+                <p>忘れ物をお探しですか？</p>
+                <a href="#" class="write-btn-link btn-gray">探しています 掲示板</a>
+            </div>
+
+            <div class="info-card">
+                <div class="info-title">主要駅 お忘れ物承り所</div>
+                <ul class="info-list">
+                    <li>
+                        <span>JR東日本</span>
+                        <span class="info-tel">050-2016-1600</span>
+                    </li>
+                    <li>
+                        <span>東京駅</span>
+                        <span class="info-tel">03-3210-xxxx</span>
+                    </li>
+                    <li>
+                        <span>新宿駅</span>
+                        <span class="info-tel">03-3354-xxxx</span>
+                    </li>
+                    <li>
+                        <span>上野駅</span>
+                        <span class="info-tel">03-3841-xxxx</span>
+                    </li>
+                    <li>
+                        <span>池袋駅</span>
+                        <span class="info-tel">03-3982-xxxx</span>
+                    </li>
+                </ul>
+                <div class="info-note">
+                    ※ 受付時間: 10:00 ~ 18:00<br>
+                    (実際の番号と異なる場合があります)
+                </div>
+            </div>
+        </aside>
+    </div>
+	<div id="passwordModal" class="modal-overlay">
+	    <div class="modal-box">
+	        <svg class="modal-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+	            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path>
+	        </svg>
+
+	        <div class="modal-title-text">パスワード確認</div>
+	        
+	        <div class="modal-desc-text">
+	            記事を作成した時の<br>パスワード(4桁)を入力してください。
+	        </div>
+	        
+	        <input type="password" id="modalPasswordInput" class="modal-input-pw" maxlength="4" placeholder="●●●●">
+	        
+	        <div id="modalErrorMsg" class="modal-error">
+	            パスワードが一致しません。
+	        </div>
+
+	        <div class="modal-btn-group">
+	            <button class="modal-btn modal-btn-cancel" onclick="closePwModal()">キャンセル</button>
+	            <button class="modal-btn modal-btn-ok" onclick="submitPassword()">OK</button>
+	        </div>
+	    </div>
+	</div>
+	
+	<div id="finalDeleteModal" class="modal-overlay">
+	    <div class="modal-box">
+	        <svg class="modal-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="fill: #ff4d4d;">
+	            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path>
+	        </svg>
+
+	        <div class="modal-title-text">削除の確認</div>
+	        
+	        <div class="modal-desc-text">
+	            本当に削除しますか？<br>
+	            削除されたデータは復元できません。
+	        </div>
+	        
+	        <div class="modal-btn-group">
+				<button class="modal-btn modal-btn-cancel" onclick="closeFinalModal()">キャンセル</button>
+				            <button class="modal-btn modal-btn-delete" onclick="executeDelete()">削除する</button>
+	        </div>
+	    </div>
+	</div>
+
+	<form id="deleteForm" th:action="@{/items/{id}/delete(id=${item.id})}" method="post" style="display: none;"></form>
+
+<script th:inline="javascript">
+    const itemId = /*[[${item.id}]]*/ 0;
+    const pwModal = document.getElementById('passwordModal');
+	const finalModal = document.getElementById('finalDeleteModal');
+	
+    const pwInput = document.getElementById('modalPasswordInput');
+    const errorMsg = document.getElementById('modalErrorMsg');
+    let currentAction = ''; // 'edit' 또는 'delete'
+
+    // 1. 모달 열기 (actionType: 'edit' or 'delete')
+    function openPwModal(actionType) {
+        currentAction = actionType;
+        pwInput.value = ''; // 입력창 초기화
+        errorMsg.style.display = 'none'; // 에러메시지 숨김
+        pwModal.style.display = 'flex';
+        pwInput.focus();
+    }
+
+    // 2. 모달 닫기
+    function closePwModal() {
+        pwModal.style.display = 'none';
+    }
+
+	// 최종 확인 모달 닫기
+    function closeFinalModal() {
+        finalModal.style.display = 'none';
+    }
+
+    // 진짜 삭제 실행 (최종 모달에서 '삭제' 클릭 시)
+    function executeDelete() {
+        document.getElementById('deleteForm').submit();
+    }
+	
+	// 3. 비밀번호 확인 요청 함수
+	function submitPassword() {
+	    const password = pwInput.value;
+	    const errorMsgDiv = document.getElementById('modalErrorMsg'); 
+
+	    // 1. 빈 값 체크 (입력 안 하고 확인 눌렀을 때)
+	    if (!password) {
+	        // [요청 반영] "비밀번호를 입력해주세요"
+	        errorMsgDiv.innerText = "パスワードを入力してください。";
+	        errorMsgDiv.style.display = 'block';
+	        pwInput.focus();
+	        return;
+	    }
+
+	    // 2. 서버 확인 요청 (비밀번호는 URL이 아니라 요청 본문으로 보낸다)
+	    fetch(`/items/${itemId}/check-password`, {
+	        method: 'POST',
+	        body: new URLSearchParams({ password: password })
+	    })
+	    .then(response => {
+	        // 연속으로 틀려서 일정 시간 잠긴 경우
+	        if (response.status === 429) return 'locked';
+	        if (!response.ok) throw new Error(response.status);
+	        return response.json();
+	    })
+	    .then(result => {
+	        if (result === 'locked') {
+	            errorMsgDiv.innerText = "入力回数の上限を超えました。\nしばらくしてから再度お試しください。";
+	            errorMsgDiv.style.display = 'block';
+	            pwInput.value = '';
+	            return;
+	        }
+
+	        if (result === true) {
+	            // 일치: 모달 닫고 다음 단계
+	            closePwModal(); 
+
+	            if (currentAction === 'delete') {
+	                document.getElementById('finalDeleteModal').style.display = 'flex'; 
+	            } else if (currentAction === 'edit') {
+	                location.href = `/items/${itemId}/edit`; 
+	            }
+	        } else {
+	            // 불일치: 입력값 비우고 에러 메시지 표시
+	            // [요청 반영] "비밀번호가 틀렸습니다. 다시 입력해주세요."
+	            errorMsgDiv.innerText = "パスワードが間違っています。\nもう一度入力してください。";
+	            errorMsgDiv.style.display = 'block';
+	            pwInput.value = ''; // 입력창 초기화
+	            pwInput.focus();
+	        }
+	    })
+	    .catch(error => {
+	        console.error('Error:', error);
+	        alert("サーバー通信エラーが発生しました。");
+	    });
+	}
+</script>
+</body>
+</html>

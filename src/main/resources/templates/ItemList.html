@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>JR-Find | 見つけた</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; }
+        .container { width: 90%; max-width: 1200px; margin: 40px auto; display: flex; gap: 40px; align-items: flex-start; }
+        .board-section { flex: 3; }
+        
+        /* [수정] 사이드바 위치 조정: 왼쪽의 타이틀 라인과 높이를 맞추기 위해 margin-top 추가 */
+        .side-section { flex: 1; margin-top: 60px; }
+
+        /* 게시판 상단 헤더 */
+        .board-title-area { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+        .view-mode-icons { display: flex; gap: 12px; color: #888; }
+        .view-mode-icons svg { width: 24px; height: 24px; cursor: pointer; }
+        .view-mode-icons svg.active { color: #333; }
+
+        /* 게시판 테이블 스타일 */
+        .lost-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        
+        /* [수정] 헤더 스타일: 텍스트 중앙 정렬 */
+        .lost-table th { 
+            border-bottom: 1px solid #333; 
+            font-size: 14px; 
+            color: #555; 
+            text-align: center; /* 헤더 가로 중앙 정렬 */
+            background-color: #fff;
+            padding: 5px 5px;
+            vertical-align: middle; /* 기본 수직 중앙 */
+        }
+
+        /* [수정] 필터가 있는 헤더(노선, 역, 물건)는 위쪽 정렬 */
+        .th-filter { vertical-align: top !important; }
+
+        /* [수정] 데이터 셀 스타일: 텍스트 좌측 정렬 */
+        .lost-table td { 
+            padding: 15px 10px; 
+            border-bottom: 1px solid #eee; 
+            font-size: 14px; 
+            text-align: left; /* 데이터 좌측 정렬 */
+            color: #555; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* 말줄임표 처리 */
+        }
+
+        /* 작성자, 작성일, 날짜 컬럼은 내용이 짧으니 중앙 정렬 유지 */
+        .td-center { text-align: center !important; }
+
+        /* [추가] 헤더 내부 필터 박스 스타일 */
+        .filter-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
+        }
+        .filter-select {
+            width: 95%;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+            outline: none;
+        }
+
+        /* [추가] 정렬 아이콘 (날짜 옆) */
+        .sort-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .sort-icon { width: 14px; height: 14px; transition: transform 0.3s; }
+        /* 오름차순일 때 아이콘 뒤집기 */
+        .sort-asc .sort-icon { transform: rotate(180deg); }
+
+        /* 사이드바 박스 디자인 */
+        .sidebar-card { border: 1px solid #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 25px; }
+        .sidebar-card p { font-size: 15px; color: #444; margin-bottom: 20px; }
+        .write-btn-link { display: block; width: 100%; padding: 12px; background-color: #f0f0f0; color: #e63946; text-decoration: none; font-weight: bold; border-radius: 6px; transition: background 0.2s; }
+        .write-btn-link:hover { background-color: #e5e5e5; }
+        
+        .btn-gray { background-color: #f0f0f0; color: #333; }
+
+        /* 하단 페이지네이션 */
+        .pager { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 40px; color: #888; font-size: 14px; }
+        .pager .page-num.active { color: #333; font-weight: bold; text-decoration: underline; }
+		
+		select:disabled {
+			background-color: #f0f0f0;
+			color: #999;
+			cursor: not-allowed;
+		}
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: mainHeader}"></div>
+
+    <div class="container">
+        <main class="board-section">
+            <div class="board-title-area">
+                <h2 style="font-size: 24px;">見つけた</h2>
+                <div class="view-mode-icons">
+                    <svg class="active" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4ZM4 5V19H20V5H4ZM6 7H8V9H6V7ZM8 11H6V13H8V11ZM6 15H8V17H6V15ZM18 7H10V9H18V7ZM10 15H18V17H10V15ZM18 11H10V13H18V11Z"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3C2.44772 3 2 3.44772 2 4V10C2 10.5523 2.44772 11 3 11H10C10.5523 11 11 10.5523 11 10V4C11 3.44772 10.5523 3 10 3H3ZM4 9V5H9V9H4ZM3 13C2.44772 13 2 13.4477 2 14V20C2 20.5523 2.44772 21 3 21H10C10.5523 21 11 20.5523 11 20V14C11 13.4477 10.5523 13 10 13H3ZM4 19V15H9V19H4ZM13 4C13 3.44772 13.4477 3 14 3H21C21.5523 3 22 3.44772 22 4V10C22 10.5523 21.5523 11 21 11H14C13.4477 11 13 10.5523 13 10V4ZM15 5V9H20V5H15ZM14 13C13.4477 13 13 13.4477 13 14V20C13 20.5523 13.4477 21 14 21H21C21.5523 21 22 20.5523 22 20V14C22 13.4477 21.5523 13 21 13H14ZM15 19V15H20V19H15Z"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11V5H5V11H19ZM19 13H5V19H19V13ZM4 3H20C20.5523 3 21 3.44772 21 4V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3Z"></path></svg>
+                </div>
+            </div>
+
+            <table class="lost-table">
+                <colgroup>
+                    <col style="width: 12%;"> <col style="width: 13%;"> <col style="width: 13%;"> <col style="width: auto;"> <col style="width: 15%;"> <col style="width: 15%;"> </colgroup>
+				<thead>
+				    <tr>
+				        <th onclick="toggleSort('date')" style="cursor: pointer;" id="header-date">
+				            <div class="sort-wrapper">
+				                <span>日付</span>
+				                <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L6 10H18L12 16Z"></path></svg>
+				            </div>
+				        </th>
+
+				        <th class="th-filter">
+				            <div class="filter-box">
+				                <span>路線</span>
+				                <select class="filter-select" id="lineFilter">
+				                    <option value=""></option>
+				                    <option th:each="line : ${lines}" th:value="${line}" th:text="${line}"></option>
+				                </select>
+				            </div>
+				        </th>
+
+				        <th class="th-filter">
+				            <div class="filter-box">
+				                <span>駅</span>
+				                <select class="filter-select" id="stationFilter">
+				                    <option value=""></option>
+				                    <option th:each="st : ${stations}" th:value="${st.stationName}" th:text="${st.stationName}" th:data-line="${st.lineName}"></option>
+				                </select>
+				            </div>
+				        </th>
+
+				        <th class="th-filter">
+				            <div class="filter-box">
+				                <span>忘れ物</span>
+				                <select class="filter-select" id="categoryFilter">
+				                    <option value=""></option>
+				                    <option th:each="cat : ${categories}" th:value="${cat.categoryName}" th:text="${cat.categoryName}"></option>
+				                </select>
+				            </div>
+				        </th>
+
+				        <th>作成者</th>
+
+				        <th onclick="toggleSort('reg')" style="cursor: pointer;" id="header-reg">
+				            <div class="sort-wrapper">
+				                <span>作成日</span>
+				                <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L6 10H18L12 16Z"></path></svg>
+				            </div>
+				        </th>
+				    </tr>
+				</thead>
+				<tbody>
+				    <tr th:if="${items == null or items.isEmpty()}">
+				        <td colspan="6" style="padding: 100px 0; color: #ccc; text-align: center;">
+				            登録されている落とし物はありません。
+				        </td>
+				    </tr>
+
+				    <tr th:unless="${items == null or items.isEmpty()}" 
+				        th:each="item : ${items}"
+				        th:onclick="|location.href='@{/items/{id}(id=${item.id})}'|"
+				        style="cursor: pointer;"
+				        class="hover-row">
+				        
+				        <td class="td-center" th:text="${item.foundDate}" th:title="${item.foundDate}"></td>
+				        
+				        <td th:text="${item.lineName}" th:title="${item.lineName}"></td>
+				        
+				        <td th:text="${item.stationName}" th:title="${item.stationName}"></td>
+				        
+				        <td>
+				            <span style="color: #888; font-size: 12px;" 
+				                  th:text="${item.categoryName}" 
+				                  th:title="${item.categoryName}"></span> <span style="margin: 0 5px; color: #ddd;">|</span>
+				            
+				            <span style="font-weight: bold; color: #333;" 
+				                  th:text="${item.itemName}" 
+				                  th:title="${item.itemName}"></span> </td>
+				        
+				        <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
+				        
+				        <td class="td-center" 
+				            th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"
+				            th:title="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
+				    </tr>
+				</tbody>
+            </table>
+
+			<div class="pager" th:if="${totalPages > 0}">
+			    
+			    <span th:if="${currentPage > 1}" 
+			          th:onclick="|goPage(null, null, null, null, ${currentPage - 1})|" 
+			          style="cursor: pointer;">&lt;</span>
+			    <span th:unless="${currentPage > 1}" style="color: #ccc;">&lt;</span>
+
+			    <span th:each="pageNum : ${#numbers.sequence(1, totalPages)}"
+			          th:text="${pageNum}"
+			          th:classappend="${pageNum == currentPage} ? 'active'"
+			          class="page-num"
+			          style="cursor: pointer;"
+			          th:onclick="|goPage(null, null, null, null, ${pageNum})|">
+			    </span>
+
+			    <span th:if="${currentPage < totalPages}" 
+			          th:onclick="|goPage(null, null, null, null, ${currentPage + 1})|" 
+			          style="cursor: pointer;">&gt;</span>
+			    <span th:unless="${currentPage < totalPages}" style="color: #ccc;">&gt;</span>
+			</div>
+        </main>
+
+        <aside class="side-section">
+            <div class="sidebar-card">
+                <p>忘れ物を拾われましたか？</p>
+                <a th:href="@{/items/new}" class="write-btn-link">投稿する</a>
+            </div>
+            <div class="sidebar-card">
+                <p>忘れ物をお探しですか？</p>
+                <a href="#" class="write-btn-link btn-gray">探しています 掲示板</a>
+            </div>
+        </aside>
+    </div>
+
+	<script th:inline="javascript">
+	    /* ==============================================
+	        새로고침(F5) 감지 시 필터 초기화
+	       ============================================== */
+	    try {
+	        const navEntries = performance.getEntriesByType("navigation");
+	        if (navEntries.length > 0 && navEntries[0].type === 'reload') {
+	            window.location.href = '/items';
+	        }
+	    } catch (e) {
+	        console.log("Navigation API not supported");
+	    }
+	        
+	    /* ==============================================
+	       1. 데이터 준비
+	       ============================================== */
+	    const allStationsData = [
+	        /*[# th:each="st : ${stations}"]*/
+	        { name: /*[[${st.stationName}]]*/ "StationName", line: /*[[${st.lineName}]]*/ "LineName" },
+	        /*[/]*/
+	    ];
+
+	    const allLinesData = /*[[${lines}]]*/ [];
+	    const serverLine = /*[[${currentLine}]]*/ "";
+	    const serverStation = /*[[${currentStation}]]*/ "";
+	    const serverCategory = /*[[${currentCategory}]]*/ "";
+	    
+	    // 기본값은 'reg_desc' (작성일 내림차순)
+	    const serverSort = /*[[${currentSort}]]*/ "reg_desc"; 
+
+	    const lineFilter = document.getElementById('lineFilter');
+	    const stationFilter = document.getElementById('stationFilter');
+	    const categoryFilter = document.getElementById('categoryFilter');
+
+	    /* ==============================================
+	       2. 필터 렌더링 함수 (양방향)
+	       ============================================== */
+	    function renderLineOptions(selectedStation) {
+	        const currentLineValue = lineFilter.value || serverLine;
+	        lineFilter.innerHTML = '<option value=""></option>';
+	        let targetLines = [];
+
+	        if (selectedStation) {
+	            const validLines = new Set();
+	            allStationsData.forEach(st => {
+	                if (st.name === selectedStation) {
+	                    validLines.add(st.line);
+	                }
+	            });
+	            targetLines = Array.from(validLines);
+	        } else {
+	            targetLines = allLinesData;
+	        }
+
+	        targetLines.forEach(lineName => {
+	            const opt = document.createElement('option');
+	            opt.value = lineName;
+	            opt.text = lineName;
+	            lineFilter.appendChild(opt);
+	        });
+
+	        if (targetLines.includes(currentLineValue)) {
+	            lineFilter.value = currentLineValue;
+	        } else {
+	            lineFilter.value = "";
+	        }
+	    }
+
+	    function renderStationOptions(selectedLine) {
+	        const currentStationValue = stationFilter.value || serverStation;
+	        stationFilter.innerHTML = '<option value=""></option>';
+	        const addedNames = new Set();
+
+	        allStationsData.forEach(st => {
+	            if (selectedLine && st.line !== selectedLine) return; 
+
+	            if (!addedNames.has(st.name)) {
+	                const opt = document.createElement('option');
+	                opt.value = st.name;
+	                opt.text = st.name;
+	                stationFilter.appendChild(opt);
+	                addedNames.add(st.name);
+	            }
+	        });
+
+	        if (addedNames.has(currentStationValue)) {
+	            stationFilter.value = currentStationValue;
+	        } else {
+	            stationFilter.value = "";
+	        }
+	    }
+
+	    /* ==============================================
+	       3. 페이지 이동 및 정렬 처리 [수정됨]
+	       ============================================== */
+	    function goPage(newLine, newStation, newCategory, newSort, newPage) {
+	        const line = newLine !== null ? newLine : lineFilter.value;
+	        const station = newStation !== null ? newStation : stationFilter.value;
+	        const category = newCategory !== null ? newCategory : categoryFilter.value;
+	        
+	        const urlParams = new URLSearchParams(window.location.search);
+	        // sort가 없으면 기본값 'reg_desc' 사용
+	        const sort = newSort !== null ? newSort : (urlParams.get('sort') || 'reg_desc');
+	        const page = newPage !== null ? newPage : (urlParams.get('page') || 1);
+
+	        location.href = `/items?line=${encodeURIComponent(line)}&station=${encodeURIComponent(station)}&category=${encodeURIComponent(category)}&sort=${sort}&page=${page}`;
+	    }
+
+	    // [수정] 정렬 토글 로직 분리
+	    // type: 'date'(발견일) 또는 'reg'(작성일)
+	    function toggleSort(type) {
+	        // 현재 URL의 정렬 상태 가져오기 (없으면 reg_desc)
+	        const currentSort = new URLSearchParams(window.location.search).get('sort') || 'reg_desc';
+	        let nextSort = 'reg_desc'; // 기본값
+
+	        if (type === 'date') {
+	            // 발견일(日付) 클릭 시
+	            if (currentSort === 'date_desc') {
+	                nextSort = 'date_asc'; // 내림차순 -> 오름차순
+	            } else {
+	                nextSort = 'date_desc'; // 그 외(오름차순이거나 다른 정렬일 때) -> 내림차순 시작
+	            }
+	        } else if (type === 'reg') {
+	            // 작성일(作成日) 클릭 시
+	            if (currentSort === 'reg_desc') {
+	                nextSort = 'reg_asc'; // 내림차순 -> 오름차순
+	            } else {
+	                nextSort = 'reg_desc'; // 그 외 -> 내림차순 시작
+	            }
+	        }
+	        
+	        goPage(null, null, null, nextSort, 1);
+	    }
+
+	    /* ==============================================
+	       4. 초기화 및 실행
+	       ============================================== */
+	    function initFilters() {
+	        if(serverCategory) categoryFilter.value = serverCategory;
+	        
+	        // [수정] 정렬 아이콘 UI 처리 (화살표 회전)
+	        const headerDate = document.getElementById('header-date');
+	        const headerReg = document.getElementById('header-reg');
+	        
+	        // 1. 초기화: 모든 active 클래스 제거 (필요하다면 색상 변경 등을 위해 클래스 추가 가능)
+	        // 여기서는 오름차순일 때 화살표만 뒤집어줍니다.
+	        
+	        if (serverSort === 'date_asc') {
+	            headerDate.classList.add('sort-asc');
+	        } else if (serverSort === 'reg_asc') {
+	            headerReg.classList.add('sort-asc');
+	        }
+
+	        // [중요] 양방향 필터링 적용 순서
+	        // 1. 현재 선택된 '역'을 기준으로 -> '노선' 목록을 압축
+	        renderLineOptions(serverStation);
+
+	        // 2. 현재 선택된 '노선'을 기준으로 -> '역' 목록을 압축
+	        // (만약 역만 선택하고 노선은 안 했다면, 여기서 역 목록은 전체가 됨 -> 괜찮음)
+	        renderStationOptions(serverLine);
+	    }
+
+	    // 이벤트 리스너
+	    lineFilter.addEventListener('change', function() {
+	        goPage(this.value, null, null, null, 1);
+	    });
+
+	    stationFilter.addEventListener('change', function() {
+	        // 역을 바꾸면 -> 해당 역에 맞는 노선만 남기고 -> 페이지 이동
+	        goPage(null, this.value, null, null, 1);
+	    });
+
+	    categoryFilter.addEventListener('change', function() {
+	        goPage(null, null, this.value, null, 1);
+	    });
+
+	    // 시작
+	    initFilters();
+
+	</script>
+</body>
+</html>
