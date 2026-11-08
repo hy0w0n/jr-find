@@ -1,15 +1,18 @@
 package com.example.jrfind.repository;
 
 import java.util.List;
+import java.util.Map;
 
 import com.example.jrfind.domain.Category;
 import com.example.jrfind.domain.FoundItem;
 import com.example.jrfind.domain.Station;
+import com.example.jrfind.domain.StationLocation;
 
 public interface JrfindRepository {
 	List<Category> findAllCategories();
 	List<String> findAllLines();
 	List<Station> findAllStations();
+	List<StationLocation> findAllStationLocations();
 	List<String> findAllAuthors();
 	String findOldestAuthor();
 
@@ -32,6 +35,9 @@ public interface JrfindRepository {
 	List<FoundItem> findByMember(Long memberId, int page, int size);
 
 	int countByMember(Long memberId);
+
+	// 역 이름 → 삭제되지 않은 게시글 수 (駅マップ)
+	Map<String, Integer> countByStation();
 
 	// 삭제되지 않은 게시글 1건 (없으면 null)
 	FoundItem findById(Long id);

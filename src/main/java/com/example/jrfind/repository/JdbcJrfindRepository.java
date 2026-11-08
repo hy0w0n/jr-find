@@ -1,7 +1,9 @@
 package com.example.jrfind.repository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import com.example.jrfind.domain.Category;
 import com.example.jrfind.domain.FoundItem;
 import com.example.jrfind.domain.Station;
+import com.example.jrfind.domain.StationLocation;
 
 @Repository
 public class JdbcJrfindRepository implements JrfindRepository {
@@ -36,6 +39,12 @@ public class JdbcJrfindRepository implements JrfindRepository {
     @Override
     public List<Station> findAllStations() {
         return jdbcTemplate.query("select * from station order by id", stationRowMapper());
+    }
+
+    @Override
+    public List<StationLocation> findAllStationLocations() {
+        return jdbcTemplate.query("SELECT * FROM Station_Location",
+            (rs, rowNum) -> new StationLocation(rs.getString("StationName"), rs.getDouble("Latitude"), rs.getDouble("Longitude")));
     }
 
     @Override
@@ -155,6 +164,16 @@ public class JdbcJrfindRepository implements JrfindRepository {
         String sql = "SELECT f.*, (SELECT count(*) FROM Post_Comment c WHERE c.FoundItemId = f.ID AND c.DEL_FLG = FALSE) AS CommentCount"
                 + " FROM Found_Item f WHERE MemberId = ? AND DEL_FLG = FALSE ORDER BY RegistrationDate DESC, ID DESC LIMIT ? OFFSET ?";
         return jdbcTemplate.query(sql, listRowMapper(), memberId, size, (page - 1) * size);
+    }
+
+    @Override
+    public Map<String, Integer> countByStation() {
+        Map<String, Integer> counts = new HashMap<>();
+        jdbcTemplate.query("SELECT StationName, count(*) AS Cnt FROM Found_Item WHERE DEL_FLG = FALSE GROUP BY StationName",
+            rs -> {
+                counts.put(rs.getString("StationName"), rs.getInt("Cnt"));
+            });
+        return counts;
     }
 
     @Override

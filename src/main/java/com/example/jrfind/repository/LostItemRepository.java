@@ -1,6 +1,7 @@
 package com.example.jrfind.repository;
 
 import java.util.List;
+import java.util.Map;
 
 import com.example.jrfind.domain.LostItem;
 
@@ -20,6 +21,9 @@ public interface LostItemRepository {
 	List<LostItem> findByMember(Long memberId, int page, int size);
 
 	int countByMember(Long memberId);
+
+	// 역 이름 → 삭제되지 않은 게시글 수 (駅マップ, 역을 모르는 글은 제외)
+	Map<String, Integer> countByStation();
 
 	// 삭제되지 않은 게시글 1건 (없으면 null)
 	LostItem findById(Long id);

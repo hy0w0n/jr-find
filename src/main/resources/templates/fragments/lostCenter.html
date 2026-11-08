@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--
+  お忘れ物 문의처 (상세 화면 사이드바, 駅マップ 공통)
+  JR東日本 공식 사이트의 안내(2026년 11월 확인)를 옮긴 것. 바뀔 수 있으므로 공식 페이지 링크를 함께 둔다.
+-->
+<div th:fragment="lostCenterInfo" class="lost-center-card">
+    <style>
+        .lost-center-card { border: 1px solid #d1e7dd; background-color: #f0fdf4; border-radius: 15px; padding: 25px 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .lost-center-title { font-size: 16px; font-weight: bold; text-align: center; color: #0f5132; border-bottom: 1px solid #d1e7dd; padding-bottom: 10px; margin-bottom: 12px; }
+        .lost-center-list { list-style: none; margin: 0; padding: 0; font-size: 13px; color: #1e4620; }
+        .lost-center-list li { padding: 8px 0; border-bottom: 1px dotted #d1e7dd; }
+        .lost-center-name { font-weight: bold; }
+        .lost-center-tel { display: block; font-size: 17px; font-weight: bold; color: #198754; text-decoration: none; }
+        .lost-center-hours { color: #5a7c65; }
+        .lost-center-note { margin-top: 12px; font-size: 11px; line-height: 1.6; color: #5a7c65; }
+        .lost-center-note a { color: #198754; }
+    </style>
+
+    <div class="lost-center-title">お忘れ物のお問い合わせ</div>
+    <ul class="lost-center-list">
+        <li>
+            <span class="lost-center-name">JR東日本 お忘れ物問い合わせ</span>
+            <a class="lost-center-tel" href="tel:050-2016-1601">050-2016-1601</a>
+            <span class="lost-center-hours">受付 8:00〜20:00</span>
+        </li>
+        <li>
+            <span class="lost-center-name">東京駅 お忘れ物承り所</span><br>
+            <span class="lost-center-hours">受付 8:30〜20:00</span>
+        </li>
+        <li>
+            <span class="lost-center-name">大宮駅 お忘れ物承り所</span><br>
+            <span class="lost-center-hours">受付 10:00〜20:00</span>
+        </li>
+    </ul>
+    <p class="lost-center-note">
+        ※ 2026年11月時点の情報です。最新の情報は
+        <a href="https://www.jreast.co.jp/info/lost.html" target="_blank" rel="noopener noreferrer">JR東日本の公式サイト</a>
+        でご確認ください。<br>
+        ※ 本サイトはJR東日本の公式サイトではありません。
+    </p>
+</div>
+</html>

@@ -9,7 +9,7 @@
 ## 기술 스택
 
 - Java 21, Spring Boot 4.0 (Spring MVC, Spring Security, JDBC, Validation)
-- Thymeleaf, HTML / CSS / JavaScript, flatpickr
+- Thymeleaf, HTML / CSS / JavaScript, flatpickr, Leaflet + OpenStreetMap (駅マップ)
 - H2 Database (파일 모드)
 - Maven
 
@@ -81,6 +81,14 @@ Java 21이 필요합니다.
 - 회원정보 변경 (氏名・ニックネーム・生年月日・電話番号, ID는 변경 불가): 닉네임을 바꾸면 지금까지 쓴 글·댓글의 작성자명도 함께 변경 (트랜잭션), 다시 로그인하지 않아도 헤더에 바로 반영
 - 비밀번호 변경: 현재 비밀번호 확인 (5회 연속 실패 시 5분간 잠금), 새 비밀번호 규칙·확인 일치 검사
 
+## 駅マップ (`/map`)
+
+- 헤더·홈 화면의 지도 아이콘으로 이동. Leaflet + OpenStreetMap 지도 (API 키 불필요)
+- 역마다 마커 표시 (게시글이 있는 역은 빨간색), 역을 누르면 지나는 노선과 見つけた / 探しています 게시글 수, 해당 역으로 거른 게시판 목록 링크
+- 노선도: 노선별 색으로 역을 순서대로 이은 선 (범례 체크박스로 노선별 표시·숨김), 「全体を表示」로 전체 노선 범위 보기
+- 역 위치는 `STATION_LOCATION` 테이블 (`data.sql`, HeartRails Express API 에서 조회한 좌표), 지도 데이터는 `/map/stations` (JSON)
+- お忘れ物 문의처 안내 (JR東日本 お忘れ物問い合わせ 번호·受付時間, 東京駅・大宮駅 お忘れ物承り所): 지도와 두 상세 화면 사이드바에 공통 표시. 2026년 11월 JR東日本 공식 사이트 기준이며 공식 페이지 링크를 함께 둠
+
 ## 보안 처리
 
 - 비밀번호(회원·비회원 글 모두)는 BCrypt 해시로 저장하고, 화면(HTML)에는 내보내지 않음
@@ -99,21 +107,28 @@ src/main/java/com/example/jrfind
 ├─ config/       SecurityConfig (로그인·CSRF), WebMvcConfig (업로드 이미지·로고 경로)
 ├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
 │                SearchController (통합 검색), MemberController, MyPageController (마이페이지),
-│                LoginMemberAdvice (헤더용 로그인 정보), VerifiedItems (비밀번호 확인 상태 · 세션)
+│                MapController (駅マップ), LoginMemberAdvice (헤더용 로그인 정보),
+│                VerifiedItems (비밀번호 확인 상태 · 세션)
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
-│                Member, SignupForm, ProfileForm, PasswordForm, LoginMember, Category, Station
+│                Member, SignupForm, ProfileForm, PasswordForm, LoginMember, Category, Station,
+│                StationLocation, MapData
 ├─ repository/   JrfindRepository, LostItemRepository, CommentRepository, MemberRepository (+ JdbcTemplate 구현),
 │                KeywordCondition (검색어 SQL 조건)
-└─ service/      JrfindService, LostItemService, CommentService, MemberService, ImageStorage, PasswordAttemptLimiter
+└─ service/      JrfindService, LostItemService, CommentService, MemberService, MapService,
+                 ImageStorage, PasswordAttemptLimiter
 src/main/resources
 ├─ schema.sql, data.sql
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm (見つけた)
 │                lostList, lostDetail, lostForm (探しています), search, login, signup,
-│                mypage, profileEdit, passwordChange (마이페이지), error,
-│                fragments/header, fragments/comments (두 상세 화면 공통 댓글 영역)
+│                mypage, profileEdit, passwordChange (마이페이지), map (駅マップ), error,
+│                fragments/header, fragments/comments (두 상세 화면 공통 댓글 영역),
+│                fragments/lostCenter (お忘れ物 문의처)
 └─ logo/
 ```
 
-## 앞으로 추가할 기능
+## 앞으로 개선할 점
 
-- 지도·노선도, 분실물 센터 안내
+- 로그인 화면의 연속 실패 제한 (현재는 비회원 글 비밀번호, 마이페이지 비밀번호 확인에만 적용)
+- 회원 탈퇴, ID·비밀번호 찾기
+- 게시글 사진을 바꾸거나 지울 때 이전 이미지 파일 정리
+- 기획 단계의 발전 기능: 1:1 채팅, 역 인근 위치 선택, 사진 여러 장 첨부

@@ -2,7 +2,9 @@ package com.example.jrfind.repository;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -89,6 +91,16 @@ public class JdbcLostItemRepository implements LostItemRepository {
 		String sql = "SELECT l.*, (SELECT count(*) FROM Post_Comment c WHERE c.LostItemId = l.ID AND c.DEL_FLG = FALSE) AS CommentCount"
 				+ " FROM Lost_Item l WHERE MemberId = ? AND DEL_FLG = FALSE ORDER BY RegistrationDate DESC, ID DESC LIMIT ? OFFSET ?";
 		return jdbcTemplate.query(sql, listRowMapper(), memberId, size, (page - 1) * size);
+	}
+
+	@Override
+	public Map<String, Integer> countByStation() {
+		Map<String, Integer> counts = new HashMap<>();
+		jdbcTemplate.query("SELECT StationName, count(*) AS Cnt FROM Lost_Item WHERE DEL_FLG = FALSE AND StationName IS NOT NULL GROUP BY StationName",
+			rs -> {
+				counts.put(rs.getString("StationName"), rs.getInt("Cnt"));
+			});
+		return counts;
 	}
 
 	@Override
