@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,8 +21,8 @@ import org.springframework.web.multipart.MultipartFile; // 파일 받기
 import org.springframework.web.server.ResponseStatusException;
 
 import com.example.jrfind.domain.FoundItem; // 도메인 객체
-import com.example.jrfind.domain.FoundItemCreateForm;
 import com.example.jrfind.domain.FoundItemForm;
+import com.example.jrfind.domain.LoginMember;
 import com.example.jrfind.service.InvalidPostException;
 import com.example.jrfind.service.JrfindService;
 import com.example.jrfind.service.JrfindService.PasswordCheck;
@@ -32,7 +33,7 @@ import jakarta.validation.Valid;
 @Controller
 public class JrfindController {
 	private final JrfindService service;
-	// 비밀번호 확인을 통과한 게시글 (세션별)
+	// 비밀번호 확인을 통과한 비회원 게시글 (세션별)
 	private final VerifiedItems verifiedItems;
 
 	public JrfindController(JrfindService service, VerifiedItems verifiedItems) {
@@ -91,18 +92,24 @@ public class JrfindController {
 
     @PostMapping("/items/new")
     public String createItem(
-            @Valid @ModelAttribute("form") FoundItemCreateForm form,
+            @Valid @ModelAttribute("form") FoundItemForm form,
             BindingResult bindingResult,
+            @RequestParam(name = "password", required = false) String password, // 비회원만 사용
             @RequestParam(name = "imageFile", required = false) MultipartFile file,
+            @AuthenticationPrincipal LoginMember loginMember,
             Model model) {
         // 서버 측 입력 검증 (화면 JS 검증을 거치지 않고 직접 보낸 요청 대비)
         if (bindingResult.hasErrors()) {
             return showRegisterForm(model, firstErrorMessage(bindingResult));
         }
+        // 비회원은 수정·삭제용 4자리 비밀번호 필수
+        if (loginMember == null && (password == null || !password.matches("\\d{4}"))) {
+            return showRegisterForm(model, "パスワードは半角数字4桁で入力してください。");
+        }
 
         try {
             // 서비스에게 데이터와 파일을 넘겨서 저장하라고 시킴
-            service.saveItem(form, file);
+            service.saveItem(form, password, loginMember, file);
         } catch (InvalidPostException e) {
             return showRegisterForm(model, e.getMessage());
         } catch (IOException e) {
@@ -116,12 +123,15 @@ public class JrfindController {
 
     // 상세 페이지 연결: http://localhost:8080/items/1
     @GetMapping("/items/{id}")
-    public String detail(@PathVariable("id") Long id, Model model) {
-        model.addAttribute("item", findItemOrThrow(id));
+    public String detail(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember, Model model) {
+        FoundItem item = findItemOrThrow(id);
+        model.addAttribute("item", item);
+        // 회원 글이면 작성자 본인에게만 수정·삭제 버튼을 보여준다
+        model.addAttribute("isOwner", isOwner(item, loginMember));
         return "itemDetail"; // templates/itemDetail.html 호출
     }
 
-    // 비밀번호 확인 API (AJAX용)
+    // 비밀번호 확인 API (AJAX용, 비회원 글 전용)
     // 맞으면 세션에 "확인 완료"로 기록해 두고, 이후 수정·삭제 요청에서 서버가 이 기록을 확인한다.
     @PostMapping("/items/{id}/check-password")
     @ResponseBody
@@ -142,9 +152,9 @@ public class JrfindController {
 
     // 삭제 처리
     @PostMapping("/items/{id}/delete")
-    public String deleteItem(@PathVariable("id") Long id) {
-        findItemOrThrow(id);
-        requireVerified(id);
+    public String deleteItem(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember) {
+        FoundItem item = findItemOrThrow(id);
+        requireModifiable(item, loginMember);
 
         service.deleteItem(id);
         verifiedItems.remove(id);
@@ -153,11 +163,11 @@ public class JrfindController {
 
     // 게시글 수정 화면 연결: http://localhost:8080/items/{id}/edit
     @GetMapping("/items/{id}/edit")
-    public String editForm(@PathVariable("id") Long id, Model model) {
+    public String editForm(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember, Model model) {
         FoundItem item = findItemOrThrow(id);
 
-        // 비밀번호 확인 없이 URL로 직접 들어오면 상세 화면으로 돌려보낸다
-        if (!verifiedItems.contains(id)) {
+        // 권한 없이 URL로 직접 들어오면 상세 화면으로 돌려보낸다
+        if (!canModify(item, loginMember)) {
             return "redirect:/items/" + id;
         }
         return showEditForm(model, item, null);
@@ -171,9 +181,10 @@ public class JrfindController {
             BindingResult bindingResult,
             @RequestParam(name = "imageFile", required = false) MultipartFile file,
             @RequestParam(value = "isImageDeleted", defaultValue = "false") boolean isImageDeleted,
+            @AuthenticationPrincipal LoginMember loginMember,
             Model model) {
         FoundItem item = findItemOrThrow(id);
-        requireVerified(id);
+        requireModifiable(item, loginMember);
 
         if (bindingResult.hasErrors()) {
             return showEditForm(model, item, firstErrorMessage(bindingResult));
@@ -188,7 +199,7 @@ public class JrfindController {
             return showEditForm(model, item, "画像の保存に失敗しました。");
         }
 
-        verifiedItems.remove(id); // 다시 수정하려면 비밀번호를 다시 확인
+        verifiedItems.remove(id); // 비회원 글은 다시 수정하려면 비밀번호를 다시 확인
         return "redirect:/items/" + id; // 수정 완료 후 상세 페이지로 이동
     }
 
@@ -220,9 +231,22 @@ public class JrfindController {
         return item;
     }
 
-    // 비밀번호 확인을 거치지 않은 수정·삭제 요청은 403
-    private void requireVerified(Long id) {
-        if (!verifiedItems.contains(id)) {
+    // 회원 글을 쓴 본인인지
+    private boolean isOwner(FoundItem item, LoginMember loginMember) {
+        return item.getMemberId() != null && loginMember != null && item.getMemberId().equals(loginMember.getId());
+    }
+
+    // 수정·삭제 권한: 회원 글은 작성자 본인, 비회원 글은 4자리 비밀번호 확인을 통과한 세션
+    private boolean canModify(FoundItem item, LoginMember loginMember) {
+        if (item.getMemberId() != null) {
+            return isOwner(item, loginMember);
+        }
+        return verifiedItems.contains(item.getId());
+    }
+
+    // 권한 없는 수정·삭제 요청은 403
+    private void requireModifiable(FoundItem item, LoginMember loginMember) {
+        if (!canModify(item, loginMember)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
     }

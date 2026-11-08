@@ -18,7 +18,8 @@ public class FoundItem {
     private LocalDateTime registrationDate;
     private Boolean delFlg;
     private LocalDateTime modifiedDate;
-    
+    private Long memberId; // 회원 글의 작성자 ID (비회원 글이면 null)
+
 	public Long getId() {
 		return id;
 	}
@@ -102,5 +103,11 @@ public class FoundItem {
     }
     public void setModifiedDate(LocalDateTime modifiedDate) {
         this.modifiedDate = modifiedDate;
+    }
+    public Long getMemberId() {
+        return memberId;
+    }
+    public void setMemberId(Long memberId) {
+        this.memberId = memberId;
     }
 }

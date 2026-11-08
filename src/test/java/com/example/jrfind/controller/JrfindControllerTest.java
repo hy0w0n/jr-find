@@ -3,6 +3,7 @@ package com.example.jrfind.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -65,7 +66,7 @@ class JrfindControllerTest {
 	void 비밀번호_확인_없이_삭제하면_403() throws Exception {
 		long id = createItem();
 
-		mockMvc.perform(post("/items/{id}/delete", id))
+		mockMvc.perform(post("/items/{id}/delete", id).with(csrf()))
 			.andExpect(status().isForbidden());
 
 		mockMvc.perform(get("/items/{id}", id))
@@ -77,9 +78,9 @@ class JrfindControllerTest {
 		long id = createItem();
 		MockHttpSession session = new MockHttpSession();
 
-		mockMvc.perform(post("/items/{id}/check-password", id).session(session).param("password", "0000"))
+		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).session(session).param("password", "0000"))
 			.andExpect(content().string("false"));
-		mockMvc.perform(post("/items/{id}/delete", id).session(session))
+		mockMvc.perform(post("/items/{id}/delete", id).with(csrf()).session(session))
 			.andExpect(status().isForbidden());
 	}
 
@@ -88,9 +89,9 @@ class JrfindControllerTest {
 		long id = createItem();
 		MockHttpSession session = new MockHttpSession();
 
-		mockMvc.perform(post("/items/{id}/check-password", id).session(session).param("password", PASSWORD))
+		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).session(session).param("password", PASSWORD))
 			.andExpect(content().string("true"));
-		mockMvc.perform(post("/items/{id}/delete", id).session(session))
+		mockMvc.perform(post("/items/{id}/delete", id).with(csrf()).session(session))
 			.andExpect(redirectedUrl("/items"));
 
 		mockMvc.perform(get("/items/{id}", id))
@@ -107,7 +108,7 @@ class JrfindControllerTest {
 			.andExpect(redirectedUrl("/items/" + id));
 
 		MockHttpSession session = new MockHttpSession();
-		mockMvc.perform(post("/items/{id}/check-password", id).session(session).param("password", PASSWORD));
+		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).session(session).param("password", PASSWORD));
 		mockMvc.perform(get("/items/{id}/edit", id).session(session))
 			.andExpect(status().isOk())
 			.andExpect(content().string(not(containsString(hash))))
@@ -118,7 +119,7 @@ class JrfindControllerTest {
 	void 비밀번호_확인_없이_수정_요청하면_403() throws Exception {
 		long id = createItem();
 
-		mockMvc.perform(multipart("/items/{id}/edit", id)
+		mockMvc.perform(multipart("/items/{id}/edit", id).with(csrf())
 				.param("foundDate", "2026-01-10")
 				.param("lineName", "山手線")
 				.param("stationName", "新宿")
@@ -133,11 +134,11 @@ class JrfindControllerTest {
 		long id = createItem();
 
 		for (int i = 0; i < 5; i++) {
-			mockMvc.perform(post("/items/{id}/check-password", id).param("password", "0000"))
+			mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).param("password", "0000"))
 				.andExpect(content().string("false"));
 		}
 		// 잠긴 동안에는 맞는 비밀번호도 거부
-		mockMvc.perform(post("/items/{id}/check-password", id).param("password", PASSWORD))
+		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).param("password", PASSWORD))
 			.andExpect(status().isTooManyRequests());
 	}
 
@@ -193,6 +194,14 @@ class JrfindControllerTest {
 	}
 
 	@Test
+	void CSRF_토큰이_없는_POST는_403() throws Exception {
+		long id = createItem();
+
+		mockMvc.perform(post("/items/{id}/check-password", id).param("password", PASSWORD))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
 	void 없는_게시글은_404() throws Exception {
 		mockMvc.perform(get("/items/{id}", 999999))
 			.andExpect(status().isNotFound());
@@ -213,6 +222,7 @@ class JrfindControllerTest {
 		}
 
 		MockMultipartHttpServletRequestBuilder request = multipart("/items/new");
+		request.with(csrf()); // POST 에는 CSRF 토큰 필요
 		params.forEach((name, value) -> request.param(name, value));
 		return request;
 	}

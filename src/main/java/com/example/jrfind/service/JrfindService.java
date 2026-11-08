@@ -7,15 +7,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile; // 파일 처리를 위한 import
 
 import com.example.jrfind.domain.Category;
 import com.example.jrfind.domain.FoundItem;
-import com.example.jrfind.domain.FoundItemCreateForm;
 import com.example.jrfind.domain.FoundItemForm;
+import com.example.jrfind.domain.LoginMember;
 import com.example.jrfind.domain.Station;
 import com.example.jrfind.repository.JrfindRepository;
 
@@ -30,13 +29,15 @@ public class JrfindService {
 	private final JrfindRepository repository;
 	private final ImageStorage imageStorage;
 	private final PasswordAttemptLimiter attemptLimiter;
-	// 비밀번호는 평문이 아니라 BCrypt 해시로 저장한다
-	private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+	// 비밀번호는 평문이 아니라 BCrypt 해시로 저장한다 (SecurityConfig 의 Bean)
+	private final PasswordEncoder passwordEncoder;
 
-	public JrfindService(JrfindRepository repository, ImageStorage imageStorage, PasswordAttemptLimiter attemptLimiter) {
+	public JrfindService(JrfindRepository repository, ImageStorage imageStorage, PasswordAttemptLimiter attemptLimiter,
+			PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.imageStorage = imageStorage;
         this.attemptLimiter = attemptLimiter;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<Category> getCategories() {
@@ -62,13 +63,19 @@ public class JrfindService {
     }
 
     // 게시글 저장 로직 (파일 처리 포함)
-    public void saveItem(FoundItemCreateForm form, MultipartFile imageFile) throws IOException {
+    // 회원(loginMember != null): 닉네임으로 작성, 비밀번호 없음 / 비회원: 4자리 비밀번호 + 匿名の天使 이름
+    public void saveItem(FoundItemForm form, String password, LoginMember loginMember, MultipartFile imageFile) throws IOException {
         validateMasterData(form);
 
         FoundItem item = new FoundItem();
         applyForm(item, form);
-        item.setPassword(passwordEncoder.encode(form.getPassword()));
-        item.setAuthor(generateAnonymousAuthor());
+        if (loginMember != null) {
+            item.setMemberId(loginMember.getId());
+            item.setAuthor(loginMember.getNickname());
+        } else {
+            item.setPassword(passwordEncoder.encode(password));
+            item.setAuthor(generateAnonymousAuthor());
+        }
         // 이미지가 없으면 null (사용자가 보낸 imgPath 값은 받지 않는다)
         item.setImgPath(imageStorage.store(imageFile));
         item.setRegistrationDate(LocalDateTime.now());

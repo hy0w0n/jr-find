@@ -54,8 +54,8 @@ public class JdbcJrfindRepository implements JrfindRepository {
 
     @Override
     public void save(FoundItem item) {
-        // DB 컬럼 순서: Title, FoundDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Password, Author, RegistrationDate
-        String sql = "INSERT INTO Found_Item (Title, FoundDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Password, Author, RegistrationDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // DB 컬럼 순서: Title, FoundDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Password, Author, RegistrationDate, MemberId
+        String sql = "INSERT INTO Found_Item (Title, FoundDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Password, Author, RegistrationDate, MemberId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         jdbcTemplate.update(sql,
             item.getTitle(),
@@ -66,9 +66,10 @@ public class JdbcJrfindRepository implements JrfindRepository {
             item.getItemName(),
             item.getContents(),
             item.getImgPath(), // 이미지 파일명 (없으면 null)
-            item.getPassword(), // BCrypt 해시
+            item.getPassword(), // 비회원 글: BCrypt 해시 / 회원 글: null
             item.getAuthor(),
-            item.getRegistrationDate()
+            item.getRegistrationDate(),
+            item.getMemberId() // 비회원 글이면 null
         );
     }
 
@@ -217,6 +218,7 @@ public class JdbcJrfindRepository implements JrfindRepository {
             if (modTs != null) {
                 item.setModifiedDate(modTs.toLocalDateTime());
             }
+            item.setMemberId(rs.getObject("MemberId", Long.class)); // NULL 이면 null
             return item;
         };
     }

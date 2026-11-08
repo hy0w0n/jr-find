@@ -163,7 +163,8 @@
             </div>
         </div>
 
-        <form id="regForm" method="post" enctype="multipart/form-data">
+        <!-- th:action 을 쓰면 CSRF 토큰(hidden)이 자동으로 들어간다 -->
+        <form id="regForm" th:action="@{/items/new}" method="post" enctype="multipart/form-data">
             
             <div class="form-row">
                 <div class="form-label">タイトル</div>
@@ -230,6 +231,17 @@
                 </div>
             </div>
 
+            <!-- 회원: 로그인한 계정(닉네임)으로 작성, 비밀번호 불필요 -->
+            <div class="form-row" style="border-bottom: 2px solid #333;" th:if="${loginMember != null}">
+                <div class="form-label">投稿者</div>
+                <div class="form-input">
+                    <span style="font-weight: bold;" th:text="${loginMember.nickname}">ニックネーム</span>
+                    <div class="red-notice">ログイン中のアカウントで投稿します。<br>編集・削除にパスワードは不要です。</div>
+                </div>
+            </div>
+
+            <!-- 비회원: 수정·삭제용 4자리 비밀번호 -->
+            <th:block th:if="${loginMember == null}">
             <div class="form-row">
                 <div class="form-label">パスワード (4桁)</div>
                 <div class="form-input">
@@ -250,6 +262,7 @@
                     </div>
                 </div>
             </div>
+            </th:block>
         </form>
     </div>
 
@@ -524,7 +537,8 @@
                 }
             }
 
-            if (!/^\d{4}$/.test(pwInput.value)) {
+            // 비밀번호 칸은 비회원일 때만 있다
+            if (pwInput && !/^\d{4}$/.test(pwInput.value)) {
                 e.preventDefault();
                 showModal("", "パスワードは半角数字4桁で入力してください。", function() {
                     pwInput.focus();

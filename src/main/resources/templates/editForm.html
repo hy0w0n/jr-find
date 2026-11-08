@@ -142,7 +142,8 @@
                 </div>
             </div>
 
-            <div class="form-row">
+            <!-- 비회원 글만 비밀번호가 있다 -->
+            <div class="form-row" th:if="${item.memberId == null}">
                 <div class="form-label">パスワード</div>
                 <div class="form-input">
                     <!-- 비밀번호 값은 화면(HTML)에 절대 내려보내지 않는다 -->

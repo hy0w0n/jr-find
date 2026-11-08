@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR-Find | ログイン</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
+
+        .auth-container { width: 90%; max-width: 420px; margin: 60px auto; }
+        .auth-title { font-size: 24px; padding-bottom: 10px; border-bottom: 2px solid #333; margin-bottom: 30px; }
+
+        .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .field label { font-size: 14px; font-weight: bold; }
+        .field input { padding: 12px; border: 1px solid #333; border-radius: 4px; font-size: 15px; outline: none; }
+
+        /* 안내 메시지 (에러: 빨강 / 안내: 파랑) */
+        .message { padding: 12px 15px; border-radius: 8px; font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+        .message-error { background: #fff0f0; color: #e63946; }
+        .message-info { background: #eef5ff; color: #2b6cb0; }
+
+        .submit-btn { width: 100%; padding: 14px; border: none; border-radius: 25px; background: #333; color: #fff; font-size: 16px; font-weight: bold; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+        .submit-btn:hover { background: #555; }
+
+        .sub-link { margin-top: 25px; text-align: center; font-size: 14px; }
+        .sub-link a { color: #333; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: mainHeader}"></div>
+
+    <main class="auth-container">
+        <h2 class="auth-title">ログイン</h2>
+
+        <!-- ID 가 없는지 비밀번호가 틀렸는지는 구분해서 알려주지 않는다 -->
+        <div id="errorMessage" class="message message-error" th:if="${param.error}">
+            IDまたはパスワードが正しくありません。<br>もう一度入力してください。
+        </div>
+        <div class="message message-info" th:if="${param.registered}">
+            会員登録が完了しました。ログインしてください。
+        </div>
+
+        <!-- POST /login 은 Spring Security 가 처리 (SecurityConfig) -->
+        <form id="loginForm" th:action="@{/login}" method="post" novalidate>
+            <div class="field">
+                <label for="loginId">ID</label>
+                <input type="text" id="loginId" name="loginId" maxlength="20" autocomplete="username">
+            </div>
+            <div class="field">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" maxlength="64" autocomplete="current-password">
+            </div>
+            <button type="submit" class="submit-btn">ログイン</button>
+        </form>
+
+        <p class="sub-link">アカウントをお持ちでない方は <a th:href="@{/signup}">会員登録</a></p>
+    </main>
+
+    <script>
+        // 빈 칸이면 서버로 보내지 않고 안내
+        const loginForm = document.getElementById('loginForm');
+
+        loginForm.addEventListener('submit', function(e) {
+            const requiredFields = [
+                { id: 'loginId', message: 'IDを入力してください。' },
+                { id: 'password', message: 'パスワードを入力してください。' }
+            ];
+            for (let field of requiredFields) {
+                const el = document.getElementById(field.id);
+                if (!el.value.trim()) {
+                    e.preventDefault();
+                    showError(field.message);
+                    el.focus();
+                    return;
+                }
+            }
+        });
+
+        function showError(text) {
+            let box = document.getElementById('errorMessage');
+            if (!box) {
+                box = document.createElement('div');
+                box.id = 'errorMessage';
+                box.className = 'message message-error';
+                loginForm.before(box);
+            }
+            box.textContent = text;
+        }
+    </script>
+</body>
+</html>
