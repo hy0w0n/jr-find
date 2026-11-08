@@ -47,6 +47,39 @@ public class JdbcMemberRepository implements MemberRepository {
         return count != null && count > 0;
     }
 
+    @Override
+    public Member findById(Long id) {
+        try {
+            return jdbcTemplate.queryForObject("SELECT * FROM Member WHERE ID = ?", memberRowMapper(), id);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public void updateProfile(Member member) {
+        String sql = "UPDATE Member SET RealName = ?, Nickname = ?, BirthDate = ?, Phone = ? WHERE ID = ?";
+        jdbcTemplate.update(sql,
+            member.getRealName(),
+            member.getNickname(),
+            member.getBirthDate(),
+            member.getPhone(),
+            member.getId()
+        );
+    }
+
+    @Override
+    public void updatePassword(Long id, String passwordHash) {
+        jdbcTemplate.update("UPDATE Member SET Password = ? WHERE ID = ?", passwordHash, id);
+    }
+
+    @Override
+    public void updateAuthorName(Long memberId, String nickname) {
+        jdbcTemplate.update("UPDATE Found_Item SET Author = ? WHERE MemberId = ?", nickname, memberId);
+        jdbcTemplate.update("UPDATE Lost_Item SET Author = ? WHERE MemberId = ?", nickname, memberId);
+        jdbcTemplate.update("UPDATE Post_Comment SET Author = ? WHERE MemberId = ?", nickname, memberId);
+    }
+
     private RowMapper<Member> memberRowMapper() {
         return (rs, rowNum) -> {
             Member member = new Member();

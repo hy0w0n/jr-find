@@ -41,4 +41,13 @@ public class CommentService {
 	public void deleteComment(Long commentId) {
 		repository.delete(commentId);
 	}
+
+	// 회원이 쓴 댓글 (마이페이지)
+	public List<Comment> getCommentsByMember(Long memberId, int page, int size) {
+		return repository.findByMember(memberId, page, size);
+	}
+
+	public int countCommentsByMember(Long memberId) {
+		return repository.countByMember(memberId);
+	}
 }

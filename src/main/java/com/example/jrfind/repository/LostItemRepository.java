@@ -16,6 +16,11 @@ public interface LostItemRepository {
 	// 조건에 맞는 게시글 전체 개수 (페이지 계산용)
 	int count(String line, String station, String category, String keyword);
 
+	// 회원이 쓴 게시글 (마이페이지, 최신 순)
+	List<LostItem> findByMember(Long memberId, int page, int size);
+
+	int countByMember(Long memberId);
+
 	// 삭제되지 않은 게시글 1건 (없으면 null)
 	LostItem findById(Long id);
 

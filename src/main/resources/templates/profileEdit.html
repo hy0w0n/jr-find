@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>JR-Find | 会員情報の変更</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
+        .container { width: 90%; max-width: 800px; margin: 30px auto; }
+
+        /* 회원가입 화면과 같은 모양 */
+        .form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .action-btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px; }
+        .btn { padding: 8px 25px; border-radius: 20px; border: 1px solid #ccc; cursor: pointer; font-size: 14px; font-family: inherit; text-decoration: none; color: #333; background: #f0f0f0; transition: all 0.2s; }
+        .btn-submit { color: #e63946; font-weight: bold; }
+        .btn:hover { background: #e5e5e5; }
+
+        .form-row { display: flex; border-bottom: 1px solid #eee; align-items: center; min-height: 70px; }
+        .form-label { width: 180px; padding: 20px; font-weight: bold; }
+        .form-label .optional { font-size: 12px; font-weight: normal; color: #999; }
+        .form-input { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 6px; }
+        .readonly-value { color: #888; }
+
+        input[type="text"], input[type="date"], input[type="tel"] { width: 280px; padding: 10px; border: 1px solid #333; border-radius: 4px; outline: none; font-family: inherit; }
+        .input-error { border-color: #e63946 !important; }
+        .field-note { font-size: 12px; color: #999; }
+        .field-error { font-size: 13px; color: #e63946; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: mainHeader}"></div>
+
+    <main class="container">
+        <div class="form-header">
+            <h2 style="font-size: 24px;">会員情報の変更</h2>
+        </div>
+
+        <!-- 서버 검증에서 걸리면 입력값을 유지한 채 항목별 에러 메시지를 보여준다 -->
+        <form id="profileForm" th:action="@{/mypage/edit}" th:object="${profileForm}" method="post" novalidate>
+            <div class="form-row">
+                <div class="form-label">ID</div>
+                <div class="form-input">
+                    <span class="readonly-value" th:text="${loginMember.username}">loginId</span>
+                    <span class="field-note">IDは変更できません。</span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-label">氏名</div>
+                <div class="form-input">
+                    <input type="text" th:field="*{realName}" maxlength="20" autocomplete="name" th:errorclass="input-error">
+                    <span class="field-error" th:if="${#fields.hasErrors('realName')}" th:errors="*{realName}"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-label">ニックネーム <span class="optional">(任意)</span></div>
+                <div class="form-input">
+                    <input type="text" th:field="*{nickname}" maxlength="20" th:errorclass="input-error">
+                    <span class="field-note">投稿者名として表示されます。未入力の場合は氏名が表示されます。<br>変更すると、これまでの投稿・コメントの投稿者名も変わります。</span>
+                    <span class="field-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-label">生年月日</div>
+                <div class="form-input">
+                    <input type="date" th:field="*{birthDate}" id="birthDate" min="1900-01-01" th:errorclass="input-error">
+                    <span class="field-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-label">電話番号</div>
+                <div class="form-input">
+                    <input type="tel" th:field="*{phone}" maxlength="13" placeholder="090-1234-5678" autocomplete="tel" th:errorclass="input-error">
+                    <span class="field-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
+                </div>
+            </div>
+
+            <div class="action-btns">
+                <a th:href="@{/mypage}" class="btn">キャンセル</a>
+                <button type="submit" class="btn btn-submit">変更する</button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        // 생년월일은 오늘 이후를 고를 수 없게
+        const today = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        document.getElementById('birthDate').max = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    </script>
+</body>
+</html>

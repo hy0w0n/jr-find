@@ -15,4 +15,9 @@ public interface CommentRepository {
 	Comment findById(Board board, Long postId, Long id);
 
 	void delete(Long id);
+
+	// 회원이 쓴 댓글 (마이페이지, 최신 순). 삭제된 게시글의 댓글은 제외
+	List<Comment> findByMember(Long memberId, int page, int size);
+
+	int countByMember(Long memberId);
 }

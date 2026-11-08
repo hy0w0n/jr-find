@@ -146,11 +146,19 @@ public class JdbcJrfindRepository implements JrfindRepository {
         params.add(size);
         params.add((page - 1) * size);
 
-        return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
-            FoundItem item = foundItemRowMapper().mapRow(rs, rowNum);
-            item.setCommentCount(rs.getInt("CommentCount"));
-            return item;
-        }, params.toArray());
+        return jdbcTemplate.query(sql.toString(), listRowMapper(), params.toArray());
+    }
+
+    @Override
+    public List<FoundItem> findByMember(Long memberId, int page, int size) {
+        String sql = "SELECT f.*, (SELECT count(*) FROM Post_Comment c WHERE c.FoundItemId = f.ID AND c.DEL_FLG = FALSE) AS CommentCount"
+                + " FROM Found_Item f WHERE MemberId = ? AND DEL_FLG = FALSE ORDER BY RegistrationDate DESC, ID DESC LIMIT ? OFFSET ?";
+        return jdbcTemplate.query(sql, listRowMapper(), memberId, size, (page - 1) * size);
+    }
+
+    @Override
+    public int countByMember(Long memberId) {
+        return jdbcTemplate.queryForObject("SELECT count(*) FROM Found_Item WHERE MemberId = ? AND DEL_FLG = FALSE", Integer.class, memberId);
     }
 
     @Override
@@ -232,6 +240,15 @@ public class JdbcJrfindRepository implements JrfindRepository {
                 item.setModifiedDate(modTs.toLocalDateTime());
             }
             item.setMemberId(rs.getObject("MemberId", Long.class)); // NULL 이면 null
+            return item;
+        };
+    }
+
+    // 목록용: 게시글 + 댓글 수 (SQL 에 CommentCount 컬럼이 있어야 함)
+    private RowMapper<FoundItem> listRowMapper() {
+        return (rs, rowNum) -> {
+            FoundItem item = foundItemRowMapper().mapRow(rs, rowNum);
+            item.setCommentCount(rs.getInt("CommentCount"));
             return item;
         };
     }

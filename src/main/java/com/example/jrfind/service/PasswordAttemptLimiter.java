@@ -8,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Component;
 
 // 비밀번호 확인 시도 횟수 제한
-// 비밀번호가 숫자 4자리(1만 가지)라서 제한이 없으면 전부 대입해 볼 수 있다.
-// 같은 접속자가 같은 게시글에 MAX_FAILURES 번 틀리면 LOCK_TIME 동안 확인을 막는다.
+// 비회원 게시글 비밀번호는 숫자 4자리(1만 가지)라서 제한이 없으면 전부 대입해 볼 수 있다.
+// 같은 key(게시글+접속자, 마이페이지는 회원)로 MAX_FAILURES 번 틀리면 LOCK_TIME 동안 확인을 막는다.
 @Component
 public class PasswordAttemptLimiter {
 	private static final int MAX_FAILURES = 5;

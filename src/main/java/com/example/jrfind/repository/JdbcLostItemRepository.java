@@ -80,11 +80,19 @@ public class JdbcLostItemRepository implements LostItemRepository {
 		params.add(size);
 		params.add((page - 1) * size);
 
-		return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
-			LostItem item = lostItemRowMapper().mapRow(rs, rowNum);
-			item.setCommentCount(rs.getInt("CommentCount"));
-			return item;
-		}, params.toArray());
+		return jdbcTemplate.query(sql.toString(), listRowMapper(), params.toArray());
+	}
+
+	@Override
+	public List<LostItem> findByMember(Long memberId, int page, int size) {
+		String sql = "SELECT l.*, (SELECT count(*) FROM Post_Comment c WHERE c.LostItemId = l.ID AND c.DEL_FLG = FALSE) AS CommentCount"
+				+ " FROM Lost_Item l WHERE MemberId = ? AND DEL_FLG = FALSE ORDER BY RegistrationDate DESC, ID DESC LIMIT ? OFFSET ?";
+		return jdbcTemplate.query(sql, listRowMapper(), memberId, size, (page - 1) * size);
+	}
+
+	@Override
+	public int countByMember(Long memberId) {
+		return jdbcTemplate.queryForObject("SELECT count(*) FROM Lost_Item WHERE MemberId = ? AND DEL_FLG = FALSE", Integer.class, memberId);
 	}
 
 	@Override
@@ -132,6 +140,15 @@ public class JdbcLostItemRepository implements LostItemRepository {
 	@Override
 	public void delete(Long id) {
 		jdbcTemplate.update("UPDATE Lost_Item SET DEL_FLG = TRUE WHERE ID = ?", id);
+	}
+
+	// 목록용: 게시글 + 댓글 수 (SQL 에 CommentCount 컬럼이 있어야 함)
+	private RowMapper<LostItem> listRowMapper() {
+		return (rs, rowNum) -> {
+			LostItem item = lostItemRowMapper().mapRow(rs, rowNum);
+			item.setCommentCount(rs.getInt("CommentCount"));
+			return item;
+		};
 	}
 
 	private RowMapper<LostItem> lostItemRowMapper() {

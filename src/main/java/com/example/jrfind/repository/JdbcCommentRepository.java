@@ -55,6 +55,36 @@ public class JdbcCommentRepository implements CommentRepository {
 		jdbcTemplate.update("UPDATE Post_Comment SET DEL_FLG = TRUE WHERE ID = ?", id);
 	}
 
+	// 댓글이 달린 게시글(삭제되지 않은 것)과 함께 조회. 어느 게시판 글인지는 어느 쪽이 연결됐는지로 판단
+	private static final String MEMBER_COMMENTS_FROM = " FROM Post_Comment c"
+			+ " LEFT JOIN Found_Item f ON c.FoundItemId = f.ID AND f.DEL_FLG = FALSE"
+			+ " LEFT JOIN Lost_Item l ON c.LostItemId = l.ID AND l.DEL_FLG = FALSE"
+			+ " WHERE c.MemberId = ? AND c.DEL_FLG = FALSE AND (f.ID IS NOT NULL OR l.ID IS NOT NULL)";
+
+	@Override
+	public List<Comment> findByMember(Long memberId, int page, int size) {
+		String sql = "SELECT c.*, f.Title AS FoundTitle, l.Title AS LostTitle" + MEMBER_COMMENTS_FROM
+				+ " ORDER BY c.RegistrationDate DESC, c.ID DESC LIMIT ? OFFSET ?";
+		return jdbcTemplate.query(sql, (rs, rowNum) -> {
+			Comment comment = commentRowMapper().mapRow(rs, rowNum);
+			if (rs.getString("FoundTitle") != null) {
+				comment.setBoard(Board.FOUND);
+				comment.setPostId(rs.getLong("FoundItemId"));
+				comment.setPostTitle(rs.getString("FoundTitle"));
+			} else {
+				comment.setBoard(Board.LOST);
+				comment.setPostId(rs.getLong("LostItemId"));
+				comment.setPostTitle(rs.getString("LostTitle"));
+			}
+			return comment;
+		}, memberId, size, (page - 1) * size);
+	}
+
+	@Override
+	public int countByMember(Long memberId) {
+		return jdbcTemplate.queryForObject("SELECT count(*)" + MEMBER_COMMENTS_FROM, Integer.class, memberId);
+	}
+
 	private RowMapper<Comment> commentRowMapper() {
 		return (rs, rowNum) -> {
 			Comment comment = new Comment();

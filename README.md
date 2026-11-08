@@ -74,6 +74,13 @@ Java 21이 필요합니다.
 - 입력 오류는 항목별로 표시하고 입력값은 유지 (ID 중복, 비밀번호 확인 불일치 포함)
 - 로그인·로그아웃은 Spring Security 폼 로그인 사용. 로그인 실패 시 ID와 비밀번호 중 무엇이 틀렸는지 구분하지 않음
 
+## 마이페이지 (`/mypage`, 회원만)
+
+- 헤더의 유저 아이콘·닉네임으로 이동. 내 회원정보와 내가 쓴 글(見つけた / 探しています)·댓글을 탭별로 10건씩 표시
+- 댓글 탭에서 누르면 그 게시글의 해당 댓글 위치로 이동 (삭제된 게시글의 댓글은 제외)
+- 회원정보 변경 (氏名・ニックネーム・生年月日・電話番号, ID는 변경 불가): 닉네임을 바꾸면 지금까지 쓴 글·댓글의 작성자명도 함께 변경 (트랜잭션), 다시 로그인하지 않아도 헤더에 바로 반영
+- 비밀번호 변경: 현재 비밀번호 확인 (5회 연속 실패 시 5분간 잠금), 새 비밀번호 규칙·확인 일치 검사
+
 ## 보안 처리
 
 - 비밀번호(회원·비회원 글 모두)는 BCrypt 해시로 저장하고, 화면(HTML)에는 내보내지 않음
@@ -91,22 +98,22 @@ src/main/java/com/example/jrfind
 ├─ JrFindApplication.java
 ├─ config/       SecurityConfig (로그인·CSRF), WebMvcConfig (업로드 이미지·로고 경로)
 ├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
-│                SearchController (통합 검색), MemberController, LoginMemberAdvice (헤더용 로그인 정보),
-│                VerifiedItems (비밀번호 확인 상태 · 세션)
+│                SearchController (통합 검색), MemberController, MyPageController (마이페이지),
+│                LoginMemberAdvice (헤더용 로그인 정보), VerifiedItems (비밀번호 확인 상태 · 세션)
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
-│                Member, SignupForm, LoginMember, Category, Station
+│                Member, SignupForm, ProfileForm, PasswordForm, LoginMember, Category, Station
 ├─ repository/   JrfindRepository, LostItemRepository, CommentRepository, MemberRepository (+ JdbcTemplate 구현),
 │                KeywordCondition (검색어 SQL 조건)
 └─ service/      JrfindService, LostItemService, CommentService, MemberService, ImageStorage, PasswordAttemptLimiter
 src/main/resources
 ├─ schema.sql, data.sql
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm (見つけた)
-│                lostList, lostDetail, lostForm (探しています), search, login, signup, error,
+│                lostList, lostDetail, lostForm (探しています), search, login, signup,
+│                mypage, profileEdit, passwordChange (마이페이지), error,
 │                fragments/header, fragments/comments (두 상세 화면 공통 댓글 영역)
 └─ logo/
 ```
 
 ## 앞으로 추가할 기능
 
-- 마이페이지 (내가 쓴 글, 개인정보 수정)
 - 지도·노선도, 분실물 센터 안내

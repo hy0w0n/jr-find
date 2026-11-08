@@ -37,6 +37,15 @@ public class LostItemService {
 		return repository.count(line, station, category, keyword);
 	}
 
+	// 회원이 쓴 글 (마이페이지)
+	public List<LostItem> getItemsByMember(Long memberId, int page, int size) {
+		return repository.findByMember(memberId, page, size);
+	}
+
+	public int countItemsByMember(Long memberId) {
+		return repository.countByMember(memberId);
+	}
+
 	// 검색어에 맞는 최신 글 limit 건 (통합 검색 화면용)
 	public List<LostItem> searchLatest(String keyword, int limit) {
 		return repository.findAll(null, null, null, keyword, "latest", 1, limit);
