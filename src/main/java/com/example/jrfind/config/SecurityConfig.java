@@ -1,8 +1,9 @@
 package com.example.jrfind.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
@@ -22,10 +23,36 @@ import com.example.jrfind.service.MemberService;
 
 @Configuration
 public class SecurityConfig {
+	// 화면이 불러올 수 있는 것: 이 사이트의 스크립트·스타일·이미지 (+ 지도 타일, 사진 미리 보기의 data:)
+	// 스크립트는 모두 파일로 불러오므로 인라인 스크립트·on… 속성은 실행되지 않는다 (게시글 등에 스크립트가 끼어들어도)
+	// 스타일은 화면마다 <style>·style 속성을 쓰므로 'unsafe-inline' 을 허용한다
+	static final String CONTENT_SECURITY_POLICY = String.join("; ",
+		"default-src 'self'",
+		"script-src 'self'",
+		"style-src 'self' 'unsafe-inline'",
+		"img-src 'self' data: https://tile.openstreetmap.org",
+		"connect-src 'self'",
+		"object-src 'none'",
+		"base-uri 'self'",
+		"form-action 'self'",
+		"frame-ancestors 'none'");
+
+	// H2 콘솔(개발용, 기본은 꺼짐)을 켠 경우만: 콘솔 화면은 자체 스크립트·iframe 을 쓰고 CSRF 토큰을 넣을 수 없으므로
+	// 콘솔 주소에는 아래 설정 대신 이 설정을 쓴다 (localhost 에서만 접속 가능)
+	@Bean
+	@Order(1)
+	@ConditionalOnBooleanProperty("spring.h2.console.enabled")
+	public SecurityFilterChain h2ConsoleFilterChain(HttpSecurity http) throws Exception {
+		http
+			.securityMatcher("/h2-console/**")
+			.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+			.csrf(csrf -> csrf.disable())
+			.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+		return http.build();
+	}
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http, MemberService memberService, SessionRegistry sessionRegistry,
-			@Value("${spring.h2.console.enabled:false}") boolean h2ConsoleEnabled) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, MemberService memberService, SessionRegistry sessionRegistry) throws Exception {
 		// 로그인이 필요한 화면에서 로그인 화면으로 갈 때 원래 화면을 저장해 두는 곳.
 		// 로그인 후 그 화면으로 돌아갈 때 주소에 ?continue 를 붙이지 않는다 (Spring Security 기본값은 붙인다)
 		HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
@@ -77,17 +104,13 @@ public class SecurityConfig {
 			.exceptionHandling(exception -> exception
 				.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login?required"))
 				.accessDeniedHandler(new ExpiredFormHandler()))
-			// 다른 사이트로 이동할 때 주소의 경로·검색어는 보내지 않는다, 쓰지 않는 브라우저 기능(카메라 등)은 막는다
+			// 콘텐츠 보안 정책(CSP, 위 CONTENT_SECURITY_POLICY), 다른 사이트로 이동할 때 주소의 경로·검색어는 보내지 않는다,
+			// 쓰지 않는 브라우저 기능(카메라 등)은 막는다. 다른 사이트의 iframe 에는 넣지 못한다 (X-Frame-Options: DENY, 기본값)
+			// POST 요청에는 CSRF 토큰이 필요하다 (기본값. th:action 폼은 자동으로 들어감, fetch 는 헤더로 보냄)
 			.headers(headers -> headers
+				.contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
 				.referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
 				.permissionsPolicyHeader(permissions -> permissions.policy("camera=(), microphone=(), geolocation=(), payment=(), usb=()")));
-		// POST 요청에는 CSRF 토큰이 필요하다 (th:action 폼은 자동으로 들어감, fetch 는 헤더로 보냄)
-		// H2 콘솔(개발용, 기본은 꺼짐)을 켠 경우만: 자체 화면이라 토큰을 넣을 수 없으므로 제외하고, iframe 을 쓰므로 같은 사이트 안에서는 허용
-		if (h2ConsoleEnabled) {
-			http
-				.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
-				.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
-		}
 		return http.build();
 	}
 
