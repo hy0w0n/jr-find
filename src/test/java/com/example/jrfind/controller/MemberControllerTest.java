@@ -93,6 +93,8 @@ class MemberControllerTest {
 			.andExpect(model().attributeHasFieldErrors("signupForm", "password"));
 		mockMvc.perform(signupRequest("loginId", newLoginId(), "nickname", "匿名の天使 001"))
 			.andExpect(model().attributeHasFieldErrorCode("signupForm", "nickname", "reserved"));
+		mockMvc.perform(signupRequest("loginId", newLoginId(), "nickname", " 退会したユーザー "))
+			.andExpect(model().attributeHasFieldErrorCode("signupForm", "nickname", "reserved"));
 		mockMvc.perform(signupRequest("loginId", "ab")) // 4자 미만
 			.andExpect(model().attributeHasFieldErrors("signupForm", "loginId"));
 	}

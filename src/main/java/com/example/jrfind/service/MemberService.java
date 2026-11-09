@@ -15,11 +15,12 @@ import com.example.jrfind.domain.ProfileForm;
 import com.example.jrfind.domain.SignupForm;
 import com.example.jrfind.repository.MemberRepository;
 
-// 회원가입, 로그인 시 회원 조회 (Spring Security 가 loadUserByUsername 을 호출한다), 로그인 연속 실패 제한, 회원정보·비밀번호 변경
+// 회원가입, 로그인 시 회원 조회 (Spring Security 가 loadUserByUsername 을 호출한다), 로그인 연속 실패 제한, 회원정보·비밀번호 변경, 탈퇴
 @Service
 public class MemberService implements UserDetailsService {
-	// 비회원 작성자명(匿名の天使 001 등)과 헷갈리지 않도록 회원 닉네임으로는 쓸 수 없게 한다
+	// 비회원 작성자명(匿名の天使 001 등), 탈퇴한 회원의 작성자명과 헷갈리지 않도록 회원 닉네임으로는 쓸 수 없게 한다
 	public static final String RESERVED_NAME_PREFIX = "匿名の天使";
+	public static final String WITHDRAWN_NAME = "退会したユーザー";
 	private static final int LOGIN_ID_MAX_LENGTH = 20; // SignupForm 의 ID 규칙
 	private static final int LOGIN_IP_MAX_FAILURES = 20;
 
@@ -58,6 +59,10 @@ public class MemberService implements UserDetailsService {
 
 	public String displayNameOf(SignupForm form) {
 		return displayNameOf(form.getRealName(), form.getNickname());
+	}
+
+	public boolean isReservedName(String name) {
+		return name.startsWith(RESERVED_NAME_PREFIX) || name.equals(WITHDRAWN_NAME);
 	}
 
 	public void register(SignupForm form) {
@@ -148,5 +153,14 @@ public class MemberService implements UserDetailsService {
 
 	public void changePassword(Long memberId, String newPassword) {
 		repository.updatePassword(memberId, passwordEncoder.encode(newPassword));
+	}
+
+	// 退会: 회원정보(ID·비밀번호·氏名·生年月日·電話番号)는 지우고, 글·댓글은 남겨 작성자명만 「退会したユーザー」로 바꾼다
+	// 같은 ID 로 다시 가입할 수 있지만 예전 글·댓글과는 연결되지 않는다 (글·댓글은 회원 번호로 연결)
+	@Transactional
+	public void withdraw(Long memberId) {
+		repository.withdraw(memberId, WITHDRAWN_NAME, LocalDateTime.now());
+		repository.updateAuthorName(memberId, WITHDRAWN_NAME);
+		attemptLimiter.reset(attemptKey(memberId));
 	}
 }

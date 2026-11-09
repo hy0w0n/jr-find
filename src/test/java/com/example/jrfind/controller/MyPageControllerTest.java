@@ -1,11 +1,13 @@
 package com.example.jrfind.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
@@ -37,7 +40,7 @@ import com.example.jrfind.domain.LostItem;
 import com.example.jrfind.domain.SignupForm;
 import com.example.jrfind.service.MemberService;
 
-// 마이페이지: 로그인 필요, 내가 쓴 글·댓글, 회원정보 변경(작성자명·세션 반영), 비밀번호 변경
+// 마이페이지: 로그인 필요, 내가 쓴 글·댓글, 회원정보 변경(작성자명·세션 반영), 비밀번호 변경, 탈퇴
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -62,6 +65,8 @@ class MyPageControllerTest {
 		mockMvc.perform(get("/mypage/password")).andExpect(redirectedUrl("/login?required"));
 		mockMvc.perform(post("/mypage/edit").with(csrf()).param("realName", "x"))
 			.andExpect(redirectedUrl("/login?required"));
+		mockMvc.perform(get("/mypage/withdraw")).andExpect(redirectedUrl("/login?required"));
+		mockMvc.perform(withdrawRequest(PASSWORD, true)).andExpect(redirectedUrl("/login?required"));
 	}
 
 	@Test
@@ -202,6 +207,8 @@ class MyPageControllerTest {
 
 		mockMvc.perform(profileRequest("鈴木次郎", "匿名の天使 001", "1990-12-24", "080-9999-0000").with(user(me)))
 			.andExpect(model().attributeHasFieldErrorCode("profileForm", "nickname", "reserved"));
+		mockMvc.perform(profileRequest("鈴木次郎", "退会したユーザー", "1990-12-24", "080-9999-0000").with(user(me)))
+			.andExpect(model().attributeHasFieldErrorCode("profileForm", "nickname", "reserved"));
 
 		assertThat(memberRow(me.getId()).get("NICKNAME")).isEqualTo("さがす人");
 		assertThat(memberRow(me.getId()).get("REALNAME")).isEqualTo("山田太郎");
@@ -248,11 +255,127 @@ class MyPageControllerTest {
 		assertThat(memberService.matchesPassword(me.getId(), PASSWORD)).isTrue();
 	}
 
+	// ---------- 退会 ----------
+
+	@Test
+	void 탈퇴하면_회원정보는_지우고_글과_댓글은_退会したユーザー로_남는다() throws Exception {
+		String loginId = signup();
+		LoginMember me = loginMember(loginId);
+		long foundId = insertFound(me, "退会テスト財布", false);
+		long lostId = insertLost(me, "退会テスト傘", false);
+		comment(me, "/items/" + foundId, "退会テストのコメント");
+		MockHttpSession session = login(loginId);
+
+		// 탈퇴 화면: 지금 남아 있는 글·댓글 수
+		mockMvc.perform(get("/mypage/withdraw").session(session))
+			.andExpect(view().name("withdraw"))
+			.andExpect(model().attribute("foundCount", 1))
+			.andExpect(model().attribute("lostCount", 1))
+			.andExpect(model().attribute("commentCount", 1));
+
+		mockMvc.perform(withdrawRequest(PASSWORD, true).session(session))
+			.andExpect(redirectedUrl("/?withdrawn"))
+			.andExpect(unauthenticated());
+
+		Map<String, Object> row = memberRow(me.getId());
+		assertThat(row.get("WITHDRAWNDATE")).isNotNull();
+		assertThat(row.get("NICKNAME")).isEqualTo("退会したユーザー");
+		for (String column : List.of("LOGINID", "PASSWORD", "REALNAME", "BIRTHDATE", "PHONE")) {
+			assertThat(row.get(column)).as(column).isNull();
+		}
+		assertThat(author("FOUND_ITEM", foundId)).isEqualTo("退会したユーザー");
+		assertThat(author("LOST_ITEM", lostId)).isEqualTo("退会したユーザー");
+		assertThat(jdbcTemplate.queryForList("SELECT AUTHOR FROM POST_COMMENT WHERE MEMBERID = ?", String.class, me.getId()))
+			.containsExactly("退会したユーザー");
+
+		// 글·댓글은 그대로 보이고, 지금 세션은 로그아웃
+		mockMvc.perform(get("/items/{id}", foundId))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("退会テストのコメント")))
+			.andExpect(content().string(containsString("退会したユーザー")));
+		mockMvc.perform(get("/lost-items/{id}", lostId)).andExpect(status().isOk());
+		mockMvc.perform(get("/mypage").session(session)).andExpect(redirectedUrl("/login?required"));
+		mockMvc.perform(get("/").param("withdrawn", ""))
+			.andExpect(content().string(containsString("退会が完了しました")));
+	}
+
+	@Test
+	void 탈퇴한_ID로는_로그인할_수_없고_같은_ID로_새로_가입하면_예전_글과_연결되지_않는다() throws Exception {
+		String loginId = signup();
+		LoginMember before = loginMember(loginId);
+		insertFound(before, "以前の投稿", false);
+		withdraw(loginId);
+
+		mockMvc.perform(formLogin("/login").userParameter("loginId").user(loginId).password(PASSWORD))
+			.andExpect(unauthenticated())
+			.andExpect(redirectedUrl("/login?error"));
+
+		signup(loginId);
+		LoginMember after = loginMember(loginId);
+		assertThat(after.getId()).isNotEqualTo(before.getId());
+		mockMvc.perform(get("/mypage").with(user(after)))
+			.andExpect(model().attribute("foundCount", 0));
+
+		// 같은 ID 였던 회원이 둘 다 탈퇴해도 된다 (탈퇴한 회원의 ID 는 모두 비어 있음)
+		withdraw(loginId);
+		assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM MEMBER WHERE ID IN (?, ?) AND WITHDRAWNDATE IS NOT NULL",
+			Integer.class, before.getId(), after.getId())).isEqualTo(2);
+	}
+
+	@Test
+	void 비밀번호가_틀리거나_확인에_체크하지_않으면_탈퇴하지_않는다() throws Exception {
+		String loginId = signup();
+		LoginMember me = loginMember(loginId);
+
+		mockMvc.perform(withdrawRequest("wrong1234", true).with(user(me)))
+			.andExpect(view().name("withdraw"))
+			.andExpect(model().attributeHasFieldErrorCode("withdrawForm", "currentPassword", "mismatch"));
+		mockMvc.perform(withdrawRequest("", true).with(user(me)))
+			.andExpect(model().attributeHasFieldErrorCode("withdrawForm", "currentPassword", "NotBlank"));
+		mockMvc.perform(withdrawRequest(PASSWORD, false).with(user(me)))
+			.andExpect(view().name("withdraw"))
+			.andExpect(model().attributeHasFieldErrorCode("withdrawForm", "agree", "AssertTrue"))
+			.andExpect(model().attribute("foundCount", 0)); // 다시 보여줄 때도 글 수가 있어야 함
+
+		assertThat(memberRow(me.getId()).get("WITHDRAWNDATE")).isNull();
+		assertThat(loginMember(loginId).getId()).isEqualTo(me.getId());
+	}
+
+	@Test
+	void 탈퇴하면_다른_브라우저에_로그인해_둔_세션도_끝난다() throws Exception {
+		String loginId = signup();
+		MockHttpSession pc = login(loginId);
+		MockHttpSession phone = login(loginId);
+		mockMvc.perform(get("/mypage").session(phone)).andExpect(status().isOk());
+
+		mockMvc.perform(withdrawRequest(PASSWORD, true).session(pc))
+			.andExpect(redirectedUrl("/?withdrawn"));
+
+		mockMvc.perform(get("/mypage").session(phone))
+			.andExpect(redirectedUrl("/?withdrawn"));
+		mockMvc.perform(get("/mypage").session(phone))
+			.andExpect(redirectedUrl("/login?required"));
+	}
+
+	@Test
+	void DB에서도_탈퇴하지_않은_회원의_정보는_비울_수_없고_탈퇴한_회원의_정보는_남길_수_없다() {
+		LoginMember me = loginMember(signup());
+
+		assertThatThrownBy(() -> jdbcTemplate.update("UPDATE MEMBER SET PHONE = NULL WHERE ID = ?", me.getId()))
+			.isInstanceOf(DataIntegrityViolationException.class);
+		assertThatThrownBy(() -> jdbcTemplate.update("UPDATE MEMBER SET WITHDRAWNDATE = CURRENT_TIMESTAMP WHERE ID = ?", me.getId()))
+			.isInstanceOf(DataIntegrityViolationException.class);
+	}
+
 	// ---------- 도우미 ----------
 
 	private String signup() {
+		return signup("my_" + UUID.randomUUID().toString().substring(0, 8));
+	}
+
+	private String signup(String loginId) {
 		SignupForm form = new SignupForm();
-		form.setLoginId("my_" + UUID.randomUUID().toString().substring(0, 8));
+		form.setLoginId(loginId);
 		form.setPassword(PASSWORD);
 		form.setPasswordConfirm(PASSWORD);
 		form.setRealName("山田太郎");
@@ -288,6 +411,19 @@ class MyPageControllerTest {
 			.param("currentPassword", current)
 			.param("newPassword", newPassword)
 			.param("newPasswordConfirm", confirm);
+	}
+
+	private MockHttpServletRequestBuilder withdrawRequest(String password, boolean agree) {
+		MockHttpServletRequestBuilder request = post("/mypage/withdraw").with(csrf()).param("currentPassword", password);
+		if (agree) {
+			request.param("agree", "true"); // 체크하지 않으면 값이 오지 않는다
+		}
+		return request;
+	}
+
+	private void withdraw(String loginId) throws Exception {
+		mockMvc.perform(withdrawRequest(PASSWORD, true).session(login(loginId)))
+			.andExpect(redirectedUrl("/?withdrawn"));
 	}
 
 	private void comment(LoginMember member, String postUrl, String contents) throws Exception {

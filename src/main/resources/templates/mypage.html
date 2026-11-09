@@ -26,6 +26,8 @@
         .profile-table { width: 100%; border-collapse: collapse; font-size: 14px; }
         .profile-table th { width: 140px; padding: 10px 0; text-align: left; font-weight: normal; color: #888; border-top: 1px solid #f0f0f0; }
         .profile-table td { padding: 10px 0; border-top: 1px solid #f0f0f0; }
+        .withdraw-link { margin-top: 10px; text-align: right; font-size: 12px; }
+        .withdraw-link a { color: #999; }
 
         /* 탭 */
         .tabs { display: flex; margin-top: 40px; border-bottom: 1px solid #333; }
@@ -94,6 +96,7 @@
                     <tr><th>電話番号</th><td th:text="${member.phone}"></td></tr>
                     <tr><th>登録日</th><td th:text="${#temporals.format(member.registrationDate, 'yyyy-MM-dd')}"></td></tr>
                 </table>
+                <p class="withdraw-link"><a th:href="@{/mypage/withdraw}">退会する</a></p>
             </section>
 
             <!-- 내가 쓴 글·댓글 -->

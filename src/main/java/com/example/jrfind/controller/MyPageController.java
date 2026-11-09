@@ -1,9 +1,14 @@
 package com.example.jrfind.controller;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
@@ -18,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.example.jrfind.domain.LoginMember;
 import com.example.jrfind.domain.PasswordForm;
 import com.example.jrfind.domain.ProfileForm;
+import com.example.jrfind.domain.WithdrawForm;
 import com.example.jrfind.service.CommentService;
 import com.example.jrfind.service.JrfindService;
 import com.example.jrfind.service.LostItemService;
@@ -27,7 +33,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
-// 마이페이지: 내 회원정보, 내가 쓴 글·댓글, 회원정보 변경, 비밀번호 변경
+// 마이페이지: 내 회원정보, 내가 쓴 글·댓글, 회원정보 변경, 비밀번호 변경, 탈퇴
 // 모두 로그인이 필요하다 (SecurityConfig)
 @Controller
 @RequestMapping("/mypage")
@@ -39,15 +45,18 @@ public class MyPageController {
 	private final JrfindService foundService;
 	private final LostItemService lostService;
 	private final CommentService commentService;
+	private final SessionRegistry sessionRegistry;
 	// 로그인 정보는 세션에 저장된다 (회원정보를 바꾸면 세션 쪽도 바꿔 줌)
 	private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+	private final LogoutHandler logoutHandler = new SecurityContextLogoutHandler();
 
 	public MyPageController(MemberService memberService, JrfindService foundService, LostItemService lostService,
-			CommentService commentService) {
+			CommentService commentService, SessionRegistry sessionRegistry) {
 		this.memberService = memberService;
 		this.foundService = foundService;
 		this.lostService = lostService;
 		this.commentService = commentService;
+		this.sessionRegistry = sessionRegistry;
 	}
 
 	// tab: found(見つけた) / lost(探しています) / comments(コメント)
@@ -106,8 +115,8 @@ public class MyPageController {
 			@AuthenticationPrincipal LoginMember loginMember,
 			HttpServletRequest request,
 			HttpServletResponse response) {
-		if (memberService.displayNameOf(form.getRealName(), form.getNickname()).startsWith(MemberService.RESERVED_NAME_PREFIX)) {
-			bindingResult.rejectValue("nickname", "reserved", "「" + MemberService.RESERVED_NAME_PREFIX + "」で始まる名前は使用できません。");
+		if (memberService.isReservedName(memberService.displayNameOf(form.getRealName(), form.getNickname()))) {
+			bindingResult.rejectValue("nickname", "reserved", MemberController.RESERVED_NAME_MESSAGE);
 		}
 		if (bindingResult.hasErrors()) {
 			return "profileEdit"; // 입력값과 에러 메시지를 그대로 다시 보여줌
@@ -134,13 +143,7 @@ public class MyPageController {
 			HttpServletRequest request,
 			HttpServletResponse response) {
 		Long memberId = loginMember.getId();
-		if (!bindingResult.hasFieldErrors("currentPassword")) {
-			if (memberService.isPasswordCheckLocked(memberId)) {
-				bindingResult.rejectValue("currentPassword", "locked", "入力回数の上限を超えました。しばらくしてから再度お試しください。");
-			} else if (!memberService.matchesPassword(memberId, form.getCurrentPassword())) {
-				bindingResult.rejectValue("currentPassword", "mismatch", "現在のパスワードが正しくありません。");
-			}
-		}
+		checkCurrentPassword(memberId, form.getCurrentPassword(), bindingResult);
 		if (!bindingResult.hasFieldErrors("newPassword")) {
 			if (!form.getNewPassword().equals(form.getNewPasswordConfirm())) {
 				bindingResult.rejectValue("newPasswordConfirm", "mismatch", "パスワードが一致しません。");
@@ -155,6 +158,59 @@ public class MyPageController {
 		memberService.changePassword(memberId, form.getNewPassword());
 		refreshLoginMember(loginMember, request, response);
 		return "redirect:/mypage?passwordChanged";
+	}
+
+	// ---------- 退会 ----------
+	// 회원정보는 지우고 글·댓글은 남긴다 (작성자명은 「退会したユーザー」). 되돌릴 수 없으므로 비밀번호를 다시 확인한다
+
+	@GetMapping("/withdraw")
+	public String withdrawForm(@AuthenticationPrincipal LoginMember loginMember, Model model) {
+		addPostCounts(loginMember.getId(), model);
+		model.addAttribute("withdrawForm", new WithdrawForm());
+		return "withdraw";
+	}
+
+	@PostMapping("/withdraw")
+	public String withdraw(
+			@Valid @ModelAttribute("withdrawForm") WithdrawForm form,
+			BindingResult bindingResult,
+			@AuthenticationPrincipal LoginMember loginMember,
+			Authentication authentication,
+			HttpServletRequest request,
+			HttpServletResponse response,
+			Model model) {
+		Long memberId = loginMember.getId();
+		checkCurrentPassword(memberId, form.getCurrentPassword(), bindingResult);
+		if (bindingResult.hasErrors()) {
+			addPostCounts(memberId, model);
+			return "withdraw";
+		}
+
+		memberService.withdraw(memberId);
+		// 다른 브라우저·기기에 로그인해 둔 세션도 끝낸다 (그쪽은 다음 요청 때 로그아웃되고 홈으로)
+		sessionRegistry.getAllSessions(loginMember, false).forEach(SessionInformation::expireNow);
+		// 지금 세션은 바로 로그아웃
+		logoutHandler.logout(request, response, authentication);
+		return "redirect:/?withdrawn";
+	}
+
+	// 탈퇴 전에 지울 글·댓글이 있는지 볼 수 있도록 건수를 보여준다
+	private void addPostCounts(Long memberId, Model model) {
+		model.addAttribute("foundCount", foundService.countItemsByMember(memberId));
+		model.addAttribute("lostCount", lostService.countItemsByMember(memberId));
+		model.addAttribute("commentCount", commentService.countCommentsByMember(memberId));
+	}
+
+	// 현재 비밀번호 확인 (비밀번호 변경, 탈퇴). 연속으로 틀리면 잠시 확인을 막는다
+	private void checkCurrentPassword(Long memberId, String currentPassword, BindingResult bindingResult) {
+		if (bindingResult.hasFieldErrors("currentPassword")) {
+			return; // 빈 칸
+		}
+		if (memberService.isPasswordCheckLocked(memberId)) {
+			bindingResult.rejectValue("currentPassword", "locked", "入力回数の上限を超えました。しばらくしてから再度お試しください。");
+		} else if (!memberService.matchesPassword(memberId, currentPassword)) {
+			bindingResult.rejectValue("currentPassword", "mismatch", "現在のパスワードが正しくありません。");
+		}
 	}
 
 	// 세션에 저장된 로그인 정보를 DB 의 최신 회원정보로 바꾼다 (다시 로그인하지 않아도 반영되도록)

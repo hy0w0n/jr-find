@@ -29,6 +29,8 @@
         /* 중앙 메인 콘텐츠 */
         .main-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 10vh; }
         
+        .notice { margin-bottom: 30px; padding: 12px 25px; border-radius: 6px; font-size: 14px; background: #e8f5e9; color: #2e7d32; }
+
         /* 로고 영역 */
 		.main-logo { 
             width: 400px; 
@@ -64,6 +66,8 @@
     </header>
 
     <main class="main-container">
+        <!-- 탈퇴 직후 (MyPageController), 다른 기기에서 탈퇴해 이 브라우저의 로그인이 끝난 경우 (SecurityConfig) -->
+        <div class="notice" th:if="${param.withdrawn}">退会が完了しました。ご利用ありがとうございました。</div>
 		<a th:href="@{/}" class="main-logo">
 			<img th:src="@{/logo/logo3_1.png}" alt="JR Find Logo">
 		</a>

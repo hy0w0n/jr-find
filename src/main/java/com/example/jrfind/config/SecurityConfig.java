@@ -3,11 +3,14 @@ package com.example.jrfind.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import com.example.jrfind.service.MemberService;
 
@@ -15,10 +18,10 @@ import com.example.jrfind.service.MemberService;
 public class SecurityConfig {
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http, MemberService memberService) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, MemberService memberService, SessionRegistry sessionRegistry) throws Exception {
 		LoginAttemptGuard loginAttemptGuard = new LoginAttemptGuard(memberService);
 		http
-			// 探しています 게시판의 작성·수정·삭제, 댓글(두 게시판), 마이페이지는 회원만 가능
+			// 探しています 게시판의 작성·수정·삭제, 댓글(두 게시판), 마이페이지(탈퇴 포함)는 회원만 가능
 			// (로그인 전이면 로그인 화면으로 보내고, 로그인 후 원래 화면으로 돌아옴)
 			// 그 외 화면은 로그인 없이 볼 수 있다.
 			// 게시글·댓글 수정·삭제 권한(작성자 본인 / 4자리 비밀번호 확인)은 각 컨트롤러에서 확인한다.
@@ -41,6 +44,11 @@ public class SecurityConfig {
 			.addFilterBefore(loginAttemptGuard, UsernamePasswordAuthenticationFilter.class)
 			.logout(logout -> logout
 				.logoutSuccessUrl("/"))
+			// 회원별 로그인 세션 목록 (탈퇴하면 다른 브라우저·기기의 로그인도 끝낸다 → 그쪽은 다음 요청 때 로그아웃되고 홈으로)
+			.sessionManagement(session -> session
+				.maximumSessions(-1) // 동시 로그인 수는 제한하지 않음
+				.sessionRegistry(sessionRegistry)
+				.expiredUrl("/?withdrawn"))
 			// 로그인이 필요한 화면에 로그인 없이 들어오면 안내 문구가 있는 로그인 화면으로
 			.exceptionHandling(exception -> exception
 				.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login?required")))
@@ -52,6 +60,17 @@ public class SecurityConfig {
 			.headers(headers -> headers
 				.frameOptions(frame -> frame.sameOrigin()));
 		return http.build();
+	}
+
+	@Bean
+	public SessionRegistry sessionRegistry() {
+		return new SessionRegistryImpl();
+	}
+
+	// 세션이 끝나거나 세션 ID 가 바뀌면 SessionRegistry 에 알려 준다 (끝난 세션이 목록에 쌓이지 않도록)
+	@Bean
+	public HttpSessionEventPublisher httpSessionEventPublisher() {
+		return new HttpSessionEventPublisher();
 	}
 
 	// 회원 비밀번호, 비회원 게시글 비밀번호 모두 BCrypt 로 저장

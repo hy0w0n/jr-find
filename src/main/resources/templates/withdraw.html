@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>JR-Find | 退会</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
+        .container { width: 90%; max-width: 800px; margin: 30px auto; }
+
+        /* 비밀번호 변경 화면과 같은 모양 */
+        .form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .action-btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px; }
+        .btn { padding: 8px 25px; border-radius: 20px; border: 1px solid #ccc; cursor: pointer; font-size: 14px; font-family: inherit; text-decoration: none; color: #333; background: #f0f0f0; transition: all 0.2s; }
+        .btn-withdraw { color: #fff; background: #e63946; border-color: #e63946; font-weight: bold; }
+        .btn:hover { background: #e5e5e5; }
+        .btn-withdraw:hover { background: #c92f3b; }
+
+        /* 탈퇴 전 확인 사항 */
+        .notice { padding: 20px 25px; border-radius: 8px; background: #fff0f0; font-size: 14px; line-height: 1.8; }
+        .notice-title { font-weight: bold; color: #e63946; margin-bottom: 8px; }
+        .notice ul { padding-left: 20px; }
+
+        .my-posts { margin-top: 20px; padding: 15px 25px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .my-posts-title { color: #888; margin-bottom: 8px; }
+        .my-posts a { margin-right: 20px; color: #333; }
+        .my-posts strong { color: #e63946; }
+
+        .form-row { display: flex; border-bottom: 1px solid #eee; align-items: center; min-height: 70px; margin-top: 20px; }
+        .form-label { width: 180px; padding: 20px; font-weight: bold; }
+        .form-input { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 6px; }
+
+        input[type="password"] { width: 280px; padding: 10px; border: 1px solid #333; border-radius: 4px; outline: none; font-family: inherit; }
+        .input-error { border-color: #e63946 !important; }
+        .field-error { font-size: 13px; color: #e63946; }
+        .agree-row { margin-top: 20px; font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
+        .agree-row label { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: mainHeader}"></div>
+
+    <main class="container">
+        <div class="form-header">
+            <h2 style="font-size: 24px;">退会</h2>
+        </div>
+
+        <section class="notice">
+            <p class="notice-title">退会する前にご確認ください</p>
+            <ul>
+                <li>会員情報(ID・氏名・生年月日・電話番号)は削除され、元に戻すことはできません。</li>
+                <li>投稿した記事・コメントは削除されずに残り、投稿者名は「退会したユーザー」と表示されます。退会後は編集・削除できません。</li>
+                <li>削除したい記事・コメントがある場合は、退会する前に削除してください。</li>
+                <li>退会後に同じIDで新しく会員登録できますが、以前の記事・コメントは引き継がれません。</li>
+            </ul>
+        </section>
+
+        <!-- 지금 남아 있는 내 글·댓글 (마이페이지 탭으로 이동해서 지울 수 있음) -->
+        <section class="my-posts">
+            <p class="my-posts-title">現在の投稿</p>
+            <a th:href="@{/mypage(tab='found')}">見つけた <strong th:text="${foundCount}">0</strong>件</a>
+            <a th:href="@{/mypage(tab='lost')}">探しています <strong th:text="${lostCount}">0</strong>件</a>
+            <a th:href="@{/mypage(tab='comments')}">コメント <strong th:text="${commentCount}">0</strong>件</a>
+        </section>
+
+        <!-- 비밀번호는 에러가 나도 다시 채워 넣지 않는다 -->
+        <form id="withdrawForm" th:action="@{/mypage/withdraw}" th:object="${withdrawForm}" method="post" novalidate>
+            <div class="form-row">
+                <div class="form-label">パスワード</div>
+                <div class="form-input">
+                    <input type="password" id="currentPassword" name="currentPassword" maxlength="64" autocomplete="current-password"
+                           th:classappend="${#fields.hasErrors('currentPassword')} ? 'input-error'">
+                    <span class="field-error" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></span>
+                </div>
+            </div>
+
+            <div class="agree-row">
+                <label><input type="checkbox" id="agree" name="agree" value="true" th:checked="*{agree}"> 上記の内容を確認しました</label>
+                <span class="field-error" th:if="${#fields.hasErrors('agree')}" th:errors="*{agree}"></span>
+            </div>
+
+            <div class="action-btns">
+                <a th:href="@{/mypage}" class="btn">キャンセル</a>
+                <button type="submit" class="btn btn-withdraw">退会する</button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        // 되돌릴 수 없으므로 한 번 더 확인 (입력값 확인은 서버에서)
+        document.getElementById('withdrawForm').addEventListener('submit', function(e) {
+            if (!confirm('本当に退会しますか？\nこの操作は取り消せません。')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

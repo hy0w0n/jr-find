@@ -14,6 +14,7 @@ public class Member {
 	private String phone;
 	private LocalDateTime agreedDate; // 개인정보 취급 동의 일시
 	private LocalDateTime registrationDate;
+	private LocalDateTime withdrawnDate; // 탈퇴 일시 (탈퇴하지 않았으면 null)
 
 	public Long getId() {
 		return id;
@@ -68,5 +69,11 @@ public class Member {
 	}
 	public void setRegistrationDate(LocalDateTime registrationDate) {
 		this.registrationDate = registrationDate;
+	}
+	public LocalDateTime getWithdrawnDate() {
+		return withdrawnDate;
+	}
+	public void setWithdrawnDate(LocalDateTime withdrawnDate) {
+		this.withdrawnDate = withdrawnDate;
 	}
 }

@@ -81,6 +81,13 @@ Java 21이 필요합니다.
 - 댓글 탭에서 누르면 그 게시글의 해당 댓글 위치로 이동 (삭제된 게시글의 댓글은 제외)
 - 회원정보 변경 (氏名・ニックネーム・生年月日・電話番号, ID는 변경 불가): 닉네임을 바꾸면 지금까지 쓴 글·댓글의 작성자명도 함께 변경 (트랜잭션), 다시 로그인하지 않아도 헤더에 바로 반영
 - 비밀번호 변경: 현재 비밀번호 확인 (5회 연속 실패 시 5분간 잠금), 새 비밀번호 규칙·확인 일치 검사
+- 退会 (`/mypage/withdraw`): 비밀번호 재확인 + 주의 사항 확인 체크 + 확인 대화상자
+  - 회원정보(ID·비밀번호·氏名・生年月日・電話番号)는 삭제하고, 글·댓글은 남겨 작성자명을 「退会したユーザー」로 변경 (트랜잭션)
+  - 탈퇴 화면에 남아 있는 내 글·댓글 수를 보여 줘서, 지우고 싶은 글은 탈퇴 전에 지울 수 있게 함
+  - 다른 브라우저·기기에 로그인해 둔 세션도 함께 종료 (Spring Security `SessionRegistry`)
+  - 같은 ID 로 다시 가입할 수 있지만 예전 글·댓글과는 연결되지 않음 (글·댓글은 회원 번호로 연결)
+  - 「退会したユーザー」는 닉네임으로 쓸 수 없음 (「匿名の天使」로 시작하는 이름과 같은 처리)
+  - DB 에서도 CHECK 제약으로 "탈퇴하지 않은 회원은 개인정보가 모두 있고, 탈퇴한 회원은 모두 비어 있음"을 보장
 
 ## 駅マップ (`/map`)
 
@@ -117,7 +124,7 @@ src/main/java/com/example/jrfind
 │                MapController (駅マップ), LoginMemberAdvice (헤더용 로그인 정보),
 │                VerifiedItems (비밀번호 확인 상태 · 세션)
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
-│                Member, SignupForm, ProfileForm, PasswordForm, LoginMember, Category, Station,
+│                Member, SignupForm, ProfileForm, PasswordForm, WithdrawForm, LoginMember, Category, Station,
 │                StationLocation, MapData
 ├─ repository/   JrfindRepository, LostItemRepository, CommentRepository, MemberRepository (+ JdbcTemplate 구현),
 │                KeywordCondition (검색어 SQL 조건)
@@ -127,7 +134,7 @@ src/main/resources
 ├─ schema.sql, data.sql
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm (見つけた)
 │                lostList, lostDetail, lostForm (探しています), search, login, signup,
-│                mypage, profileEdit, passwordChange (마이페이지), map (駅マップ), error,
+│                mypage, profileEdit, passwordChange, withdraw (마이페이지), map (駅マップ), error,
 │                fragments/header, fragments/comments (두 상세 화면 공통 댓글 영역),
 │                fragments/lostCenter (お忘れ物 문의처)
 └─ logo/
@@ -135,6 +142,6 @@ src/main/resources
 
 ## 앞으로 개선할 점
 
-- 회원 탈퇴, ID·비밀번호 찾기
+- ID·비밀번호 찾기 (회원 정보에 이메일이 없어 본인 확인 수단을 먼저 마련해야 함)
 - 게시글 사진을 바꾸거나 지울 때 이전 이미지 파일 정리
 - 기획 단계의 발전 기능: 1:1 채팅, 역 인근 위치 선택, 사진 여러 장 첨부

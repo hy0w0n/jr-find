@@ -1,5 +1,7 @@
 package com.example.jrfind.repository;
 
+import java.time.LocalDateTime;
+
 import com.example.jrfind.domain.Member;
 
 public interface MemberRepository {
@@ -20,4 +22,7 @@ public interface MemberRepository {
 
 	// 게시글·댓글에 저장해 둔 작성자명(작성 시점의 닉네임)을 새 닉네임으로 바꾼다
 	void updateAuthorName(Long memberId, String nickname);
+
+	// 탈퇴: 개인정보(ID·비밀번호·氏名·生年月日·電話番号)를 지우고 닉네임과 탈퇴 일시를 남긴다
+	void withdraw(Long id, String nickname, LocalDateTime withdrawnDate);
 }

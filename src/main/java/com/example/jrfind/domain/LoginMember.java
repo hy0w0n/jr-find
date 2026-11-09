@@ -44,4 +44,15 @@ public class LoginMember implements UserDetails {
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return List.of(new SimpleGrantedAuthority("ROLE_MEMBER"));
 	}
+
+	// 같은 회원 번호면 같은 로그인 정보로 본다 (SessionRegistry 에서 회원의 로그인 세션을 찾을 때 사용)
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof LoginMember other && id.equals(other.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return id.hashCode();
+	}
 }

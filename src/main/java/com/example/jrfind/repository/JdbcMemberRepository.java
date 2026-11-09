@@ -1,5 +1,8 @@
 package com.example.jrfind.repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import javax.sql.DataSource;
 
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -80,6 +83,13 @@ public class JdbcMemberRepository implements MemberRepository {
         jdbcTemplate.update("UPDATE Post_Comment SET Author = ? WHERE MemberId = ?", nickname, memberId);
     }
 
+    @Override
+    public void withdraw(Long id, String nickname, LocalDateTime withdrawnDate) {
+        String sql = "UPDATE Member SET LoginId = NULL, Password = NULL, RealName = NULL, Nickname = ?, BirthDate = NULL, Phone = NULL, WithdrawnDate = ?"
+            + " WHERE ID = ? AND WithdrawnDate IS NULL";
+        jdbcTemplate.update(sql, nickname, withdrawnDate, id);
+    }
+
     private RowMapper<Member> memberRowMapper() {
         return (rs, rowNum) -> {
             Member member = new Member();
@@ -88,10 +98,11 @@ public class JdbcMemberRepository implements MemberRepository {
             member.setPassword(rs.getString("Password"));
             member.setRealName(rs.getString("RealName"));
             member.setNickname(rs.getString("Nickname"));
-            member.setBirthDate(rs.getDate("BirthDate").toLocalDate());
+            member.setBirthDate(rs.getObject("BirthDate", LocalDate.class)); // 탈퇴한 회원은 NULL
             member.setPhone(rs.getString("Phone"));
             member.setAgreedDate(rs.getTimestamp("AgreedDate").toLocalDateTime());
             member.setRegistrationDate(rs.getTimestamp("RegistrationDate").toLocalDateTime());
+            member.setWithdrawnDate(rs.getObject("WithdrawnDate", LocalDateTime.class));
             return member;
         };
     }

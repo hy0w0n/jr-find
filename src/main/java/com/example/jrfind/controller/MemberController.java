@@ -17,6 +17,10 @@ import jakarta.validation.Valid;
 
 @Controller
 public class MemberController {
+	// 회원가입, 회원정보 변경(MyPageController) 공통
+	static final String RESERVED_NAME_MESSAGE = "「" + MemberService.RESERVED_NAME_PREFIX + "」で始まる名前や「"
+			+ MemberService.WITHDRAWN_NAME + "」は使用できません。";
+
 	private final MemberService memberService;
 
 	public MemberController(MemberService memberService) {
@@ -52,8 +56,8 @@ public class MemberController {
 		if (!bindingResult.hasFieldErrors("loginId") && memberService.isLoginIdTaken(form.getLoginId())) {
 			bindingResult.rejectValue("loginId", "duplicate", "このIDは既に使用されています。");
 		}
-		if (memberService.displayNameOf(form).startsWith(MemberService.RESERVED_NAME_PREFIX)) {
-			bindingResult.rejectValue("nickname", "reserved", "「" + MemberService.RESERVED_NAME_PREFIX + "」で始まる名前は使用できません。");
+		if (memberService.isReservedName(memberService.displayNameOf(form))) {
+			bindingResult.rejectValue("nickname", "reserved", RESERVED_NAME_MESSAGE);
 		}
 		if (bindingResult.hasErrors()) {
 			return "signup"; // 입력값과 에러 메시지를 그대로 다시 보여줌
