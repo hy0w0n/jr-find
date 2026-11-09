@@ -2,6 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JR-Find | 見つけた</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -113,6 +114,8 @@
         /* 댓글 수 */
         .comment-count { margin-left: 4px; color: #e63946; font-size: 12px; font-weight: bold; }
     </style>
+    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
     <div th:replace="~{fragments/header :: mainHeader}"></div>

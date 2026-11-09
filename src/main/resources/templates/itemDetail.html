@@ -2,6 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- fetch 로 POST 할 때 헤더에 넣을 CSRF 토큰 -->
     <meta name="_csrf" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
@@ -224,6 +225,8 @@
 		}
 		
     </style>
+    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
     <div th:replace="~{fragments/header :: mainHeader}"></div>

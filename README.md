@@ -124,6 +124,13 @@ Java 21이 필요합니다.
 - 역 위치는 `STATION_LOCATION` 테이블 (`data.sql`, HeartRails Express API 에서 조회한 좌표), 지도 데이터는 `/map/stations` (JSON)
 - お忘れ物 문의처 안내 (JR東日本 お忘れ物問い合わせ 번호·受付時間, 東京駅・大宮駅 お忘れ物承り所): 지도와 두 상세 화면 사이드바에 공통 표시. 2026년 11월 JR東日本 공식 사이트 기준이며 공식 페이지 링크를 함께 둠
 
+## 휴대폰 화면
+
+- 모든 화면에 viewport 를 지정하고, 공통 스타일 `static/css/mobile.css` (폭 768px 이하에서만 적용)로 휴대폰에 맞게 배치
+- 헤더는 로고·아이콘을 한 줄에, 검색창은 아래 줄 전체로. 본문과 사이드바는 세로로 (게시판 목록에서는 「投稿する」를 목록 위에)
+- 목록 표는 카드 형태 (물건 이름을 첫 줄에), 등록·회원 폼은 항목 이름을 입력 칸 위에, 창(모달)은 화면 폭에 맞춤
+- PC 화면의 배치는 그대로
+
 ## 보안 처리
 
 - 비밀번호(회원·비회원 글 모두)는 BCrypt 해시로 저장하고, 화면(HTML)에는 내보내지 않음
@@ -147,20 +154,22 @@ Java 21이 필요합니다.
 src/main/java/com/example/jrfind
 ├─ JrFindApplication.java
 ├─ config/       SecurityConfig (로그인·CSRF), LoginAttemptGuard (로그인 연속 실패 제한),
-│                WebMvcConfig (업로드 이미지·로고 경로)
+│                ExpiredFormHandler (오래 열어 둔 폼을 보냈을 때 안내), WebMvcConfig (업로드 이미지·로고 경로)
 ├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
 │                SearchController (통합 검색), MemberController, MyPageController (마이페이지),
 │                MapController (駅マップ), LoginMemberAdvice (헤더용 로그인 정보),
 │                VerifiedItems (비밀번호 확인 상태 · 세션)
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
 │                Member, SignupForm, ProfileForm, PasswordForm, WithdrawForm, LoginMember, Category, Station,
-│                StationLocation, MapData
+│                StationLocation, MapData, Texts (입력 문자열 정리)
 ├─ repository/   JrfindRepository, LostItemRepository, CommentRepository, MemberRepository (+ JdbcTemplate 구현),
 │                KeywordCondition (검색어 SQL 조건)
 └─ service/      JrfindService, LostItemService, CommentService, MemberService, MapService,
                  ImageStorage, PasswordAttemptLimiter
 src/main/resources
-├─ schema.sql, data.sql
+├─ schema.sql, data.sql, messages.properties (입력 형식 오류 문구)
+├─ static/       css/mobile.css (휴대폰 화면), js/submit-once.js (두 번 전송 방지),
+│                js/date-input.js (날짜 직접 입력 확인), js/share-link.js (「シェア」)
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm (見つけた)
 │                lostList, lostDetail, lostForm (探しています), search, login, signup,
 │                mypage, profileEdit, passwordChange, withdraw (마이페이지), map (駅マップ), error,

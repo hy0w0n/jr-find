@@ -2,6 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${item == null} ? 'JR-Find | 探しています 投稿' : 'JR-Find | 探しています 編集'">JR-Find | 探しています 投稿</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
     <style>
@@ -63,6 +64,8 @@
         .warning-check { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: bold; cursor: pointer; }
         .warning-check input { width: 18px; height: 18px; cursor: pointer; }
     </style>
+    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
     <div th:replace="~{fragments/header :: mainHeader}"></div>

@@ -2,6 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JR-Find | マイページ</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -65,6 +66,8 @@
         .write-btn-link { display: block; width: 100%; padding: 12px; background-color: #f0f0f0; color: #e63946; text-decoration: none; font-weight: bold; border-radius: 6px; transition: background 0.2s; }
         .write-btn-link:hover { background-color: #e5e5e5; }
     </style>
+    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
     <div th:replace="~{fragments/header :: mainHeader}"></div>

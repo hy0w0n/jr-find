@@ -124,6 +124,13 @@ Java 21 が必要です。
 - 駅の位置は `STATION_LOCATION` テーブル（`data.sql`、HeartRails Express API で取得した座標）、地図データは `/map/stations`（JSON）
 - お忘れ物の問い合わせ先の案内（JR東日本 お忘れ物問い合わせの電話番号・受付時間、東京駅・大宮駅 お忘れ物承り所）：地図と両詳細画面のサイドバーに共通で表示。2026年11月時点の JR東日本 公式サイトの情報に基づき、公式ページへのリンクも掲載
 
+## スマートフォン表示
+
+- すべての画面に viewport を指定し、共通スタイル `static/css/mobile.css`（幅768px以下でのみ適用）でスマートフォン向けに配置
+- ヘッダーはロゴとアイコンを1行に、検索ボックスは下の行いっぱいに。本文とサイドバーは縦に並べる（掲示板の一覧では「投稿する」を一覧の上に）
+- 一覧の表はカード形式（物の名前を1行目に）、登録・会員フォームは項目名を入力欄の上に、ダイアログは画面幅に合わせる
+- PC 画面のレイアウトはそのまま
+
 ## セキュリティ対策
 
 - パスワード（会員・非会員の投稿とも）は BCrypt ハッシュで保存し、画面（HTML）には出力しない
@@ -147,20 +154,22 @@ Java 21 が必要です。
 src/main/java/com/example/jrfind
 ├─ JrFindApplication.java
 ├─ config/       SecurityConfig（ログイン・CSRF）、LoginAttemptGuard（ログインの連続失敗制限）、
-│                WebMvcConfig（アップロード画像・ロゴのパス）
+│                ExpiredFormHandler（長時間開いたフォームを送信したときの案内）、WebMvcConfig（アップロード画像・ロゴのパス）
 ├─ controller/   JrfindController（見つけた）、LostItemController（探しています）、CommentController（コメント）、
 │                SearchController（統合検索）、MemberController、MyPageController（マイページ）、
 │                MapController（駅マップ）、LoginMemberAdvice（ヘッダー用のログイン情報）、
 │                VerifiedItems（パスワード確認状態・セッション）
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
 │                Member, SignupForm, ProfileForm, PasswordForm, WithdrawForm, LoginMember, Category, Station,
-│                StationLocation, MapData
+│                StationLocation, MapData, Texts（入力文字列の整理）
 ├─ repository/   JrfindRepository, LostItemRepository, CommentRepository, MemberRepository（+ JdbcTemplate による実装）、
 │                KeywordCondition（検索キーワードの SQL 条件）
 └─ service/      JrfindService, LostItemService, CommentService, MemberService, MapService,
                  ImageStorage, PasswordAttemptLimiter
 src/main/resources
-├─ schema.sql, data.sql
+├─ schema.sql, data.sql, messages.properties（入力形式エラーの文言）
+├─ static/       css/mobile.css（スマートフォン表示）、js/submit-once.js（二重送信の防止）、
+│                js/date-input.js（日付の直接入力の確認）、js/share-link.js（「シェア」）
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm（見つけた）
 │                lostList, lostDetail, lostForm（探しています）, search, login, signup,
 │                mypage, profileEdit, passwordChange, withdraw（マイページ）, map（駅マップ）, error,

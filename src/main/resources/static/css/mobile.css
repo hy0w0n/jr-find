@@ -1,0 +1,138 @@
+/*
+  휴대폰 화면 (폭 768px 이하) 공통
+  각 화면의 <style> 뒤에 불러와서, 같은 선택자는 이쪽이 우선한다 (모든 화면의 <head> 끝에서 불러옴).
+  PC 화면의 모양은 바꾸지 않는다.
+*/
+@media (max-width: 768px) {
+
+    /* ---------- 공통 틀: 본문과 사이드바를 세로로 ---------- */
+    .container { width: auto; margin: 20px 16px; gap: 20px; flex-direction: column; align-items: stretch; }
+    .board-section, .content-section, .search-section, .mypage-section, .map-section { width: 100%; }
+    .side-section { width: 100%; min-width: 0; margin-top: 0; }
+    .sidebar-card { margin-bottom: 12px; padding: 18px 16px; }
+    .sidebar-card p { margin-bottom: 12px; font-size: 14px; }
+
+    /* 게시판 목록: 「投稿する」가 보이도록 사이드바를 목록 위에 작게 */
+    .board-section + .side-section { order: -1; display: flex; gap: 10px; }
+    .board-section + .side-section .sidebar-card { flex: 1; margin: 0; padding: 12px 10px; }
+    .board-section + .side-section .sidebar-card p { margin-bottom: 8px; font-size: 12px; }
+    .board-section + .side-section .write-btn-link { padding: 10px 6px; font-size: 13px; }
+    .board-section + .side-section .sidebar-note { display: none; }
+
+    /* ---------- 헤더: 로고·아이콘 한 줄, 검색창은 아래 줄 전체 ----------
+       헤더의 <style> 은 본문(body) 안에 있어서 이 파일보다 뒤에 읽히므로 body 를 붙여 우선하게 한다 */
+    body .header-wrapper { flex-wrap: wrap; gap: 8px 10px; padding: 8px 16px 12px; }
+    body .header-logo { width: 120px; height: 44px; order: 1; justify-content: flex-start; }
+    body .header-icons { order: 2; gap: 8px; margin-left: auto; }
+    body .header-search { order: 3; width: 100%; }
+    body .header-search input { padding: 9px 40px 9px 16px; font-size: 16px; } /* 16px 미만이면 iPhone 이 입력할 때 화면을 확대한다 */
+    body .header-svg, body .auth-icon { width: 38px; height: 38px; padding: 7px; }
+    body .header-svg svg, body .auth-icon svg { width: 22px; height: 22px; }
+    body .auth-menu { gap: 8px; }
+    body .auth-name { display: none; } /* 유저 아이콘이 마이페이지로 연결된다 */
+    body .auth-btn { padding: 7px 14px; font-size: 13px; }
+    body .expired-notice { padding: 10px 16px; font-size: 13px; }
+
+    /* ---------- 홈 ---------- */
+    .top-nav { padding: 12px 16px; gap: 8px; }
+    .nav-icon { width: 38px; height: 38px; padding: 7px; }
+    .main-container { padding: 0 16px 10vh; }
+    .main-logo { width: 72%; max-width: 300px; margin-bottom: 20px; }
+    .search-wrapper { width: 100%; margin-bottom: 24px; }
+    .search-input { padding: 14px 52px 14px 20px; font-size: 16px; }
+    .btn-group { gap: 12px; width: 100%; }
+    .action-btn { flex: 1; width: auto; padding: 14px 8px; font-size: 16px; }
+    .notice { padding: 10px 16px; font-size: 13px; }
+
+    /* ---------- 목록 표 → 카드 (見つけた・探しています 목록, 통합 검색, 마이페이지) ---------- */
+    .lost-table, .result-table, .my-table, .lost-table tbody, .result-table tbody, .my-table tbody { display: block; }
+    .lost-table tbody tr, .result-table tbody tr, .my-table tbody tr {
+        display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 12px 4px; border-bottom: 1px solid #eee;
+    }
+    .lost-table tbody td, .result-table tbody td, .my-table tbody td {
+        display: block; max-width: 100%; padding: 0; border: none; font-size: 12px; color: #888; text-align: left !important;
+    }
+    /* 물건 (4번째 칸)을 맨 위 한 줄 전체로 */
+    .lost-table tbody td:nth-child(4), .result-table tbody td:nth-child(4), .my-table tbody td:nth-child(4) {
+        order: -1; flex: 0 0 100%; font-size: 15px; color: #333;
+    }
+    /* 마이페이지 댓글 표 (3칸): 댓글 내용을 맨 위 한 줄 전체로 */
+    .my-table tbody td:first-child:nth-last-child(3) { flex: 0 0 100%; font-size: 14px; color: #333; }
+    /* 글이 없을 때의 안내 칸 */
+    .lost-table tbody td[colspan], .result-table tbody td[colspan], .my-table tbody td[colspan] {
+        flex: 0 0 100%; padding: 50px 0 !important; text-align: center !important; font-size: 13px;
+    }
+    .result-table thead, .my-table thead, .result-table colgroup, .my-table colgroup, .lost-table colgroup { display: none; }
+
+    /* 게시판 목록의 머리줄: 노선·역·忘れ物 선택을 한 줄로, 정렬 버튼은 그 아래 */
+    .lost-table thead { display: block; }
+    .lost-table thead tr { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+    .lost-table thead th { display: block; padding: 0; border: none; }
+    .lost-table th.th-filter { order: 1; flex: 1 1 0; min-width: 0; }
+    .lost-table th.th-filter .filter-box { align-items: stretch; gap: 3px; }
+    .lost-table th.th-filter .filter-box span { font-size: 11px; }
+    .lost-table .filter-select { width: 100%; font-size: 13px; padding: 5px 2px; }
+    .lost-table thead tr::after { content: ''; order: 2; flex-basis: 100%; height: 0; } /* 선택 3개 다음에서 줄바꿈 */
+    .lost-table th#header-date, .lost-table th#header-reg { order: 3; padding: 4px 12px; border: 1px solid #ddd; border-radius: 14px; font-size: 12px; }
+    .lost-table thead th:nth-child(5) { display: none; } /* 작성자 (카드 안에 있다) */
+
+    .board-title-area { flex-wrap: wrap; gap: 6px; }
+    .board-tools { justify-content: stretch; }
+    .board-search { width: 100%; }
+    .board-search input[type="text"] { font-size: 16px; }
+    .keyword-bar { flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+    .pager { gap: 14px; margin-top: 24px; flex-wrap: wrap; }
+
+    /* ---------- 상세 ---------- */
+    .post-title-row { flex-wrap: wrap; gap: 6px; }
+    .post-meta-bar { flex-wrap: wrap; gap: 4px 12px; }
+    .post-body { padding: 24px 4px 30px; min-height: 0; }
+    .info-table th { width: 105px; padding: 10px; white-space: nowrap; }
+    .info-table td { padding: 10px; }
+    .btn-group { flex-wrap: wrap; gap: 10px; }
+    .right-btns { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .btn-action { padding: 8px 14px; font-size: 13px; }
+
+    /* ---------- 등록·수정 폼, 회원 폼: 항목 이름을 입력 칸 위에 ---------- */
+    .form-header { flex-wrap: wrap; gap: 10px; }
+    .form-row { flex-direction: column; align-items: stretch; min-height: 0; }
+    .form-label { width: auto; padding: 14px 0 4px; }
+    .form-input { padding: 6px 0 14px; flex-wrap: wrap; }
+    .form-input select { flex: 1 1 140px; width: auto !important; min-width: 0; } /* 화면의 style="width: …" 보다 우선 */
+    /* 회원 폼의 입력 칸(PC 는 280px)은 폭 전체로. 등록 폼처럼 style="width: …" 를 준 칸은 그 폭 그대로 */
+    .form-input input[type="text"], .form-input input[type="password"], .form-input input[type="date"], .form-input input[type="tel"] {
+        width: 100%; max-width: 100%; font-size: 16px;
+    }
+    .form-input input#itemName { flex: 1 1 100% !important; }
+    .detail-row { flex-direction: column; }
+    .detail-content { flex-direction: column; height: auto; margin: 6px 0 14px; }
+    .detail-text { height: 200px; flex: none; border-right: none; border-bottom: 1px solid #333; font-size: 16px; }
+    .detail-image-upload { height: 180px; flex: none; }
+    .action-btns { flex-wrap: wrap; }
+    .agree-box { padding: 16px; }
+    .readonly-value { word-break: break-all; }
+
+    /* ---------- 창 (모달) ---------- */
+    .modal-box, .warning-box { width: auto; max-width: calc(100% - 32px); padding: 28px 20px; }
+    .modal-overlay { padding: 16px 0; overflow-y: auto; }
+    .modal-input-pw { width: 100%; }
+
+    /* ---------- 마이페이지 ---------- */
+    .profile-card { padding: 18px 16px; }
+    .profile-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .profile-btns { flex-wrap: wrap; }
+    .profile-table th { width: 90px; }
+    .tabs { overflow-x: auto; }
+    .tab { padding: 10px 12px; font-size: 14px; white-space: nowrap; }
+
+    /* ---------- 통합 검색 ---------- */
+    .search-title { font-size: 20px; }
+    .result-section { margin-top: 28px; }
+
+    /* ---------- 駅マップ ---------- */
+    .map-title-area { flex-wrap: wrap; gap: 4px; }
+    #map { height: 60vh; min-height: 320px; }
+
+    /* ---------- 오류 화면 ---------- */
+    .error-container { padding: 70px 16px; }
+}

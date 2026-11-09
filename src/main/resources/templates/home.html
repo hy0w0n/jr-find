@@ -56,6 +56,8 @@
         .action-btn { width: 220px; padding: 18px; border-radius: 15px; border: 1px solid #333; background: #fff; font-size: 18px; font-weight: bold; text-decoration: none; color: #333; text-align: center; transition: all 0.2s; }
         .action-btn:hover { background: #333; color: #fff; }
     </style>
+    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
 
