@@ -388,6 +388,7 @@
         pwInput.value = ''; // 입력창 초기화
         errorMsg.style.display = 'none'; // 에러메시지 숨김
         pwDesc.innerHTML = pwDescDefault;
+        afterMessage = null; // 창을 다시 열면 처음부터 확인한다
         pwModal.style.display = 'flex';
         pwInput.focus();
     }
