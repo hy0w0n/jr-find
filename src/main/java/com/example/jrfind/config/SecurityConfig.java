@@ -1,5 +1,6 @@
 package com.example.jrfind.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,6 +13,7 @@ import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
@@ -22,7 +24,8 @@ import com.example.jrfind.service.MemberService;
 public class SecurityConfig {
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http, MemberService memberService, SessionRegistry sessionRegistry) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, MemberService memberService, SessionRegistry sessionRegistry,
+			@Value("${spring.h2.console.enabled:false}") boolean h2ConsoleEnabled) throws Exception {
 		// 로그인이 필요한 화면에서 로그인 화면으로 갈 때 원래 화면을 저장해 두는 곳.
 		// 로그인 후 그 화면으로 돌아갈 때 주소에 ?continue 를 붙이지 않는다 (Spring Security 기본값은 붙인다)
 		HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
@@ -54,8 +57,11 @@ public class SecurityConfig {
 			.requestCache(cache -> cache
 				.requestCache(requestCache))
 			// 로그아웃하면 홈에서 「ログアウトしました」 안내
+			// 세션 쿠키를 지우고, 브라우저에 저장된 화면도 지우게 한다 (로그아웃 후 「뒤로」로 마이페이지 등이 그대로 보이지 않도록)
 			.logout(logout -> logout
-				.logoutSuccessUrl("/?logout"))
+				.logoutSuccessUrl("/?logout")
+				.deleteCookies("JSESSIONID")
+				.addLogoutHandler((request, response, authentication) -> response.setHeader("Clear-Site-Data", "\"cache\"")))
 			// 회원별 로그인 세션 목록. 탈퇴·비밀번호 변경 때 다른 브라우저·기기의 로그인도 끝낸다
 			// → 그쪽은 다음 요청 때 로그아웃되고, 탈퇴면 홈(탈퇴 안내), 비밀번호 변경이면 로그인 화면(다시 로그인 안내)으로
 			.sessionManagement(session -> session
@@ -71,13 +77,17 @@ public class SecurityConfig {
 			.exceptionHandling(exception -> exception
 				.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login?required"))
 				.accessDeniedHandler(new ExpiredFormHandler()))
-			// POST 요청에는 CSRF 토큰이 필요하다 (th:action 폼은 자동으로 들어감, fetch 는 헤더로 보냄)
-			// H2 콘솔은 자체 화면이라 토큰을 넣을 수 없으므로 제외 (localhost 에서만 접속 가능)
-			.csrf(csrf -> csrf
-				.ignoringRequestMatchers("/h2-console/**"))
-			// H2 콘솔이 iframe 을 사용하므로 같은 사이트 안에서는 허용
+			// 다른 사이트로 이동할 때 주소의 경로·검색어는 보내지 않는다, 쓰지 않는 브라우저 기능(카메라 등)은 막는다
 			.headers(headers -> headers
-				.frameOptions(frame -> frame.sameOrigin()));
+				.referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+				.permissionsPolicyHeader(permissions -> permissions.policy("camera=(), microphone=(), geolocation=(), payment=(), usb=()")));
+		// POST 요청에는 CSRF 토큰이 필요하다 (th:action 폼은 자동으로 들어감, fetch 는 헤더로 보냄)
+		// H2 콘솔(개발용, 기본은 꺼짐)을 켠 경우만: 자체 화면이라 토큰을 넣을 수 없으므로 제외하고, iframe 을 쓰므로 같은 사이트 안에서는 허용
+		if (h2ConsoleEnabled) {
+			http
+				.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+				.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+		}
 		return http.build();
 	}
 

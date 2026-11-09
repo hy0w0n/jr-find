@@ -89,7 +89,7 @@ public class ExpiredFormHandler implements AccessDeniedHandler {
 			try {
 				URI uri = new URI(referer);
 				int port = (uri.getPort() != -1) ? uri.getPort() : ("https".equals(uri.getScheme()) ? 443 : 80);
-				if (request.getServerName().equalsIgnoreCase(uri.getHost()) && port == request.getServerPort() && uri.getRawPath() != null) {
+				if (request.getServerName().equalsIgnoreCase(uri.getHost()) && port == request.getServerPort() && isLocalPath(uri.getRawPath())) {
 					path = uri.getRawPath() + ((uri.getRawQuery() != null) ? "?" + uri.getRawQuery() : "");
 				}
 			} catch (URISyntaxException e) {
@@ -102,5 +102,10 @@ public class ExpiredFormHandler implements AccessDeniedHandler {
 			.fragment(fragment)
 			.build()
 			.toUriString();
+	}
+
+	// 이 사이트 안의 경로만. 「//다른 사이트/…」, 「/\다른 사이트/…」 는 브라우저가 다른 사이트 주소로 읽는다
+	private static boolean isLocalPath(String path) {
+		return path != null && path.startsWith("/") && !path.startsWith("//") && !path.contains("\\");
 	}
 }

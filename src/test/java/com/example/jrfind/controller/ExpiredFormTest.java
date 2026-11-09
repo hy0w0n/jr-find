@@ -101,6 +101,9 @@ class ExpiredFormTest {
 			.andExpect(redirectedUrl("/?expired"));
 		mockMvc.perform(post("/signup").with(csrf().useInvalidToken()))
 			.andExpect(redirectedUrl("/?expired"));
+		// 같은 사이트의 주소라도 경로가 「//」 로 시작하면 브라우저는 다른 사이트(evil.example)로 읽는다
+		mockMvc.perform(post("/signup").with(csrf().useInvalidToken()).header("Referer", "http://localhost//evil.example/path"))
+			.andExpect(redirectedUrl("/?expired"));
 		mockMvc.perform(post("/signup").with(csrf().useInvalidToken())
 				.header("Referer", "http://localhost/items?q=%E8%B2%A1%E5%B8%83&expired"))
 			.andExpect(redirectedUrl("/items?q=%E8%B2%A1%E5%B8%83&expired"));

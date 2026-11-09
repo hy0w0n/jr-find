@@ -60,7 +60,7 @@ Java 21 が必要です。
 
 - 初回起動時に `data/` フォルダに H2 DB が作成され、`schema.sql`・`data.sql` によってテーブルと路線・駅・カテゴリのデータが登録されます。
 - アップロードした画像は `uploads/` フォルダに保存されます。
-- H2 コンソール：http://localhost:8080/h2-console（JDBC URL `jdbc:h2:file:./data/jrfinddb`、ユーザー `sa`、パスワードなし）
+- H2 コンソールはデフォルトでは無効です。環境変数 `JRFIND_H2_CONSOLE=true` で有効にすると http://localhost:8080/h2-console で確認できます（このPCからのみ接続可能。JDBC URL `jdbc:h2:file:./data/jrfinddb`、ユーザー `sa`、パスワードなし）
 
 設定は環境変数で変更できます。
 
@@ -69,6 +69,7 @@ Java 21 が必要です。
 | `SPRING_DATASOURCE_URL` | `jdbc:h2:file:./data/jrfinddb;AUTO_SERVER=TRUE` | DB 接続 URL |
 | `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` | `sa` /（なし） | DB アカウント |
 | `JRFIND_UPLOAD_DIR` | `./uploads` | 画像の保存フォルダ |
+| `JRFIND_H2_CONSOLE` | `false` | H2 コンソールの使用（開発用） |
 
 テスト：`./mvnw test`（インメモリ DB を使用）
 
@@ -179,6 +180,7 @@ src/main/java/com/example/jrfind
 src/main/resources
 ├─ schema.sql, data.sql, messages.properties（入力形式エラーの文言）
 ├─ static/       css/mobile.css（スマートフォン表示）、js/submit-once.js（二重送信の防止）、
+│                js/page-restore.js（「戻る」で表示された画面の処理）、
 │                js/date-input.js（日付の直接入力の確認）、js/share-link.js（「シェア」）
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm（見つけた）
 │                lostList, lostDetail, lostForm（探しています）, search, login, signup,

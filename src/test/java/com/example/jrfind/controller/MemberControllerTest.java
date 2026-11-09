@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -165,9 +167,12 @@ class MemberControllerTest {
 		mockMvc.perform(get("/login").with(user(member)))
 			.andExpect(redirectedUrl("/"));
 
+		// 세션 쿠키와 브라우저에 저장된 화면을 지운다 (로그아웃 후 「뒤로」로 개인정보 화면이 보이지 않도록)
 		mockMvc.perform(post("/logout").with(user(member)).with(csrf()))
 			.andExpect(redirectedUrl("/?logout"))
-			.andExpect(unauthenticated());
+			.andExpect(unauthenticated())
+			.andExpect(cookie().maxAge("JSESSIONID", 0))
+			.andExpect(header().string("Clear-Site-Data", "\"cache\""));
 		mockMvc.perform(get("/").param("logout", ""))
 			.andExpect(content().string(containsString("ログアウトしました。")));
 	}

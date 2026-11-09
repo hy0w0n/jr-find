@@ -60,7 +60,7 @@ Java 21이 필요합니다.
 
 - 처음 실행하면 `data/` 폴더에 H2 DB가 만들어지고, `schema.sql`·`data.sql`로 테이블과 노선·역·카테고리 데이터가 들어갑니다.
 - 업로드한 이미지는 `uploads/` 폴더에 저장됩니다.
-- H2 콘솔: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:file:./data/jrfinddb`, 사용자 `sa`, 비밀번호 없음)
+- H2 콘솔은 기본으로 꺼져 있습니다. 환경변수 `JRFIND_H2_CONSOLE=true`로 켜면 http://localhost:8080/h2-console 에서 볼 수 있습니다 (이 PC에서만 접속 가능. JDBC URL `jdbc:h2:file:./data/jrfinddb`, 사용자 `sa`, 비밀번호 없음)
 
 설정은 환경변수로 바꿀 수 있습니다.
 
@@ -69,6 +69,7 @@ Java 21이 필요합니다.
 | `SPRING_DATASOURCE_URL` | `jdbc:h2:file:./data/jrfinddb;AUTO_SERVER=TRUE` | DB 접속 URL |
 | `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` | `sa` / (없음) | DB 계정 |
 | `JRFIND_UPLOAD_DIR` | `./uploads` | 이미지 저장 폴더 |
+| `JRFIND_H2_CONSOLE` | `false` | H2 콘솔 사용 여부 (개발용) |
 
 테스트: `./mvnw test` (메모리 DB 사용)
 
@@ -179,6 +180,7 @@ src/main/java/com/example/jrfind
 src/main/resources
 ├─ schema.sql, data.sql, messages.properties (입력 형식 오류 문구)
 ├─ static/       css/mobile.css (휴대폰 화면), js/submit-once.js (두 번 전송 방지),
+│                js/page-restore.js (뒤로 가기로 돌아온 화면 처리),
 │                js/date-input.js (날짜 직접 입력 확인), js/share-link.js (「シェア」)
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm (見つけた)
 │                lostList, lostDetail, lostForm (探しています), search, login, signup,
