@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.example.jrfind.domain.FoundItem;
 import com.example.jrfind.domain.LoginMember;
@@ -158,7 +160,7 @@ class SearchControllerTest {
 			.andExpect(model().attribute("totalItems", 2))
 			.andExpect(model().attribute("currentKeyword", marker))
 			.andExpect(content().string(containsString("の検索結果")))
-			.andExpect(content().string(containsString("value=\"" + marker + "\""))); // 헤더 검색창에 검색어 유지
+			.andExpect(content().string(containsString("value=\"" + marker + "\""))); // 게시판 안 검색창에 검색어 유지
 
 		List<FoundItem> items = (List<FoundItem>) mockMvc.perform(get("/items").param("q", marker).param("station", "新宿"))
 			.andExpect(model().attribute("totalItems", 1))
@@ -189,6 +191,34 @@ class SearchControllerTest {
 	}
 
 	@Test
+	void 게시판_안_검색창은_그_게시판으로_보내고_지금_고른_필터와_정렬을_함께_보낸다() throws Exception {
+		insertFound("傘", "新宿", marker, false);
+		insertFound("傘", "渋谷", marker, false);
+		insertLost("傘", "新宿", marker);
+
+		String boardForm = form(page(get("/items").param("q", marker).param("station", "新宿").param("sort", "date_asc")), "id=\"boardSearch\"");
+		assertThat(boardForm).contains("action=\"/items\"", "name=\"q\"", "value=\"" + marker + "\"",
+			"name=\"station\" value=\"新宿\"", "name=\"sort\" value=\"date_asc\"");
+		assertThat(form(page(get("/lost-items").param("category", "その他")), "id=\"boardSearch\""))
+			.contains("action=\"/lost-items\"", "name=\"category\" value=\"その他\"");
+
+		// 검색창이 보내는 그대로 (고르지 않은 필터는 빈 값). 다른 게시판의 글은 나오지 않는다
+		mockMvc.perform(get("/items").param("line", "").param("station", "新宿").param("category", "").param("sort", "latest").param("q", marker))
+			.andExpect(model().attribute("totalItems", 1));
+		mockMvc.perform(get("/lost-items").param("line", "").param("station", "").param("category", "").param("sort", "latest").param("q", marker))
+			.andExpect(model().attribute("totalItems", 1));
+	}
+
+	@Test
+	void 헤더_검색창은_통합_검색_화면에서만_검색어를_채운다() throws Exception {
+		assertThat(form(page(get("/search").param("q", marker)), "class=\"header-search\""))
+			.contains("action=\"/search\"", "value=\"" + marker + "\"");
+		// 게시판 목록에서는 게시판 안 검색창에만 표시
+		assertThat(form(page(get("/items").param("q", marker)), "class=\"header-search\"")).doesNotContain(marker);
+		assertThat(form(page(get("/lost-items").param("q", marker)), "class=\"header-search\"")).doesNotContain(marker);
+	}
+
+	@Test
 	void 작성_일시나_날짜가_같은_글도_페이지를_넘기면_빠짐없이_한_번씩_나온다() throws Exception {
 		// 같은 일시에 등록된 글 (예전 데이터를 옮겨 왔을 때 실제로 있었던 경우)
 		LocalDateTime sameTime = LocalDateTime.of(2026, 1, 20, 12, 0);
@@ -216,6 +246,16 @@ class SearchControllerTest {
 	}
 
 	// ---------- 도우미 ----------
+
+	private String page(MockHttpServletRequestBuilder request) throws Exception {
+		return mockMvc.perform(request).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+	}
+
+	// html 에서 attribute 가 붙은 <form> ~ </form> 부분
+	private String form(String html, String attribute) {
+		int start = html.lastIndexOf("<form", html.indexOf(attribute));
+		return html.substring(start, html.indexOf("</form>", start));
+	}
 
 	private long insertFound(String itemName, String station, String contents, boolean deleted) {
 		jdbcTemplate.update("INSERT INTO FOUND_ITEM (TITLE, FOUNDDATE, LINENAME, STATIONNAME, CATEGORYNAME, ITEMNAME, CONTENTS, AUTHOR, DEL_FLG, REGISTRATIONDATE)"

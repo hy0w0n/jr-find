@@ -100,6 +100,13 @@
         .keyword-bar b { color: #e63946; }
         .keyword-clear { margin-left: auto; background: none; border: none; font-size: 13px; font-family: inherit; color: #888; text-decoration: underline; cursor: pointer; }
         .keyword-clear:hover { color: #333; }
+        /* 게시판 안 검색창 */
+        .board-tools { display: flex; justify-content: flex-end; margin-bottom: 15px; }
+        .board-search { position: relative; width: 320px; max-width: 100%; }
+        .board-search input[type="text"] { width: 100%; padding: 8px 40px 8px 16px; border: 1px solid #ccc; border-radius: 20px; font-size: 13px; font-family: inherit; outline: none; }
+        .board-search input[type="text"]:focus { border-color: #333; }
+        .board-search-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; padding: 0; border: none; background: none; color: #555; cursor: pointer; }
+        .board-search-btn svg { width: 100%; height: 100%; }
         /* 댓글 수 */
         .comment-count { margin-left: 4px; color: #e63946; font-size: 12px; font-weight: bold; }
     </style>
@@ -118,7 +125,23 @@
                 </div>
             </div>
 
-            <!-- 검색어로 찾은 경우 (헤더 검색 → 통합 검색 → 「すべて見る」) -->
+            <!-- 이 게시판 안에서만 검색 (제목·본문). 헤더 검색창은 두 게시판 통합 검색 -->
+            <!-- 지금 고른 노선·역·忘れ物 필터와 정렬은 그대로 두고 1페이지부터 보여준다 -->
+            <div class="board-tools">
+                <form id="boardSearch" class="board-search" th:action="@{/items}" method="get" role="search">
+                    <input type="hidden" name="line" th:value="${currentLine}">
+                    <input type="hidden" name="station" th:value="${currentStation}">
+                    <input type="hidden" name="category" th:value="${currentCategory}">
+                    <input type="hidden" name="sort" th:value="${currentSort}">
+                    <input type="text" id="boardKeyword" name="q" maxlength="100" placeholder="この掲示板内を検索（タイトル・本文）"
+                           aria-label="見つけた 掲示板内を検索" th:value="${currentKeyword}">
+                    <button type="submit" class="board-search-btn" title="この掲示板内を検索">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>
+                    </button>
+                </form>
+            </div>
+
+            <!-- 검색어로 찾은 경우 (게시판 안 검색창, 또는 헤더 검색 → 통합 검색 → 「すべて見る」) -->
             <div class="keyword-bar" th:if="${currentKeyword != null}">
                 <span>「<b th:text="${currentKeyword}">キーワード</b>」の検索結果 <span th:text="${totalItems}">0</span>件</span>
                 <button type="button" class="keyword-clear" onclick="clearKeyword()">検索をやめる</button>
@@ -370,8 +393,9 @@
 	    // [수정] 정렬 토글 로직 분리
 	    // type: 'date'(발견일) 또는 'reg'(작성일)
 	    function toggleSort(type) {
-	        // 현재 URL의 정렬 상태 가져오기 (없으면 reg_desc)
-	        const currentSort = new URLSearchParams(window.location.search).get('sort') || 'reg_desc';
+	        // 현재 URL의 정렬 상태 가져오기 (없으면 reg_desc. 기본값 latest 도 작성일 내림차순과 같다)
+	        let currentSort = new URLSearchParams(window.location.search).get('sort') || 'reg_desc';
+	        if (currentSort === 'latest') currentSort = 'reg_desc';
 	        let nextSort = 'reg_desc'; // 기본값
 
 	        if (type === 'date') {
@@ -433,6 +457,18 @@
 
 	    categoryFilter.addEventListener('change', function() {
 	        goPage(null, null, this.value, null, 1);
+	    });
+
+	    // 게시판 안 검색: 빈 칸이면 보내지 않는다 (검색 중이었다면 검색어만 지운다)
+	    document.getElementById('boardSearch').addEventListener('submit', function(e) {
+	        const input = document.getElementById('boardKeyword');
+	        if (input.value.trim() !== '') return;
+	        e.preventDefault();
+	        if (keyword) {
+	            clearKeyword();
+	        } else {
+	            input.focus();
+	        }
 	    });
 
 	    // 시작
