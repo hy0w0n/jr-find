@@ -116,6 +116,7 @@
     .modal-box, .warning-box { width: auto; max-width: calc(100% - 32px); padding: 28px 20px; }
     .modal-overlay { padding: 16px 0; overflow-y: auto; }
     .modal-input-pw { width: 100%; }
+    .warning-title { font-size: 18px; } /* 探しています 작성 전 주의사항: 제목이 두 줄로 끊기지 않게 */
 
     /* ---------- 마이페이지 ---------- */
     .profile-card { padding: 18px 16px; }
