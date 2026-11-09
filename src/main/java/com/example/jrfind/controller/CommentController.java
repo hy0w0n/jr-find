@@ -3,6 +3,7 @@ package com.example.jrfind.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.example.jrfind.config.ExpiredFormHandler;
 import com.example.jrfind.domain.Board;
 import com.example.jrfind.domain.Comment;
 import com.example.jrfind.domain.CommentForm;
@@ -21,7 +21,6 @@ import com.example.jrfind.service.JrfindService;
 import com.example.jrfind.service.LostItemService;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 // 댓글 작성·삭제 (見つけた / 探しています 게시판 공통)
@@ -45,9 +44,9 @@ public class CommentController {
 	// 로그인하지 않은 사람이 댓글 영역의 「ログイン」을 누르면 이 주소로 온다.
 	// 로그인 화면을 거쳐 다시 여기로 돌아오면 상세 화면의 댓글 위치로 보낸다.
 	@GetMapping("/items/{id}/comments")
-	public String foundComments(@PathVariable("id") Long id, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+	public String foundComments(@PathVariable("id") Long id, HttpServletRequest request) {
 		requirePost(Board.FOUND, id);
-		return backToCommentArea(Board.FOUND, id, request, redirectAttributes);
+		return backToCommentArea(Board.FOUND, id, request);
 	}
 
 	@PostMapping("/items/{id}/comments")
@@ -71,9 +70,9 @@ public class CommentController {
 	// ---------- 探しています 게시판 ----------
 
 	@GetMapping("/lost-items/{id}/comments")
-	public String lostComments(@PathVariable("id") Long id, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+	public String lostComments(@PathVariable("id") Long id, HttpServletRequest request) {
 		requirePost(Board.LOST, id);
-		return backToCommentArea(Board.LOST, id, request, redirectAttributes);
+		return backToCommentArea(Board.LOST, id, request);
 	}
 
 	@PostMapping("/lost-items/{id}/comments")
@@ -126,16 +125,24 @@ public class CommentController {
 		return backToPost(board, postId);
 	}
 
-	// 로그인 링크로 돌아왔을 때: 로그인이 끝나서 보내지 못한 댓글(ExpiredFormHandler)이 있으면 입력 칸에 다시 채운다
-	private String backToCommentArea(Board board, Long postId, HttpServletRequest request, RedirectAttributes redirectAttributes) {
-		HttpSession session = request.getSession(false);
-		String attribute = ExpiredFormHandler.pendingDraftAttribute(request.getRequestURI());
-		if (session != null && session.getAttribute(attribute) instanceof String draft) {
-			session.removeAttribute(attribute);
-			redirectAttributes.addFlashAttribute("commentDraft", draft);
+	// 로그인 링크로 돌아왔을 때: 로그인이 끝나서 보내지 못한 댓글(FormDraft)이 있으면 입력 칸으로 (상세 화면에서 채운다)
+	private String backToCommentArea(Board board, Long postId, HttpServletRequest request) {
+		if (FormDraft.exists(request, request.getRequestURI())) {
 			return "redirect:" + board.postUrl(postId) + "#commentForm";
 		}
 		return backToPost(board, postId);
+	}
+
+	// 상세 화면: 로그인한 사람이 이 글에 쓰다가 보내지 못한 댓글이 있으면 입력 칸에 다시 채운다 (한 번만)
+	// (입력 오류로 돌아온 경우는 commentDraft 가 이미 들어 있다)
+	public static void restoreCommentDraft(Board board, Long postId, LoginMember loginMember, HttpServletRequest request, Model model) {
+		if (loginMember == null || model.containsAttribute("commentDraft")) {
+			return;
+		}
+		FormDraft draft = FormDraft.take(request, board.postUrl(postId) + "/comments");
+		if (draft != null) {
+			model.addAttribute("commentDraft", draft.get("contents"));
+		}
 	}
 
 	// 상세 화면의 댓글 위치로

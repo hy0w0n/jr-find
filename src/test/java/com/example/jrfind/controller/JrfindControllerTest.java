@@ -135,17 +135,35 @@ class JrfindControllerTest {
 	}
 
 	@Test
-	void 비밀번호_확인_없이_수정_요청하면_403() throws Exception {
+	void 비밀번호_확인_없이_수정_요청하면_저장하지_않고_비밀번호를_다시_물은_뒤_입력한_내용을_채운다() throws Exception {
 		long id = createItem();
-
-		mockMvc.perform(multipart("/items/{id}/edit", id).with(csrf())
+		// 다른 탭에서 먼저 저장했거나, 저장한 뒤 「뒤로」로 돌아와 다시 보낸 경우와 같다 (저장하면 비밀번호 확인이 풀린다)
+		MockHttpSession session = new MockHttpSession();
+		mockMvc.perform(multipart("/items/{id}/edit", id).with(csrf()).session(session)
 				.param("foundDate", "2026-01-10")
 				.param("lineName", "山手線")
 				.param("stationName", "新宿")
 				.param("categoryName", "財布")
 				.param("itemName", "書き換え")
-				.param("contents", "書き換え"))
-			.andExpect(status().isForbidden());
+				.param("contents", "書き換えた本文"))
+			.andExpect(redirectedUrl("/items/" + id + "?reverify"));
+		assertThat(latestRow().get("ITEMNAME")).isEqualTo("黄色い財布");
+
+		// 상세 화면에서 비밀번호 창을 바로 연다
+		mockMvc.perform(get("/items/{id}", id).param("reverify", "").session(session))
+			.andExpect(model().attribute("reverify", true));
+		// 다시 확인하면 수정 화면에 입력한 내용이 채워져 있다 (한 번만)
+		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).session(session).param("password", PASSWORD));
+		mockMvc.perform(get("/items/{id}/edit", id).session(session))
+			.andExpect(content().string(containsString("value=\"書き換え\"")))
+			.andExpect(content().string(containsString(">書き換えた本文</textarea>")))
+			.andExpect(model().attribute("errorMessage", "入力していた内容を元に戻しました。内容を確認して、もう一度送信してください。"));
+		mockMvc.perform(get("/items/{id}/edit", id).session(session))
+			.andExpect(content().string(containsString("value=\"黄色い財布\"")));
+
+		// 비밀번호를 확인하지 않은 다른 사람이 상세 화면에 ?reverify 를 붙여도 창은 열리지 않는다
+		mockMvc.perform(get("/items/{id}", id).param("reverify", ""))
+			.andExpect(model().attribute("reverify", false));
 	}
 
 	@Test

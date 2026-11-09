@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam; // 파라미터 받
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile; // 파일 받기
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.jrfind.domain.Board;
 import com.example.jrfind.domain.FoundItem; // 도메인 객체
@@ -95,7 +96,13 @@ public class JrfindController {
 
     //3. 게시글 등록 화면 연결: http://localhost:8080/items/new
     @GetMapping("/items/new")
-    public String registerForm(Model model) {
+    public String registerForm(HttpServletRequest request, Model model) {
+        // 시간이 지나 보내지 못한 입력이 있으면 다시 채운다 (ExpiredFormHandler)
+        FormDraft draft = FormDraft.take(request, request.getRequestURI());
+        if (draft != null) {
+            model.addAttribute("form", draft.bindTo(new FoundItemForm()));
+            return showRegisterForm(model, FormErrors.withImageNotice(FormErrors.DRAFT_RESTORED, draft.imageDropped()));
+        }
         return showRegisterForm(model, null);
     }
 
@@ -133,12 +140,16 @@ public class JrfindController {
 
     // 상세 페이지 연결: http://localhost:8080/items/1
     @GetMapping("/items/{id}")
-    public String detail(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember, Model model) {
+    public String detail(@PathVariable("id") Long id, @RequestParam(name = "reverify", required = false) String reverify,
+            @AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request, Model model) {
         FoundItem item = findItemOrThrow(id);
         model.addAttribute("item", item);
         // 회원 글이면 작성자 본인에게만 수정·삭제 버튼을 보여준다
         model.addAttribute("isOwner", isOwner(item, loginMember));
         model.addAttribute("comments", commentService.getComments(Board.FOUND, id));
+        CommentController.restoreCommentDraft(Board.FOUND, id, loginMember, request, model);
+        // 비회원 글 수정을 보냈는데 비밀번호 확인이 끝나 있었으면, 비밀번호 창을 바로 열어서 다시 묻는다 (입력한 내용은 보관돼 있다)
+        model.addAttribute("reverify", reverify != null && item.getMemberId() == null && FormDraft.exists(request, editUrl(id)));
         return "itemDetail"; // templates/itemDetail.html 호출
     }
 
@@ -174,12 +185,29 @@ public class JrfindController {
 
     // 게시글 수정 화면 연결: http://localhost:8080/items/{id}/edit
     @GetMapping("/items/{id}/edit")
-    public String editForm(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember, Model model) {
+    public String editForm(@PathVariable("id") Long id, @RequestParam(name = "expired", required = false) String expired,
+            @AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request, Model model) {
         FoundItem item = findItemOrThrow(id);
 
-        // 권한 없이 URL로 직접 들어오면 상세 화면으로 돌려보낸다
         if (!canModify(item, loginMember)) {
-            return "redirect:/items/" + id;
+            // 회원 글인데 로그인이 끝나 있으면 로그인 화면으로 (로그인하면 이 화면으로 돌아온다)
+            if (item.getMemberId() != null && loginMember == null) {
+                return "redirect:" + UriComponentsBuilder.fromPath("/login").queryParam("required").queryParam("next", editUrl(id)).build().toUriString();
+            }
+            // 비회원 글이고 보내지 못한 수정 내용이 있으면 비밀번호를 다시 묻는다
+            if (item.getMemberId() == null && FormDraft.exists(request, editUrl(id))) {
+                return "redirect:/items/" + id + "?reverify" + ((expired != null) ? "&expired" : "");
+            }
+            // 권한 없이 URL로 직접 들어오면 상세 화면으로 돌려보낸다 (시간이 지나 보내지 못했다는 안내는 그대로)
+            return "redirect:/items/" + id + ((expired != null) ? "?expired" : "");
+        }
+
+        // 보내지 못한 수정 내용이 있으면 다시 채운다
+        FormDraft draft = FormDraft.take(request, editUrl(id));
+        if (draft != null) {
+            FoundItemForm form = draft.bindTo(new FoundItemForm());
+            return showEditFormError(model, item, form, FormErrors.withImageNotice(FormErrors.DRAFT_RESTORED, draft.imageDropped()),
+                    null, Boolean.parseBoolean(draft.get("isImageDeleted")));
         }
         return showEditForm(model, item, null);
     }
@@ -193,8 +221,15 @@ public class JrfindController {
             @RequestParam(name = "imageFile", required = false) MultipartFile file,
             @RequestParam(value = "isImageDeleted", defaultValue = "false") boolean isImageDeleted,
             @AuthenticationPrincipal LoginMember loginMember,
+            HttpServletRequest request,
             Model model) {
         FoundItem item = findItemOrThrow(id);
+        // 비회원 글인데 비밀번호 확인이 끝나 있으면 (다른 탭에서 먼저 저장했거나, 저장한 뒤 「뒤로」로 돌아와 다시 보낸 경우)
+        // 입력한 내용을 보관해 두고 비밀번호를 다시 묻는다 → 확인하면 수정 화면에 다시 채운다
+        if (item.getMemberId() == null && !verifiedItems.contains(id)) {
+            FormDraft.save(request, file != null && !file.isEmpty());
+            return "redirect:/items/" + id + "?reverify";
+        }
         requireModifiable(item, loginMember);
 
         if (bindingResult.hasErrors()) {
@@ -233,7 +268,7 @@ public class JrfindController {
         return "editForm";
     }
 
-    // 입력 오류로 수정 화면을 다시 보여줄 때
+    // 입력한 값으로 수정 화면을 다시 보여줄 때 (입력 오류, 보내지 못한 입력을 다시 채울 때)
     // - 수정 화면은 item 의 값을 보여주므로, DB 값이 아니라 입력한 값으로 바꿔서 보여준다 (DB 는 그대로)
     // - 지운 사진은 지운 상태로 보여준다 (되살아난 채로 저장되지 않게), 고른 사진은 다시 고르도록 안내
     private String showEditFormError(Model model, FoundItem item, FoundItemForm form, String errorMessage,
@@ -249,6 +284,10 @@ public class JrfindController {
             model.addAttribute("isImageDeleted", true);
         }
         return showEditForm(model, item, FormErrors.withImageNotice(errorMessage, file));
+    }
+
+    private static String editUrl(Long id) {
+        return "/items/" + id + "/edit";
     }
 
     // 없는 글·삭제된 글이면 404 화면

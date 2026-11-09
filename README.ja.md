@@ -78,6 +78,7 @@ Java 21 が必要です。
 - 投稿一覧：路線・駅・カテゴリでの絞り込み、発見日・投稿日での並べ替え、ページネーション（15件ずつ）
 - 投稿登録：カレンダーで発見日を選択、路線に応じて駅の選択肢が切り替わる、タイトルの自動生成、写真の添付
 - 非会員の投稿：投稿者名を自動で付与（`匿名の天使 001` 形式）、4桁のパスワードを確認してから編集・削除
+  - 保存すると確認が解除されるため、別のタブで先に保存した場合や、保存後に「戻る」で戻って再送信した場合は、入力内容を保管したうえでパスワードを再確認し、編集画面に戻す
 - 会員の投稿：ニックネームで表示、投稿者本人のみ編集・削除可能（削除はすべて論理削除）
 
 ## 探しています 掲示板
@@ -146,6 +147,8 @@ Java 21 が必要です。
 
 - パスワード（会員・非会員の投稿とも）は BCrypt ハッシュで保存し、画面（HTML）には出力しない
 - すべての POST リクエストで CSRF トークンを確認（フォームは hidden 項目、fetch はヘッダーで送信）
+  - 画面を長時間開いていてトークンが一致しない場合は、403 ではなく元の画面に戻して案内。登録・編集・コメントは入力内容を保管し、
+    同じフォームを再度開いたときに戻す（ログインが切れていれば再ログイン後、非会員の投稿はパスワード再確認後）。保管は1セッションに1件、2,000文字まで
 - 編集・削除の権限はサーバーで確認：会員の投稿は投稿者本人、非会員の投稿は「パスワード確認を通過したセッション」、コメントは書いた本人（画面の JS チェックだけに頼らない）
 - パスワードを5回連続で間違えると5分間ロック（4桁パスワードの総当たり攻撃対策）
 - ログインの連続失敗制限（ロック中は正しいパスワードでも確認しない）
@@ -169,7 +172,7 @@ src/main/java/com/example/jrfind
 ├─ controller/   JrfindController（見つけた）、LostItemController（探しています）、CommentController（コメント）、
 │                SearchController（統合検索）、MemberController、MyPageController（マイページ）、
 │                MapController（駅マップ）、LoginMemberAdvice（ヘッダー用のログイン情報）、
-│                VerifiedItems（パスワード確認状態・セッション）
+│                VerifiedItems（パスワード確認状態・セッション）、FormDraft（送信できなかった入力の保管・セッション）
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
 │                Member, SignupForm, ProfileForm, PasswordForm, WithdrawForm, LoginMember, Category, Station,
 │                StationLocation, MapData, Texts（入力文字列の整理）

@@ -38,8 +38,15 @@ final class FormErrors {
 		return (index < 0) ? Integer.MAX_VALUE : index;
 	}
 
+	// 보내지 못한 입력(FormDraft)을 폼에 다시 채웠을 때의 안내
+	static final String DRAFT_RESTORED = "入力していた内容を元に戻しました。内容を確認して、もう一度送信してください。";
+
 	// 입력 오류로 화면을 다시 보여줄 때, 고른 사진은 다시 채울 수 없다 (브라우저가 파일 칸을 비운다) → 다시 고르도록 안내
 	static String withImageNotice(String message, MultipartFile file) {
-		return (file != null && !file.isEmpty()) ? message + "\n(選択した画像は、もう一度選択してください。)" : message;
+		return withImageNotice(message, file != null && !file.isEmpty());
+	}
+
+	static String withImageNotice(String message, boolean imageDropped) {
+		return imageDropped ? message + "\n(選択した画像は、もう一度選択してください。)" : message;
 	}
 }

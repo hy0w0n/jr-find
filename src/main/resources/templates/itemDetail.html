@@ -371,20 +371,32 @@
 
 <script th:inline="javascript">
     const itemId = /*[[${item.id}]]*/ 0;
+    const reverify = /*[[${reverify}]]*/ false;
     const pwModal = document.getElementById('passwordModal');
 	const finalModal = document.getElementById('finalDeleteModal');
 	
     const pwInput = document.getElementById('modalPasswordInput');
     const errorMsg = document.getElementById('modalErrorMsg');
+    const pwDesc = pwModal.querySelector('.modal-desc-text');
+    const pwDescDefault = pwDesc.innerHTML;
     let currentAction = ''; // 'edit' 또는 'delete'
+    let afterMessage = null; // 확인할 수 없는 상태(화면이 오래됨·글이 삭제됨)를 알린 뒤 OK 를 누르면 할 일
 
     // 1. 모달 열기 (actionType: 'edit' or 'delete')
     function openPwModal(actionType) {
         currentAction = actionType;
         pwInput.value = ''; // 입력창 초기화
         errorMsg.style.display = 'none'; // 에러메시지 숨김
+        pwDesc.innerHTML = pwDescDefault;
         pwModal.style.display = 'flex';
         pwInput.focus();
+    }
+
+    // 수정 화면에서 보냈는데 비밀번호 확인이 끝나 있었던 경우 (다른 탭에서 먼저 저장 등): 바로 다시 묻는다
+    // 입력한 내용은 서버에 보관돼 있어서, 확인하면 수정 화면에 다시 채워진다
+    if (reverify) {
+        openPwModal('edit');
+        pwDesc.innerText = '保存する前に、もう一度パスワード(4桁)を入力してください。\n入力していた内容は、確認後の編集画面に戻します。';
     }
 
     // 2. 모달 닫기
@@ -416,6 +428,10 @@
 	
 	// 3. 비밀번호 확인 요청 함수
 	function submitPassword() {
+	    if (afterMessage) {
+	        afterMessage();
+	        return;
+	    }
 	    const password = pwInput.value;
 	    const errorMsgDiv = document.getElementById('modalErrorMsg'); 
 
@@ -441,10 +457,23 @@
 	    .then(response => {
 	        // 연속으로 틀려서 일정 시간 잠긴 경우
 	        if (response.status === 429) return 'locked';
+	        // 화면을 오래 열어 둬서 세션이 끝난 경우 (CSRF 토큰이 맞지 않음)
+	        if (response.status === 403) return 'expired';
+	        // 다른 탭 등에서 이미 삭제된 글
+	        if (response.status === 404) return 'deleted';
 	        if (!response.ok) throw new Error(response.status);
 	        return response.json();
 	    })
 	    .then(result => {
+	        if (result === 'expired' || result === 'deleted') {
+	            errorMsgDiv.innerText = (result === 'expired')
+	                ? "画面を開いてから時間が経ったため、確認できませんでした。\n「OK」を押すと、画面を読み込み直します。"
+	                : "この投稿は削除されています。\n「OK」を押すと、一覧に戻ります。";
+	            errorMsgDiv.style.display = 'block';
+	            pwInput.value = '';
+	            afterMessage = (result === 'expired') ? () => location.reload() : () => { location.href = '/items'; };
+	            return;
+	        }
 	        if (result === 'locked') {
 	            errorMsgDiv.innerText = "入力回数の上限を超えました。\nしばらくしてから再度お試しください。";
 	            errorMsgDiv.style.display = 'block';

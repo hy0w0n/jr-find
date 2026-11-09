@@ -26,6 +26,7 @@ import com.example.jrfind.service.InvalidPostException;
 import com.example.jrfind.service.JrfindService;
 import com.example.jrfind.service.LostItemService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 // 探しています 게시판
@@ -75,16 +76,24 @@ public class LostItemController {
 	}
 
 	@GetMapping("/{id}")
-	public String detail(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember, Model model) {
+	public String detail(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request, Model model) {
 		LostItem item = findItemOrThrow(id);
 		model.addAttribute("item", item);
 		model.addAttribute("isOwner", isOwner(item, loginMember));
 		model.addAttribute("comments", commentService.getComments(Board.LOST, id));
+		CommentController.restoreCommentDraft(Board.LOST, id, loginMember, request, model);
 		return "lostDetail";
 	}
 
 	@GetMapping("/new")
-	public String registerForm(Model model) {
+	public String registerForm(HttpServletRequest request, Model model) {
+		// 시간이 지나 보내지 못한 입력이 있으면 다시 채운다 (ExpiredFormHandler. 로그인이 끝났으면 다시 로그인한 뒤)
+		FormDraft draft = FormDraft.take(request, request.getRequestURI());
+		if (draft != null) {
+			model.addAttribute("form", draft.bindTo(new LostItemForm()));
+			model.addAttribute("warningConfirmed", Boolean.parseBoolean(draft.get("warningConfirmed")));
+			return showForm(model, null, FormErrors.withImageNotice(FormErrors.DRAFT_RESTORED, draft.imageDropped()));
+		}
 		model.addAttribute("form", new LostItemForm());
 		return showForm(model, null, null);
 	}
@@ -119,11 +128,18 @@ public class LostItemController {
 	}
 
 	@GetMapping("/{id}/edit")
-	public String editForm(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember, Model model) {
+	public String editForm(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request, Model model) {
 		LostItem item = findItemOrThrow(id);
 		// 작성자 본인이 아니면 상세 화면으로 돌려보낸다
 		if (!isOwner(item, loginMember)) {
 			return "redirect:/lost-items/" + id;
+		}
+		// 시간이 지나 보내지 못한 수정 내용이 있으면 다시 채운다
+		FormDraft draft = FormDraft.take(request, request.getRequestURI());
+		if (draft != null) {
+			model.addAttribute("form", draft.bindTo(LostItemForm.from(item)));
+			return showFormError(model, item, FormErrors.withImageNotice(FormErrors.DRAFT_RESTORED, draft.imageDropped()), null,
+				Boolean.parseBoolean(draft.get("isImageDeleted")));
 		}
 		model.addAttribute("form", LostItemForm.from(item));
 		return showForm(model, item, null);

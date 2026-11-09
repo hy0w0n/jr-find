@@ -78,6 +78,7 @@ Java 21이 필요합니다.
 - 게시글 목록: 노선·역·카테고리 필터, 발견일·작성일 정렬, 페이지네이션 (15건씩)
 - 게시글 등록: 달력으로 발견일 선택, 노선에 따라 역 목록 변경, 제목 자동 생성, 사진 첨부
 - 비회원 글: 작성자 이름 자동 부여 (`匿名の天使 001` 형식), 4자리 비밀번호 확인 후 수정·삭제
+  - 저장하면 확인이 풀리므로, 다른 탭에서 먼저 저장했거나 저장 후 「뒤로」로 돌아와 다시 보내면 입력한 내용을 보관해 두고 비밀번호를 다시 물은 뒤 수정 화면에 채움
 - 회원 글: 닉네임으로 표시, 작성자 본인만 수정·삭제 (삭제는 모두 논리 삭제)
 
 ## 探しています 게시판
@@ -146,6 +147,8 @@ Java 21이 필요합니다.
 
 - 비밀번호(회원·비회원 글 모두)는 BCrypt 해시로 저장하고, 화면(HTML)에는 내보내지 않음
 - 모든 POST 요청에 CSRF 토큰 확인 (폼은 hidden 값, fetch 는 헤더로 전송)
+  - 화면을 오래 열어 둬서 토큰이 맞지 않으면 403 대신 보던 화면으로 돌아가 안내. 등록·수정·댓글은 입력한 내용을 보관했다가
+    같은 폼을 다시 열 때 채움 (로그인이 끝났으면 다시 로그인한 뒤, 비회원 글은 비밀번호를 다시 확인한 뒤). 보관은 한 세션에 하나, 2,000자까지
 - 수정·삭제 권한은 서버에서 검사: 회원 글은 작성자 본인, 비회원 글은 "비밀번호 확인을 통과한 세션", 댓글은 쓴 본인 (화면 JS 검사만으로 막지 않음)
 - 비밀번호 5회 연속 실패 시 5분간 잠금 (4자리 비밀번호 무차별 대입 방지)
 - 로그인 연속 실패 제한 (잠긴 동안은 맞는 비밀번호도 확인하지 않음)
@@ -169,7 +172,7 @@ src/main/java/com/example/jrfind
 ├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
 │                SearchController (통합 검색), MemberController, MyPageController (마이페이지),
 │                MapController (駅マップ), LoginMemberAdvice (헤더용 로그인 정보),
-│                VerifiedItems (비밀번호 확인 상태 · 세션)
+│                VerifiedItems (비밀번호 확인 상태 · 세션), FormDraft (보내지 못한 입력 보관 · 세션)
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
 │                Member, SignupForm, ProfileForm, PasswordForm, WithdrawForm, LoginMember, Category, Station,
 │                StationLocation, MapData, Texts (입력 문자열 정리)

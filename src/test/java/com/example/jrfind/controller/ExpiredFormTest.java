@@ -2,16 +2,19 @@ package com.example.jrfind.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -77,12 +80,85 @@ class ExpiredFormTest {
 		mockMvc.perform(get("/lost-items/{id}", postId).param("expired", "").session(session))
 			.andExpect(content().string(containsString("ログインが必要な操作は、もう一度ログインしてからお試しください。")));
 
+		// 로그인하기 전의 상세 화면에서는 꺼내지 않는다
+		mockMvc.perform(get("/lost-items/{id}", postId).session(session))
+			.andExpect(content().string(not(containsString("下書きのコメント"))));
+
 		// 댓글 영역의 「ログイン」 → 로그인 → 돌아오면 입력 칸에 다시 채운다 (한 번만)
 		mockMvc.perform(get("/lost-items/{id}/comments", postId).session(session).with(user(member)))
-			.andExpect(redirectedUrl("/lost-items/" + postId + "#commentForm"))
-			.andExpect(flash().attribute("commentDraft", "下書きのコメント"));
+			.andExpect(redirectedUrl("/lost-items/" + postId + "#commentForm"));
+		mockMvc.perform(get("/lost-items/{id}", postId).session(session).with(user(member)))
+			.andExpect(content().string(containsString(">下書きのコメント</textarea>")));
 		mockMvc.perform(get("/lost-items/{id}/comments", postId).session(session).with(user(member)))
 			.andExpect(redirectedUrl("/lost-items/" + postId + "#comments"));
+	}
+
+	@Test
+	void 보내지_못한_입력은_한_세션에_하나만_정해진_크기까지만_보관한다() throws Exception {
+		long postId = insertFound();
+		// 로그인하지 않은 채로 여러 글에 큰 댓글을 보내도 마지막 하나만 남는다 (서버 메모리가 늘지 않도록)
+		MockHttpSession session = new MockHttpSession();
+		for (long id = postId; id < postId + 5; id++) {
+			mockMvc.perform(post("/items/{id}/comments", id).with(csrf().useInvalidToken()).session(session).param("contents", "下書き" + id));
+		}
+		assertThat(Collections.list(session.getAttributeNames())).filteredOn(name -> name.contains("FormDraft")).hasSize(1);
+		assertThat(session.getAttribute(FormDraft.class.getName())).extracting("uri").isEqualTo("/items/" + (postId + 4) + "/comments");
+
+		// 너무 큰 입력은 보관하지 않는다 (댓글은 500자까지라 정상적인 입력은 들어간다)
+		MockHttpSession other = new MockHttpSession();
+		mockMvc.perform(post("/items/{id}/comments", postId).with(csrf().useInvalidToken()).session(other)
+				.param("contents", "あ".repeat(FormDraft.MAX_CHARS + 1)));
+		assertThat(other.getAttribute(FormDraft.class.getName())).isNull();
+	}
+
+	@Test
+	void 시간이_지나_보내지_못한_등록_수정은_같은_화면을_다시_열면_입력한_내용을_채운다() throws Exception {
+		// 등록 (見つけた, 비회원): 비밀번호 칸은 보관하지 않는다
+		MockHttpSession session = new MockHttpSession();
+		mockMvc.perform(multipart("/items/new").with(csrf().useInvalidToken()).session(session)
+				.param("foundDate", "2026-01-10").param("lineName", "山手線").param("stationName", "新宿")
+				.param("categoryName", "財布").param("itemName", "期限切れの財布").param("contents", "本文").param("password", "1234")
+				.header("Referer", "http://localhost/items/new"))
+			.andExpect(redirectedUrl("/items/new?expired"));
+		assertThat(((FormDraft) session.getAttribute(FormDraft.class.getName())).fields()).doesNotContainKey("password");
+		mockMvc.perform(get("/items/new").param("expired", "").session(session))
+			.andExpect(content().string(containsString("value=\"期限切れの財布\"")))
+			.andExpect(model().attribute("errorMessage", "入力していた内容を元に戻しました。内容を確認して、もう一度送信してください。"));
+
+		// 수정 (見つけた, 비회원 글): 세션이 끝나 비밀번호 확인도 풀렸으면 → 비밀번호를 다시 묻고, 확인하면 수정 화면에 채운다
+		long postId = insertFound();
+		MockHttpSession expired = new MockHttpSession();
+		mockMvc.perform(multipart("/items/{id}/edit", postId).with(csrf().useInvalidToken()).session(expired)
+				.param("foundDate", "2026-01-08").param("lineName", "山手線").param("stationName", "新宿")
+				.param("categoryName", "その他").param("itemName", "直した傘").param("contents", "直した本文")
+				.header("Referer", "http://localhost/items/" + postId + "/edit"))
+			.andExpect(redirectedUrl("/items/" + postId + "/edit?expired"));
+		mockMvc.perform(get("/items/{id}/edit", postId).param("expired", "").session(expired))
+			.andExpect(redirectedUrl("/items/" + postId + "?reverify&expired"));
+
+		// 수정 (探しています, 회원 글): 로그인이 끝났으면 다시 로그인한 뒤 채운다
+		LoginMember member = newMember();
+		long lostId = insertLost(member);
+		MockHttpSession lost = new MockHttpSession();
+		mockMvc.perform(multipart("/lost-items/{id}/edit", lostId).with(csrf().useInvalidToken()).session(lost)
+				.param("lostDate", "2026-01-12").param("lineName", "山手線").param("stationName", "渋谷")
+				.param("categoryName", "その他").param("itemName", "青い傘").param("contents", "直した本文")
+				.header("Referer", "http://localhost/lost-items/" + lostId + "/edit"))
+			.andExpect(redirectedUrl("/lost-items/" + lostId + "/edit?expired"));
+		mockMvc.perform(get("/lost-items/{id}/edit", lostId).param("expired", "").session(lost).with(user(member)))
+			.andExpect(content().string(containsString("value=\"青い傘\"")));
+	}
+
+	@Test
+	void 로그인이_끝난_채로_회원_글_수정_화면을_열면_로그인한_뒤_돌아온다() throws Exception {
+		LoginMember member = newMember();
+		jdbcTemplate.update("INSERT INTO FOUND_ITEM (TITLE, FOUNDDATE, LINENAME, STATIONNAME, CATEGORYNAME, ITEMNAME, CONTENTS, AUTHOR, MEMBERID, REGISTRATIONDATE)"
+				+ " VALUES ('[2026-01-08][山手線][新宿][その他] 傘', '2026-01-08', '山手線', '新宿', 'その他', '傘', '改札で拾いました。', ?, ?, CURRENT_TIMESTAMP)",
+			member.getNickname(), member.getId());
+		long postId = jdbcTemplate.queryForObject("SELECT max(ID) FROM FOUND_ITEM", Long.class);
+
+		mockMvc.perform(get("/items/{id}/edit", postId))
+			.andExpect(redirectedUrl("/login?required&next=/items/" + postId + "/edit"));
 	}
 
 	@Test
