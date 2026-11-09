@@ -123,6 +123,40 @@ class SearchControllerTest {
 	}
 
 	@Test
+	void 전각_반각을_구분하지_않는다() throws Exception {
+		long iphone = insertFound("iPhone 15", "新宿", marker, false);
+		long suica = insertFound("ＳＵＩＣＡカード", "新宿", marker + " （予定）", false);
+		long smartphone = insertFound("スマホ", "新宿", marker, false);
+
+		// 검색어가 전각 영숫자 / 반각 카나 (일본어 입력기에서 흔히 그대로 입력된다)
+		assertThat(foundIds(searchFound(toFullWidth(marker) + " ｉＰｈｏｎｅ"))).containsExactly(iphone);
+		assertThat(foundIds(searchFound(marker + " ｽﾏﾎ"))).containsExactly(smartphone);
+		// 글이 전각 영숫자, 검색어는 반각
+		assertThat(foundIds(searchFound(marker + " suica"))).containsExactly(suica);
+		// 전각 기호가 들어 있는 글은 전각 기호 그대로 찾는다
+		assertThat(foundIds(searchFound(marker + " （予定）"))).containsExactly(suica);
+	}
+
+	@Test
+	void 검색어가_5단어를_넘으면_앞의_5단어로_찾고_안내한다() throws Exception {
+		insertFound("黒い財布", "新宿", marker + " 南口の改札にありました", false);
+		String sixWords = marker + " 黒い 財布 南口 改札 存在しない言葉";
+
+		mockMvc.perform(get("/search").param("q", sixWords))
+			.andExpect(model().attribute("keywordTruncated", true))
+			.andExpect(model().attribute("foundCount", 1))
+			.andExpect(content().string(containsString("キーワードは5語までです。最初の5語で検索しています。")));
+		mockMvc.perform(get("/items").param("q", sixWords))
+			.andExpect(model().attribute("keywordTruncated", true))
+			.andExpect(model().attribute("totalItems", 1))
+			.andExpect(content().string(containsString("キーワードは5語までです。")));
+
+		mockMvc.perform(get("/search").param("q", marker + " 黒い 財布 南口 改札"))
+			.andExpect(model().attribute("keywordTruncated", false))
+			.andExpect(content().string(not(containsString("キーワードは5語までです。"))));
+	}
+
+	@Test
 	void 검색어가_없으면_입력_안내만_보여준다() throws Exception {
 		mockMvc.perform(get("/search").param("q", " 　 "))
 			.andExpect(status().isOk())
@@ -246,6 +280,18 @@ class SearchControllerTest {
 	}
 
 	// ---------- 도우미 ----------
+
+	// 통합 검색의 見つけた 결과 (최신 5건)
+	private Object searchFound(String q) throws Exception {
+		return mockMvc.perform(get("/search").param("q", q)).andReturn().getModelAndView().getModel().get("foundItems");
+	}
+
+	// 반각 영숫자 → 전각 (A → Ａ)
+	private static String toFullWidth(String text) {
+		StringBuilder result = new StringBuilder();
+		text.chars().forEach(c -> result.append((char) (c + 0xFEE0)));
+		return result.toString();
+	}
 
 	private String page(MockHttpServletRequestBuilder request) throws Exception {
 		return mockMvc.perform(request).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);

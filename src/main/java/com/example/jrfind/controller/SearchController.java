@@ -5,6 +5,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.example.jrfind.repository.KeywordCondition;
 import com.example.jrfind.service.JrfindService;
 import com.example.jrfind.service.LostItemService;
 
@@ -27,6 +28,7 @@ public class SearchController {
 	public String search(@RequestParam(name = "q", required = false) String keyword, Model model) {
 		String q = SearchKeyword.normalize(keyword);
 		model.addAttribute("keyword", q);
+		model.addAttribute("keywordTruncated", KeywordCondition.isTruncated(q)); // 단어가 너무 많아 뒤는 쓰지 않음
 		// 검색어가 없으면 입력 안내만 보여준다
 		if (q == null) {
 			return "search";

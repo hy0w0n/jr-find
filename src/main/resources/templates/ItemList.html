@@ -100,6 +100,7 @@
         .keyword-bar b { color: #e63946; }
         .keyword-clear { margin-left: auto; background: none; border: none; font-size: 13px; font-family: inherit; color: #888; text-decoration: underline; cursor: pointer; }
         .keyword-clear:hover { color: #333; }
+        .keyword-warn { color: #c0392b; font-size: 12px; } /* 6번째 단어부터는 검색에 쓰지 않았다는 안내 */
         /* 게시판 안 검색창 */
         .board-tools { display: flex; justify-content: flex-end; margin-bottom: 15px; }
         .board-search { position: relative; width: 320px; max-width: 100%; }
@@ -143,7 +144,7 @@
 
             <!-- 검색어로 찾은 경우 (게시판 안 검색창, 또는 헤더 검색 → 통합 검색 → 「すべて見る」) -->
             <div class="keyword-bar" th:if="${currentKeyword != null}">
-                <span>「<b th:text="${currentKeyword}">キーワード</b>」の検索結果 <span th:text="${totalItems}">0</span>件</span>
+                <span>「<b th:text="${currentKeyword}">キーワード</b>」の検索結果 <span th:text="${totalItems}">0</span>件<span class="keyword-warn" th:if="${keywordTruncated}"> (キーワードは5語までです。最初の5語で検索しています。)</span></span>
                 <button type="button" class="keyword-clear" onclick="clearKeyword()">検索をやめる</button>
             </div>
 

@@ -22,6 +22,7 @@ import com.example.jrfind.domain.Board;
 import com.example.jrfind.domain.FoundItem; // 도메인 객체
 import com.example.jrfind.domain.FoundItemForm;
 import com.example.jrfind.domain.LoginMember;
+import com.example.jrfind.repository.KeywordCondition;
 import com.example.jrfind.service.CommentService;
 import com.example.jrfind.service.InvalidPostException;
 import com.example.jrfind.service.JrfindService;
@@ -82,6 +83,7 @@ public class JrfindController {
         model.addAttribute("currentStation", station);
         model.addAttribute("currentCategory", category);
         model.addAttribute("currentKeyword", keyword);
+        model.addAttribute("keywordTruncated", KeywordCondition.isTruncated(keyword)); // 단어가 너무 많아 뒤는 쓰지 않음
         model.addAttribute("currentSort", sort);
 
         model.addAttribute("lines", service.getLines());
