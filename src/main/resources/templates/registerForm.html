@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JR-Find | 登録画面</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <link rel="stylesheet" th:href="@{/webjars/flatpickr/dist/flatpickr.min.css}">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
@@ -285,8 +285,8 @@
 	    </div>
 	</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
+    <script th:src="@{/webjars/flatpickr/dist/flatpickr.min.js}"></script>
+    <script th:src="@{/webjars/flatpickr/dist/l10n/ja.js}"></script>
     <!-- 직접 입력한 날짜 확인 (형식이 틀린 날짜를 다른 날짜로 바꾸지 않게) -->
     <script th:src="@{/js/date-input.js}"></script>
 

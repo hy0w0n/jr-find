@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JR-Find | 駅マップ</title>
     <!-- 지도: Leaflet + OpenStreetMap (API 키 불필요) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="@{/webjars/leaflet/dist/leaflet.css}">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
@@ -75,8 +74,7 @@
         </aside>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+    <script th:src="@{/webjars/leaflet/dist/leaflet.js}"></script>
     <script>
         // 노선 표시 색 (실제 노선 색에 가깝게 고른 값). 없는 노선은 회색
         const LINE_COLORS = {

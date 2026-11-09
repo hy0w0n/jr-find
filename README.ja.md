@@ -45,6 +45,7 @@
 
 - Java 21, Spring Boot 4.0（Spring MVC, Spring Security, JDBC, Validation）
 - Thymeleaf, HTML / CSS / JavaScript, flatpickr, Leaflet + OpenStreetMap（駅マップ）
+  - flatpickr・Leaflet は WebJars で jar に含めてアプリから直接配信（外部 CDN がブロックされても動作、バージョンは `pom.xml` で管理）
 - H2 Database（ファイルモード）
 - Maven
 

@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -260,6 +261,17 @@ class JrfindControllerTest {
 		mockMvc.perform(newItemRequest("itemName", itemName, "contents", "別の本文").session(session)).andExpect(redirectedUrl("/items"));
 		mockMvc.perform(newItemRequest("itemName", itemName)).andExpect(redirectedUrl("/items"));
 		assertThat(countItems()).isEqualTo(before + 3);
+	}
+
+	@Test
+	void 날짜_선택_라이브러리는_외부_CDN이_아니라_이_앱에서_제공한다() throws Exception {
+		// CDN 이 막히면 등록 화면의 스크립트가 멈춰서 글을 쓸 수 없었다 (WebJars)
+		mockMvc.perform(get("/items/new"))
+			.andExpect(content().string(containsString("src=\"/webjars/flatpickr/")))
+			.andExpect(content().string(not(containsString("cdn.jsdelivr.net"))));
+		for (String path : List.of("/webjars/flatpickr/dist/flatpickr.min.js", "/webjars/flatpickr/dist/l10n/ja.js", "/webjars/flatpickr/dist/flatpickr.min.css")) {
+			mockMvc.perform(get(path)).andExpect(status().isOk());
+		}
 	}
 
 	@Test

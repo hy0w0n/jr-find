@@ -38,9 +38,13 @@ class MapControllerTest {
 		mockMvc.perform(get("/map"))
 			.andExpect(status().isOk())
 			.andExpect(content().string(containsString("id=\"map\"")))
-			.andExpect(content().string(containsString("leaflet@1.9.4/dist/leaflet.js")))
-			.andExpect(content().string(containsString("integrity=\"sha384-"))) // CDN 파일 변조 방지
-			.andExpect(content().string(containsString("050-2016-1601")));
+			.andExpect(content().string(containsString("050-2016-1601")))
+			// 지도 라이브러리는 외부 CDN 이 아니라 이 앱에서 제공한다 (WebJars. CDN 이 막혀도 지도가 동작하도록)
+			// (화면에는 버전이 붙은 주소로 나간다: /webjars/leaflet/1.9.4/dist/leaflet.js)
+			.andExpect(content().string(containsString("src=\"/webjars/leaflet/")))
+			.andExpect(content().string(not(containsString("cdn.jsdelivr.net"))));
+		mockMvc.perform(get("/webjars/leaflet/dist/leaflet.js")).andExpect(status().isOk());
+		mockMvc.perform(get("/webjars/leaflet/dist/leaflet.css")).andExpect(status().isOk());
 
 		mockMvc.perform(get("/items"))
 			.andExpect(content().string(containsString("href=\"/map\" class=\"header-svg\"")));

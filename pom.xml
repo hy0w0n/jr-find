@@ -50,6 +50,21 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
+		<!-- 화면에서 쓰는 JS 라이브러리 (CDN 대신 jar 에 넣어 /webjars/ 로 제공. 주소에 버전을 쓰지 않도록 locator) -->
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>flatpickr</artifactId>
+			<version>4.6.13</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>leaflet</artifactId>
+			<version>1.9.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>webjars-locator-lite</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
