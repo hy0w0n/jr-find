@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import com.example.jrfind.domain.LostItem;
+import com.example.jrfind.domain.LostItemForm;
 
 @Repository
 public class JdbcLostItemRepository implements LostItemRepository {
@@ -123,7 +124,9 @@ public class JdbcLostItemRepository implements LostItemRepository {
 			sql.append(" AND LineName = ?");
 			params.add(line);
 		}
-		if (station != null && !station.isEmpty()) {
+		if (LostItemForm.UNKNOWN_STATION.equals(station)) {
+			sql.append(" AND StationName IS NULL"); // 역 필터의 「駅不明」
+		} else if (station != null && !station.isEmpty()) {
 			sql.append(" AND StationName = ?");
 			params.add(station);
 		}

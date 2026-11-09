@@ -225,7 +225,7 @@
                             </div>
                             <p class="upload-placeholder">写真があれば、<br>ぜひ追加してください。</p>
                         </div>
-                        <img id="imagePreview" src="" alt="Image Preview">
+                        <img id="imagePreview" src="" alt="選択した画像">
                         <button type="button" class="delete-img-btn" id="deleteImgBtn" onclick="deleteImage(event)">✕</button>
                     </div>
                 </div>
@@ -406,10 +406,19 @@
                 }
                 var reader = new FileReader();
                 reader.onload = function(e) {
-                    document.getElementById('imagePreview').src = e.target.result;
-                    document.getElementById('imagePreview').style.display = 'block';
-                    document.getElementById('deleteImgBtn').style.display = 'flex';
-                    document.getElementById('uploadPlaceholder').style.display = 'none';
+                    // 확장자만 바꾼 파일(.txt → .jpg 등)은 그림으로 열 수 없다 → 깨진 미리 보기 대신 안내 (서버에서도 다시 확인)
+                    const probe = new Image();
+                    probe.onload = function() {
+                        document.getElementById('imagePreview').src = e.target.result;
+                        document.getElementById('imagePreview').style.display = 'block';
+                        document.getElementById('deleteImgBtn').style.display = 'flex';
+                        document.getElementById('uploadPlaceholder').style.display = 'none';
+                    };
+                    probe.onerror = function() {
+                        input.value = "";
+                        showModal("", "画像を読み込めませんでした。\n画像ファイル(JPG・PNG・GIF・WEBP)を選択してください。", null, false);
+                    };
+                    probe.src = e.target.result;
                 }
                 reader.readAsDataURL(input.files[0]);
             }

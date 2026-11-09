@@ -2,6 +2,7 @@ package com.example.jrfind.service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -103,6 +104,7 @@ public class JrfindService {
         if (oldItem == null) throw new IllegalArgumentException("해당 게시글이 존재하지 않습니다.");
 
         validateMasterData(form);
+        List<Object> before = contentOf(oldItem);
         applyForm(oldItem, form);
 
         // 이미지 처리
@@ -113,6 +115,10 @@ public class JrfindService {
             oldItem.setImgPath(imageStorage.store(file)); // 교체
         }
 
+        // 아무것도 바꾸지 않고 저장했으면 그대로 둔다 (「編集済み」 표시를 붙이지 않음)
+        if (before.equals(contentOf(oldItem))) {
+            return;
+        }
         oldItem.setModifiedDate(LocalDateTime.now());
         repository.update(oldItem);
         // 바꾸거나 지운 사진의 이전 파일은 DB 에 반영한 뒤에 지운다
@@ -134,8 +140,17 @@ public class JrfindService {
                 item.getFoundDate(), item.getLineName(), item.getStationName(), item.getCategoryName(), item.getItemName()));
     }
 
-    // 드롭다운에 없는 노선·역·카테고리를 직접 보내는 요청 차단
+    // 수정 전후 비교용 (사용자가 바꿀 수 있는 항목과 사진)
+    private List<Object> contentOf(FoundItem item) {
+        return Arrays.asList(item.getFoundDate(), item.getLineName(), item.getStationName(), item.getCategoryName(),
+                item.getItemName(), item.getContents(), item.getImgPath());
+    }
+
+    // 드롭다운에 없는 노선·역·카테고리를 직접 보내는 요청 차단, 너무 오래된 날짜(입력 실수) 차단
     private void validateMasterData(FoundItemForm form) {
+        if (form.getFoundDate().isBefore(LostItemService.MIN_POST_DATE)) {
+            throw new InvalidPostException("発見した日は2000年1月1日以降の日付を入力してください。");
+        }
         if (!repository.existsStation(form.getLineName(), form.getStationName())) {
             throw new InvalidPostException("発見した場所(路線・駅)を正しく選択してください。");
         }

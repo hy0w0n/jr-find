@@ -1,7 +1,9 @@
 package com.example.jrfind.service;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -18,6 +20,8 @@ import com.example.jrfind.repository.LostItemRepository;
 @Service
 public class LostItemService {
 	public static final int PAGE_SIZE = 15;
+	// 잃어버린 날·발견한 날의 하한 (두 게시판 공통. 0001-01-01 같은 입력 실수 방지)
+	public static final LocalDate MIN_POST_DATE = LocalDate.of(2000, 1, 1);
 
 	private final LostItemRepository repository;
 	// 노선·역·카테고리 존재 여부 확인용 (見つけた 게시판과 같은 데이터 사용)
@@ -71,6 +75,7 @@ public class LostItemService {
 
 	public void updateItem(LostItem item, LostItemForm form, MultipartFile file, boolean isImageDeleted) throws IOException {
 		validateMasterData(form);
+		List<Object> before = contentOf(item);
 		applyForm(item, form);
 
 		String oldImage = item.getImgPath();
@@ -80,6 +85,10 @@ public class LostItemService {
 			item.setImgPath(imageStorage.store(file)); // 교체
 		}
 
+		// 아무것도 바꾸지 않고 저장했으면 그대로 둔다 (「編集済み」 표시를 붙이지 않음)
+		if (before.equals(contentOf(item))) {
+			return;
+		}
 		item.setModifiedDate(LocalDateTime.now());
 		repository.update(item);
 		// 바꾸거나 지운 사진의 이전 파일은 DB 에 반영한 뒤에 지운다
@@ -116,8 +125,17 @@ public class LostItemService {
 				item.getLostDate(), item.getLineName(), station, item.getCategoryName(), item.getItemName()));
 	}
 
-	// 드롭다운에 없는 노선·역·카테고리를 직접 보내는 요청 차단
+	// 수정 전후 비교용 (사용자가 바꿀 수 있는 항목과 사진)
+	private List<Object> contentOf(LostItem item) {
+		return Arrays.asList(item.getLostDate(), item.getLineName(), item.getStationName(), item.getCategoryName(),
+				item.getItemName(), item.getContents(), item.getImgPath());
+	}
+
+	// 드롭다운에 없는 노선·역·카테고리를 직접 보내는 요청 차단, 너무 오래된 날짜(입력 실수) 차단
 	private void validateMasterData(LostItemForm form) {
+		if (form.getLostDate().isBefore(MIN_POST_DATE)) {
+			throw new InvalidPostException("なくした日は2000年1月1日以降の日付を入力してください。");
+		}
 		boolean placeExists = form.isStationUnknown()
 				? masterRepository.existsLine(form.getLineName())
 				: masterRepository.existsStation(form.getLineName(), form.getStationName());

@@ -116,6 +116,25 @@ class JrfindControllerTest {
 	}
 
 	@Test
+	void 아무것도_바꾸지_않고_저장하면_編集済み가_붙지_않고_너무_오래된_날짜는_저장하지_않는다() throws Exception {
+		long id = createItem();
+		MockHttpSession session = new MockHttpSession();
+		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).session(session).param("password", PASSWORD));
+
+		// 등록할 때와 같은 값 그대로 저장
+		mockMvc.perform(multipart("/items/{id}/edit", id).with(csrf()).session(session)
+				.param("foundDate", "2026-01-10").param("lineName", "山手線").param("stationName", "新宿")
+				.param("categoryName", "財布").param("itemName", "黄色い財布").param("contents", "5号車で見つけました。"))
+			.andExpect(redirectedUrl("/items/" + id));
+		assertThat(latestRow().get("MODIFIEDDATE")).isNull();
+
+		int before = countItems();
+		mockMvc.perform(newItemRequest("foundDate", "1999-12-31"))
+			.andExpect(model().attribute("errorMessage", "発見した日は2000年1月1日以降の日付を入力してください。"));
+		assertThat(countItems()).isEqualTo(before);
+	}
+
+	@Test
 	void 비밀번호_확인_없이_수정_요청하면_403() throws Exception {
 		long id = createItem();
 

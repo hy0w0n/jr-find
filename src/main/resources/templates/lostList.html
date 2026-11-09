@@ -29,6 +29,7 @@
         .sort-wrapper { display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
         .sort-icon { width: 14px; height: 14px; transition: transform 0.3s; }
         .sort-asc .sort-icon { transform: rotate(180deg); }
+        .lost-table th.sort-active { color: #e63946; } /* 지금 정렬 중인 열 */
 
         .station-unknown { color: #aaa; }
         /* 찾았음 표시 */
@@ -144,8 +145,9 @@
                 <tbody>
                     <tr th:if="${items.isEmpty()}">
                         <td colspan="6" style="padding: 100px 0; color: #ccc; text-align: center;">
-                            <th:block th:if="${currentKeyword == null}">登録されている投稿はありません。</th:block>
-                            <th:block th:unless="${currentKeyword == null}">条件に一致する投稿はありません。</th:block>
+                            <!-- 검색어나 필터로 거른 결과가 0건이면 「条件に一致する」 -->
+                            <th:block th:if="${currentKeyword == null and #strings.isEmpty(currentLine) and #strings.isEmpty(currentStation) and #strings.isEmpty(currentCategory)}">登録されている投稿はありません。</th:block>
+                            <th:block th:unless="${currentKeyword == null and #strings.isEmpty(currentLine) and #strings.isEmpty(currentStation) and #strings.isEmpty(currentCategory)}">条件に一致する投稿はありません。</th:block>
                         </td>
                     </tr>
 
@@ -166,7 +168,7 @@
                             <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span>
                         </td>
                         <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
-                        <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
+                        <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd')}" th:title="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
                     </tr>
                 </tbody>
             </table>
@@ -194,7 +196,7 @@
                 <a th:href="@{/lost-items/new}" class="write-btn-link">投稿する</a>
             </div>
             <div class="sidebar-card">
-                <p>忘れ物を拾われましたか？</p>
+                <p>忘れ物を見つけましたか？</p>
                 <a th:href="@{/items}" class="write-btn-link btn-gray">見つけた 掲示板</a>
             </div>
         </aside>
@@ -219,9 +221,11 @@
         const stationFilter = document.getElementById('stationFilter');
         const categoryFilter = document.getElementById('categoryFilter');
 
+        const UNKNOWN_STATION = 'unknown'; // 역을 모르고 쓴 글 (LostItemForm.UNKNOWN_STATION)
+
         // 역을 고르면 그 역이 있는 노선만, 노선을 고르면 그 노선의 역만 보여준다
         function renderLineOptions(selectedStation) {
-            const targetLines = selectedStation
+            const targetLines = (selectedStation && selectedStation !== UNKNOWN_STATION)
                 ? [...new Set(allStationsData.filter(st => st.name === selectedStation).map(st => st.line))]
                 : allLinesData;
             fillOptions(lineFilter, targetLines, serverLine);
@@ -232,6 +236,9 @@
                 .filter(st => !selectedLine || st.line === selectedLine)
                 .map(st => st.name))];
             fillOptions(stationFilter, names, serverStation);
+            // 맨 끝에 「駅不明」: 역을 모르고 쓴 글만 보기
+            stationFilter.add(new Option('駅不明', UNKNOWN_STATION));
+            if (serverStation === UNKNOWN_STATION) stationFilter.value = UNKNOWN_STATION;
         }
 
         function fillOptions(select, values, selected) {
@@ -265,6 +272,7 @@
         }
 
         if (serverCategory) categoryFilter.value = serverCategory;
+        document.getElementById(currentSort.startsWith('date') ? 'header-date' : 'header-reg').classList.add('sort-active');
         if (currentSort === 'date_asc') document.getElementById('header-date').classList.add('sort-asc');
         if (currentSort === 'reg_asc') document.getElementById('header-reg').classList.add('sort-asc');
         renderLineOptions(serverStation);

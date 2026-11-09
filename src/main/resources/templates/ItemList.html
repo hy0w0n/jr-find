@@ -77,6 +77,8 @@
         .sort-icon { width: 14px; height: 14px; transition: transform 0.3s; }
         /* 오름차순일 때 아이콘 뒤집기 */
         .sort-asc .sort-icon { transform: rotate(180deg); }
+        /* 지금 정렬 중인 열 */
+        .lost-table th.sort-active { color: #e63946; }
 
         /* 사이드바 박스 디자인 */
         .sidebar-card { border: 1px solid #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 25px; }
@@ -203,8 +205,9 @@
 				<tbody>
 				    <tr th:if="${items == null or items.isEmpty()}">
 				        <td colspan="6" style="padding: 100px 0; color: #ccc; text-align: center;">
-				            <th:block th:if="${currentKeyword == null}">登録されている落とし物はありません。</th:block>
-				            <th:block th:unless="${currentKeyword == null}">条件に一致する投稿はありません。</th:block>
+				            <!-- 검색어나 필터로 거른 결과가 0건이면 「条件に一致する」 -->
+				            <th:block th:if="${currentKeyword == null and #strings.isEmpty(currentLine) and #strings.isEmpty(currentStation) and #strings.isEmpty(currentCategory)}">登録されている落とし物はありません。</th:block>
+				            <th:block th:unless="${currentKeyword == null and #strings.isEmpty(currentLine) and #strings.isEmpty(currentStation) and #strings.isEmpty(currentCategory)}">条件に一致する投稿はありません。</th:block>
 				        </td>
 				    </tr>
 
@@ -233,7 +236,7 @@
 				        <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
 				        
 				        <td class="td-center" 
-				            th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"
+				            th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd')}"
 				            th:title="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
 				    </tr>
 				</tbody>
@@ -263,7 +266,7 @@
 
         <aside class="side-section">
             <div class="sidebar-card">
-                <p>忘れ物を拾われましたか？</p>
+                <p>忘れ物を見つけましたか？</p>
                 <a th:href="@{/items/new}" class="write-btn-link">投稿する</a>
             </div>
             <div class="sidebar-card">
@@ -431,6 +434,9 @@
 	        // 1. 초기화: 모든 active 클래스 제거 (필요하다면 색상 변경 등을 위해 클래스 추가 가능)
 	        // 여기서는 오름차순일 때 화살표만 뒤집어줍니다.
 	        
+	        // 지금 정렬 중인 열 표시 (기본값 latest 는 작성일 순)
+	        ((serverSort || '').startsWith('date') ? headerDate : headerReg).classList.add('sort-active');
+
 	        if (serverSort === 'date_asc') {
 	            headerDate.classList.add('sort-asc');
 	        } else if (serverSort === 'reg_asc') {

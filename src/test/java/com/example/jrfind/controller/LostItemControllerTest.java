@@ -123,7 +123,7 @@ class LostItemControllerTest {
 		assertThat(row.get("TITLE")).isEqualTo("[2026-01-12][山手線][駅不明][財布] 黒い長財布");
 
 		mockMvc.perform(get("/lost-items/{id}", row.get("ID")))
-			.andExpect(content().string(containsString("駅は不明")));
+			.andExpect(content().string(containsString("class=\"station-unknown\">駅不明</span>")));
 	}
 
 	@Test
@@ -157,6 +157,76 @@ class LostItemControllerTest {
 		mockMvc.perform(newItemRequest("contents", contents).with(user(member)))
 			.andExpect(redirectedUrl("/lost-items"));
 		assertThat(latestRow().get("CONTENTS")).isEqualTo(contents.replace("\r\n", "\n"));
+	}
+
+	@Test
+	void 너무_오래된_날짜는_등록하지_않고_여러_항목이_틀리면_항상_위의_항목부터_알려준다() throws Exception {
+		LoginMember member = newMember();
+		int before = countRows();
+
+		mockMvc.perform(newItemRequest("lostDate", "1999-12-31").with(user(member)))
+			.andExpect(model().attribute("errorMessage", "なくした日は2000年1月1日以降の日付を入力してください。"));
+		// 날짜·노선·역·카테고리가 모두 비었을 때: 요청마다 다른 항목이 나오지 않고 맨 위의 なくした日 부터
+		for (int i = 0; i < 5; i++) {
+			mockMvc.perform(newItemRequest("lostDate", "", "lineName", "", "stationName", "", "categoryName", "").with(user(member)))
+				.andExpect(model().attribute("errorMessage", "なくした日を入力してください。"));
+		}
+		assertThat(countRows()).isEqualTo(before);
+	}
+
+	@Test
+	void 아무것도_바꾸지_않고_저장하면_編集済み가_붙지_않는다() throws Exception {
+		LoginMember member = newMember();
+		long id = createItem(member);
+
+		// 등록할 때와 같은 값 그대로 저장
+		MockMultipartHttpServletRequestBuilder same = multipart("/lost-items/{id}/edit", id);
+		same.with(csrf()).with(user(member))
+			.param("lostDate", "2026-01-12").param("lineName", "山手線").param("stationName", "渋谷")
+			.param("categoryName", "財布").param("itemName", "黒い長財布").param("contents", "ハチ公口の改札付近で落としたと思います。");
+		mockMvc.perform(same).andExpect(redirectedUrl("/lost-items/" + id));
+		assertThat(findRow(id).get("MODIFIEDDATE")).isNull();
+
+		mockMvc.perform(editRequest(id, "黒い長財布").with(user(member))).andExpect(redirectedUrl("/lost-items/" + id));
+		assertThat(findRow(id).get("MODIFIEDDATE")).isNotNull();
+	}
+
+	@Test
+	void 역_필터의_駅不明으로_역을_모르고_쓴_글만_볼_수_있다() throws Exception {
+		LoginMember member = newMember();
+		String marker = "駅不明" + UUID.randomUUID().toString().substring(0, 8);
+		mockMvc.perform(newItemRequest("itemName", marker, "stationName", "unknown").with(user(member)));
+		mockMvc.perform(newItemRequest("itemName", marker).with(user(member)));
+
+		mockMvc.perform(get("/lost-items").param("q", marker).param("station", "unknown"))
+			.andExpect(model().attribute("totalItems", 1));
+		mockMvc.perform(get("/lost-items").param("q", marker))
+			.andExpect(model().attribute("totalItems", 2));
+	}
+
+	@Test
+	void 필터로_거른_결과가_없으면_条件に一致する_안내를_보여준다() throws Exception {
+		mockMvc.perform(get("/lost-items").param("category", "存在しないカテゴリ"))
+			.andExpect(content().string(containsString("条件に一致する投稿はありません。")))
+			.andExpect(content().string(not(containsString("登録されている投稿はありません。"))));
+		mockMvc.perform(get("/items").param("category", "存在しないカテゴリ"))
+			.andExpect(content().string(containsString("条件に一致する投稿はありません。")));
+	}
+
+	@Test
+	void 상세_화면에는_シェア_버튼이_있고_삭제_확인에는_댓글_안내가_있다() throws Exception {
+		LoginMember member = newMember();
+		long id = createItem(member);
+
+		mockMvc.perform(get("/lost-items/{id}", id).with(user(member)))
+			.andExpect(content().string(containsString("onclick=\"shareLink()\"")))
+			.andExpect(content().string(containsString("この投稿に付いたコメントも表示されなくなります。")))
+			.andExpect(content().string(containsString("<html lang=\"ja\"")));
+		mockMvc.perform(get("/lost-items/{id}", id))
+			.andExpect(content().string(containsString("onclick=\"shareLink()\""))); // 로그인하지 않아도
+		mockMvc.perform(get("/items/{id}", 1))
+			.andExpect(content().string(containsString("onclick=\"shareLink()\"")))
+			.andExpect(content().string(not(containsString("(予定)"))));
 	}
 
 	// ---------- 수정·삭제·찾음 표시 ----------

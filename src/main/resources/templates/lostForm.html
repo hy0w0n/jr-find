@@ -139,7 +139,7 @@
                 <div class="form-label">詳細</div>
                 <div class="detail-content">
                     <textarea id="contents" th:field="*{contents}" class="detail-text" maxlength="500"
-                              placeholder="色・形・ブランド・中身・付いている物など、ご本人にしか分からない特徴は書きすぎないようにご注意ください。"></textarea>
+                              placeholder="なくした時の状況や場所、物の見た目などを書いてください。&#10;※ 中身や目印など、ご本人にしか分からない特徴は書かずに残しておくと、受け取りの際の確認に役立ちます。"></textarea>
 
                     <div class="detail-image-upload" onclick="document.getElementById('fileInput').click()">
                         <input type="file" id="fileInput" name="imageFile" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" onchange="previewImage(this)">
@@ -149,7 +149,7 @@
                             </div>
                             <p class="upload-placeholder">同じ物の写真や、<br>身につけていた時の写真があれば<br>追加してください。</p>
                         </div>
-                        <img id="imagePreview" src="" alt="Image Preview">
+                        <img id="imagePreview" src="" alt="選択した画像">
                         <button type="button" class="delete-img-btn" id="deleteImgBtn" onclick="deleteImage(event)">✕</button>
                     </div>
                 </div>
@@ -186,7 +186,7 @@
             <ul class="warning-list">
                 <li>他人の忘れ物を<b>自分の物だと偽って受け取る行為は、詐欺罪</b>にあたります。</li>
                 <li>他人の物を<b>持ち去ったり、自分の物にしたりする行為は、窃盗罪・遺失物等横領罪</b>にあたります。</li>
-                <li>忘れ物の受け取りは、駅の忘れ物取扱所または警察を通して行ってください。<br>個人間での直接の受け渡しや、金銭の要求には応じないでください。</li>
+                <li>忘れ物の受け取りは、駅のお忘れ物承り所または警察を通して行ってください。<br>個人間での直接の受け渡しや、金銭の要求には応じないでください。</li>
             </ul>
             <label class="warning-check">
                 <input type="checkbox" id="warningCheck"> 上記の内容を確認しました
@@ -241,6 +241,26 @@
         function confirmWarning() {
             warningConfirmed.value = 'true';
             document.getElementById('warningModal').style.display = 'none';
+        }
+
+        // 주의사항 창이 열려 있는 동안 키보드(Tab)로는 창 안에서만 이동한다 (뒤의 입력 칸으로 빠져나가지 않게)
+        function openWarningModal() {
+            const warningModal = document.getElementById('warningModal');
+            warningModal.style.display = 'flex';
+            document.getElementById('warningCheck').focus();
+            warningModal.addEventListener('keydown', e => {
+                if (e.key !== 'Tab') return;
+                const items = [...warningModal.querySelectorAll('input, button:not([disabled])')];
+                const first = items[0];
+                const last = items[items.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            });
         }
 
         // ---------- 달력 ----------
@@ -309,7 +329,16 @@
             }
             if (isImageDeleted) isImageDeleted.value = 'false';
             const reader = new FileReader();
-            reader.onload = e => showPreview(e.target.result);
+            reader.onload = e => {
+                // 확장자만 바꾼 파일(.txt → .jpg 등)은 그림으로 열 수 없다 → 깨진 미리 보기 대신 안내 (서버에서도 다시 확인)
+                const probe = new Image();
+                probe.onload = () => showPreview(e.target.result);
+                probe.onerror = () => {
+                    input.value = '';
+                    showModal('画像を読み込めませんでした。\n画像ファイル(JPG・PNG・GIF・WEBP)を選択してください。');
+                };
+                probe.src = e.target.result;
+            };
             reader.readAsDataURL(file);
         }
 
@@ -383,7 +412,7 @@
         if (existingImage) showPreview(existingImage);
 
         if (isNew && warningConfirmed.value !== 'true') {
-            document.getElementById('warningModal').style.display = 'flex'; // 주의사항부터 확인
+            openWarningModal(); // 주의사항부터 확인
         } else if (serverError) {
             showModal(serverError); // 서버 측 검증에서 걸린 경우
         }

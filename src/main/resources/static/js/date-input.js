@@ -5,6 +5,7 @@
 function strictDateOptions(onInvalid) {
     return {
         allowInput: true,
+        minDate: '2000-01-01', // 서버의 하한과 같다 (LostItemService.MIN_POST_DATE)
         parseDate: (text) => {
             const message = checkTypedDate(text);
             if (message) {
@@ -33,6 +34,9 @@ function checkTypedDate(text) {
     today.setHours(0, 0, 0, 0);
     if (date > today) {
         return '未来の日付は入力できません。';
+    }
+    if (date < new Date(2000, 0, 1)) {
+        return '2000年1月1日以降の日付を入力してください。';
     }
     return null;
 }
