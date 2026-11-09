@@ -115,6 +115,9 @@ public class CommentController {
 		}
 		// 등록한 댓글 위치로 (댓글 영역 맨 위로 가면 댓글이 많을 때 새 댓글이 화면 밖에 있다)
 		Long commentId = commentService.addComment(board, postId, form, loginMember);
+		if (commentId == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND); // 확인한 뒤에 게시글이 삭제됨
+		}
 		return "redirect:" + board.postUrl(postId) + "#comment-" + commentId;
 	}
 

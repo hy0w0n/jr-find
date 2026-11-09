@@ -27,18 +27,21 @@ public class JdbcCommentRepository implements CommentRepository {
 	// 새 댓글 번호를 돌려준다 (등록 후 그 댓글 위치로 이동하기 위해)
 	@Override
 	public Long save(Board board, Long postId, Comment comment) {
-		String sql = "INSERT INTO Post_Comment (" + board.getCommentColumn() + ", Contents, Author, MemberId, RegistrationDate) VALUES (?, ?, ?, ?, ?)";
+		// 게시글이 삭제되지 않았을 때만 넣는다 (확인과 저장을 한 문장으로: 글을 지우는 순간에 쓴 댓글이 지운 글에 남지 않도록)
+		String sql = "INSERT INTO Post_Comment (" + board.getCommentColumn() + ", Contents, Author, MemberId, RegistrationDate)"
+				+ " SELECT ID, CAST(? AS VARCHAR), CAST(? AS VARCHAR), CAST(? AS BIGINT), CAST(? AS TIMESTAMP)"
+				+ " FROM " + board.getPostTable() + " WHERE ID = ? AND DEL_FLG = FALSE";
 		KeyHolder keyHolder = new GeneratedKeyHolder();
-		jdbcTemplate.update(connection -> {
+		int inserted = jdbcTemplate.update(connection -> {
 			PreparedStatement ps = connection.prepareStatement(sql, new String[] { "ID" });
-			ps.setLong(1, postId);
-			ps.setString(2, comment.getContents());
-			ps.setString(3, comment.getAuthor());
-			ps.setLong(4, comment.getMemberId());
-			ps.setObject(5, comment.getRegistrationDate());
+			ps.setString(1, comment.getContents());
+			ps.setString(2, comment.getAuthor());
+			ps.setLong(3, comment.getMemberId());
+			ps.setObject(4, comment.getRegistrationDate());
+			ps.setLong(5, postId);
 			return ps;
 		}, keyHolder);
-		return keyHolder.getKey().longValue();
+		return (inserted == 1) ? keyHolder.getKey().longValue() : null;
 	}
 
 	@Override

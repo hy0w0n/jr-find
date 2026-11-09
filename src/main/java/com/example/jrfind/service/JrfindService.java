@@ -109,10 +109,12 @@ public class JrfindService {
 
         // 이미지 처리
         String oldImage = oldItem.getImgPath();
+        String newImage = null;
         if (isImageDeleted) {
             oldItem.setImgPath(null);
         } else if (file != null && !file.isEmpty()) {
-            oldItem.setImgPath(imageStorage.store(file)); // 교체
+            newImage = imageStorage.store(file); // 교체
+            oldItem.setImgPath(newImage);
         }
 
         // 아무것도 바꾸지 않고 저장했으면 그대로 둔다 (「編集済み」 표시를 붙이지 않음)
@@ -120,7 +122,12 @@ public class JrfindService {
             return;
         }
         oldItem.setModifiedDate(LocalDateTime.now());
-        repository.update(oldItem);
+        // 그사이 다른 요청이 글을 지웠거나 사진을 바꿨으면 반영하지 않고, 방금 저장한 사진 파일도 지운다
+        // (지운 글에 새 사진이 공개된 채 남거나, 어느 글에서도 쓰지 않는 파일이 쌓이지 않도록)
+        if (!repository.update(oldItem, oldImage)) {
+            imageStorage.delete(newImage);
+            throw new InvalidPostException(ConcurrentChange.message(repository.findById(id) == null));
+        }
         // 바꾸거나 지운 사진의 이전 파일은 DB 에 반영한 뒤에 지운다
         if (!Objects.equals(oldImage, oldItem.getImgPath())) {
             imageStorage.delete(oldImage);
@@ -161,7 +168,7 @@ public class JrfindService {
 
     // 닉네임 생성 헬퍼 메서드
     private String generateAnonymousAuthor() {
-        // 1. DB에 있는 모든 '匿名の天使' 닉네임을 가져옵니다.
+        // 1. DB에 있는 '匿名の天使' 닉네임을 가져옵니다. (삭제된 글의 번호는 다시 쓴다)
         List<String> existingAuthors = repository.findAllAuthors();
         Set<Integer> usedNumbers = new HashSet<>();
 
@@ -175,21 +182,16 @@ public class JrfindService {
             }
         }
 
-        // 3. 경우의 수 1000개가 다 찼는지 확인
-        if (usedNumbers.size() >= 1000) {
-            // 다 찼다면 가장 오래된 작성자명을 재사용 (DB 조회)
-            String oldest = repository.findOldestAuthor();
-            return (oldest != null) ? oldest : "匿名の天使 000"; // 만약의 경우 대비
-        }
-
-        // 4. 빈 번호가 있다면 랜덤으로 뽑아서 사용 안 된 번호 찾기
+        // 3. 빈 번호가 있다면 랜덤으로 뽑아서 사용 안 된 번호 찾기
+        // 1000개가 다 찼으면 아무 번호나 쓴다 (같은 이름의 글이 생긴다)
+        // (예전에는 가장 오래된 글의 이름을 다시 썼는데, 그러면 그 뒤로 쓰는 비회원 글이 전부 같은 이름이 됐다)
         Random random = new Random();
         int newNum;
         do {
             newNum = random.nextInt(1000); // 0 ~ 999
-        } while (usedNumbers.contains(newNum)); // 이미 있는 번호면 다시 뽑기
+        } while (usedNumbers.size() < 1000 && usedNumbers.contains(newNum)); // 이미 있는 번호면 다시 뽑기
 
-        // 5. 최종 포맷팅 (예: 22 -> "022")
+        // 4. 최종 포맷팅 (예: 22 -> "022")
         return String.format("匿名の天使 %03d", newNum);
     }
 
@@ -215,11 +217,18 @@ public class JrfindService {
     }
 
     // 삭제: 게시글은 DEL_FLG 로 숨기고 사진 파일은 지운다 (삭제한 글의 사진이 /images/파일명 으로 계속 보이지 않도록)
+    // 그사이 다른 요청이 사진을 바꿨으면 바뀐 사진을 다시 읽어서 지운다
     public void deleteItem(Long id) {
-        FoundItem item = repository.findById(id);
-        repository.delete(id);
-        if (item != null) {
-            imageStorage.delete(item.getImgPath());
+        for (int attempt = 0; attempt < ConcurrentChange.MAX_ATTEMPTS; attempt++) {
+            FoundItem item = repository.findById(id);
+            if (item == null) {
+                return; // 이미 삭제됨
+            }
+            if (repository.delete(id, item.getImgPath())) {
+                imageStorage.delete(item.getImgPath());
+                return;
+            }
         }
+        throw new IllegalStateException("게시글 삭제 중 사진이 계속 바뀌었습니다: " + id);
     }
 }

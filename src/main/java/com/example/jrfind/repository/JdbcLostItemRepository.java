@@ -44,9 +44,10 @@ public class JdbcLostItemRepository implements LostItemRepository {
 
 	// 작성자, 등록일, 찾음 여부, 삭제플래그는 수정하지 않는다
 	@Override
-	public void update(LostItem item) {
-		String sql = "UPDATE Lost_Item SET Title=?, LostDate=?, LineName=?, StationName=?, CategoryName=?, ItemName=?, Contents=?, ImgPath=?, ModifiedDate=? WHERE ID=?";
-		jdbcTemplate.update(sql,
+	public boolean update(LostItem item, String expectedImgPath) {
+		String sql = "UPDATE Lost_Item SET Title=?, LostDate=?, LineName=?, StationName=?, CategoryName=?, ItemName=?, Contents=?, ImgPath=?, ModifiedDate=?"
+			+ " WHERE ID=? AND DEL_FLG = FALSE AND ImgPath IS NOT DISTINCT FROM ?";
+		return jdbcTemplate.update(sql,
 			item.getTitle(),
 			item.getLostDate(),
 			item.getLineName(),
@@ -56,8 +57,9 @@ public class JdbcLostItemRepository implements LostItemRepository {
 			item.getContents(),
 			item.getImgPath(),
 			item.getModifiedDate(),
-			item.getId()
-		);
+			item.getId(),
+			expectedImgPath
+		) == 1;
 	}
 
 	@Override
@@ -154,9 +156,10 @@ public class JdbcLostItemRepository implements LostItemRepository {
 
 	// 논리 삭제
 	@Override
-	public void delete(Long id) {
+	public boolean delete(Long id, String expectedImgPath) {
 		// 사진 파일은 서비스에서 지우므로 파일명도 비운다
-		jdbcTemplate.update("UPDATE Lost_Item SET DEL_FLG = TRUE, ImgPath = NULL WHERE ID = ?", id);
+		return jdbcTemplate.update("UPDATE Lost_Item SET DEL_FLG = TRUE, ImgPath = NULL WHERE ID = ? AND DEL_FLG = FALSE AND ImgPath IS NOT DISTINCT FROM ?",
+			id, expectedImgPath) == 1;
 	}
 
 	// 목록용: 게시글 + 댓글 수 (SQL 에 CommentCount 컬럼이 있어야 함)

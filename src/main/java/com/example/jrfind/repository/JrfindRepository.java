@@ -13,8 +13,8 @@ public interface JrfindRepository {
 	List<String> findAllLines();
 	List<Station> findAllStations();
 	List<StationLocation> findAllStationLocations();
+	// 삭제되지 않은 비회원 글의 작성자명 (匿名の天使 번호를 고를 때)
 	List<String> findAllAuthors();
-	String findOldestAuthor();
 
 	// 등록 화면에서 보낸 노선·역·카테고리가 실제로 있는 값인지 확인
 	boolean existsStation(String line, String station);
@@ -23,7 +23,9 @@ public interface JrfindRepository {
 
 	void save(FoundItem item);
 
-	void update(FoundItem item);
+	// 수정·삭제는 삭제되지 않은 글이고 사진이 읽었을 때(expectedImgPath)와 같을 때만 반영한다 (반영했으면 true)
+	// 같은 글을 동시에 수정·삭제하면 한쪽만 반영되므로, 지운 글이나 바뀐 글에 사진 파일이 남지 않는다
+	boolean update(FoundItem item, String expectedImgPath);
 
 	// 조건에 맞는 게시글 조회 (필터, 검색어, 정렬, 페이징)
 	List<FoundItem> findAll(String line, String station, String category, String keyword, String sort, int page, int size);
@@ -45,5 +47,5 @@ public interface JrfindRepository {
 	// 삭제되지 않은 게시글의 비밀번호 해시 (없으면 null)
 	String findPasswordHash(Long id);
 
-	void delete(Long id);
+	boolean delete(Long id, String expectedImgPath);
 }

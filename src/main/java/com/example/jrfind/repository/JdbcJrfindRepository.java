@@ -92,10 +92,11 @@ public class JdbcJrfindRepository implements JrfindRepository {
     // 게시글 수정
     // 비밀번호, 작성자, 등록일, 삭제플래그는 수정하지 않습니다.
     @Override
-    public void update(FoundItem item) {
-        String sql = "UPDATE Found_Item SET Title=?, FoundDate=?, LineName=?, StationName=?, CategoryName=?, ItemName=?, Contents=?, ImgPath=?, ModifiedDate=? Where ID=?";
+    public boolean update(FoundItem item, String expectedImgPath) {
+        String sql = "UPDATE Found_Item SET Title=?, FoundDate=?, LineName=?, StationName=?, CategoryName=?, ItemName=?, Contents=?, ImgPath=?, ModifiedDate=?"
+                + " WHERE ID=? AND DEL_FLG = FALSE AND ImgPath IS NOT DISTINCT FROM ?";
 
-        jdbcTemplate.update(sql,
+        return jdbcTemplate.update(sql,
             item.getTitle(),
             item.getFoundDate(),
             item.getLineName(),
@@ -105,26 +106,16 @@ public class JdbcJrfindRepository implements JrfindRepository {
             item.getContents(),
             item.getImgPath(), // null이면 이미지 삭제, 값이 있으면 변경/유지
             item.getModifiedDate(),
-            item.getId()
-        );
+            item.getId(),
+            expectedImgPath
+        ) == 1;
     }
 
     @Override
     public List<String> findAllAuthors() {
-        // '匿名の天使'로 시작하는 모든 작성자 명을 가져옵니다.
-        String sql = "SELECT Author FROM Found_Item WHERE Author LIKE '匿名の天使%'";
+        // '匿名の天使'로 시작하는 작성자 명 (삭제된 글의 번호는 다시 쓸 수 있다)
+        String sql = "SELECT Author FROM Found_Item WHERE Author LIKE '匿名の天使%' AND DEL_FLG = FALSE";
         return jdbcTemplate.queryForList(sql, String.class);
-    }
-
-    @Override
-    public String findOldestAuthor() {
-        // 등록일(RegistrationDate)이 가장 빠른 순서대로 정렬하여 1개만 가져옵니다.
-        String sql = "SELECT Author FROM Found_Item WHERE Author LIKE '匿名の天使%' ORDER BY RegistrationDate ASC LIMIT 1";
-        try {
-            return jdbcTemplate.queryForObject(sql, String.class);
-        } catch (EmptyResultDataAccessException e) {
-            return null; // 데이터가 없으면 null 반환
-        }
     }
 
     @Override
@@ -230,10 +221,10 @@ public class JdbcJrfindRepository implements JrfindRepository {
 
     // 논리 삭제 메서드
     @Override
-    public void delete(Long id) {
+    public boolean delete(Long id, String expectedImgPath) {
         // 사진 파일은 서비스에서 지우므로 파일명도 비운다
-        String sql = "UPDATE Found_Item SET DEL_FLG = TRUE, ImgPath = NULL WHERE ID = ?";
-        jdbcTemplate.update(sql, id);
+        String sql = "UPDATE Found_Item SET DEL_FLG = TRUE, ImgPath = NULL WHERE ID = ? AND DEL_FLG = FALSE AND ImgPath IS NOT DISTINCT FROM ?";
+        return jdbcTemplate.update(sql, id, expectedImgPath) == 1;
     }
 
     // [중요] DB 결과표(ResultSet)를 자바 객체(FoundItem)로 변환하는 매핑 메서드

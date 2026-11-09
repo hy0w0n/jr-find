@@ -1,6 +1,7 @@
 package com.example.jrfind.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
@@ -110,6 +112,11 @@ class MemberControllerTest {
 		mockMvc.perform(signupRequest("loginId", loginId.toUpperCase()))
 			.andExpect(status().isOk())
 			.andExpect(model().attributeHasFieldErrorCode("signupForm", "loginId", "duplicate"));
+
+		// 화면의 중복 확인을 거의 동시에 통과한 경우(확인 → 저장 사이에 다른 가입)도 DB 에서 막는다
+		assertThatThrownBy(() -> jdbcTemplate.update("INSERT INTO MEMBER (LOGINID, PASSWORD, REALNAME, NICKNAME, BIRTHDATE, PHONE, AGREEDDATE)"
+				+ " VALUES (?, 'x', '同時', '同時', '2000-01-01', '090-0000-0000', CURRENT_TIMESTAMP)", loginId.toUpperCase()))
+			.isInstanceOf(DuplicateKeyException.class);
 	}
 
 	@Test

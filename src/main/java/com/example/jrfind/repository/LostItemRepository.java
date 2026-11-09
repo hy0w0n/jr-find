@@ -9,7 +9,9 @@ import com.example.jrfind.domain.LostItem;
 public interface LostItemRepository {
 	void save(LostItem item);
 
-	void update(LostItem item);
+	// 수정·삭제는 삭제되지 않은 글이고 사진이 읽었을 때(expectedImgPath)와 같을 때만 반영한다 (반영했으면 true)
+	// 같은 글을 동시에 수정·삭제하면 한쪽만 반영되므로, 지운 글이나 바뀐 글에 사진 파일이 남지 않는다
+	boolean update(LostItem item, String expectedImgPath);
 
 	// 조건에 맞는 게시글 조회 (필터, 검색어, 정렬, 페이징)
 	List<LostItem> findAll(String line, String station, String category, String keyword, String sort, int page, int size);
@@ -30,5 +32,5 @@ public interface LostItemRepository {
 
 	void updateResolved(Long id, boolean resolved);
 
-	void delete(Long id);
+	boolean delete(Long id, String expectedImgPath);
 }

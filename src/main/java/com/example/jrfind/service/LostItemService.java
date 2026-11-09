@@ -79,10 +79,12 @@ public class LostItemService {
 		applyForm(item, form);
 
 		String oldImage = item.getImgPath();
+		String newImage = null;
 		if (isImageDeleted) {
 			item.setImgPath(null);
 		} else if (file != null && !file.isEmpty()) {
-			item.setImgPath(imageStorage.store(file)); // 교체
+			newImage = imageStorage.store(file); // 교체
+			item.setImgPath(newImage);
 		}
 
 		// 아무것도 바꾸지 않고 저장했으면 그대로 둔다 (「編集済み」 표시를 붙이지 않음)
@@ -90,7 +92,11 @@ public class LostItemService {
 			return;
 		}
 		item.setModifiedDate(LocalDateTime.now());
-		repository.update(item);
+		// 그사이 다른 요청이 글을 지웠거나 사진을 바꿨으면 반영하지 않고, 방금 저장한 사진 파일도 지운다
+		if (!repository.update(item, oldImage)) {
+			imageStorage.delete(newImage);
+			throw new InvalidPostException(ConcurrentChange.message(repository.findById(item.getId()) == null));
+		}
 		// 바꾸거나 지운 사진의 이전 파일은 DB 에 반영한 뒤에 지운다
 		if (!Objects.equals(oldImage, item.getImgPath())) {
 			imageStorage.delete(oldImage);
@@ -103,12 +109,19 @@ public class LostItemService {
 	}
 
 	// 게시글은 DEL_FLG 로 숨기고 사진 파일은 지운다 (삭제한 글의 사진이 /images/파일명 으로 계속 보이지 않도록)
+	// 그사이 다른 요청이 사진을 바꿨으면 바뀐 사진을 다시 읽어서 지운다
 	public void deleteItem(Long id) {
-		LostItem item = repository.findById(id);
-		repository.delete(id);
-		if (item != null) {
-			imageStorage.delete(item.getImgPath());
+		for (int attempt = 0; attempt < ConcurrentChange.MAX_ATTEMPTS; attempt++) {
+			LostItem item = repository.findById(id);
+			if (item == null) {
+				return; // 이미 삭제됨
+			}
+			if (repository.delete(id, item.getImgPath())) {
+				imageStorage.delete(item.getImgPath());
+				return;
+			}
 		}
+		throw new IllegalStateException("게시글 삭제 중 사진이 계속 바뀌었습니다: " + id);
 	}
 
 	// 입력값을 게시글에 반영. 제목은 서버에서 만든다.

@@ -6,7 +6,7 @@ import com.example.jrfind.domain.Board;
 import com.example.jrfind.domain.Comment;
 
 public interface CommentRepository {
-	Long save(Board board, Long postId, Comment comment); // 새 댓글 번호
+	Long save(Board board, Long postId, Comment comment); // 새 댓글 번호. 게시글이 없거나 삭제됐으면 저장하지 않고 null
 
 	// 오래된 댓글부터
 	List<Comment> findByPost(Board board, Long postId);
