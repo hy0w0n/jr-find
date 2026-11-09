@@ -1,0 +1,90 @@
+/*
+  게시판 목록 공통 (見つけた ItemList, 探しています lostList)
+  휴대폰 화면(폭 768px 이하)은 mobile.css 가 이 뒤에서 덮어쓴다.
+*/
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; }
+.container { width: 90%; max-width: 1200px; margin: 40px auto; display: flex; gap: 40px; align-items: flex-start; }
+.board-section { flex: 3; min-width: 0; }
+/* 사이드바: 왼쪽 타이틀 줄과 높이를 맞춘다 */
+.side-section { flex: 1; margin-top: 60px; }
+
+/* 게시판 상단 */
+.board-title-area { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+.board-title { font-size: 24px; }
+.board-desc { font-size: 13px; color: #666; }
+
+/* 목록 표 */
+.lost-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.lost-table th { border-bottom: 1px solid #333; font-size: 14px; color: #555; text-align: center; background-color: #fff; padding: 5px; vertical-align: middle; }
+.th-filter { vertical-align: top !important; } /* 노선·역·忘れ物 선택이 있는 머리글은 위쪽 정렬 */
+.lost-table td { padding: 15px 10px; border-bottom: 1px solid #eee; font-size: 14px; text-align: left; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.td-center { text-align: center !important; }
+.col-date, .col-line, .col-station { width: 13%; }
+.col-author, .col-reg { width: 15%; }
+
+/* 한 줄 전체를 누르면 상세로: 물건 이름 링크를 줄 전체로 넓힌다 (가운데 클릭·Ctrl+클릭으로 새 탭, 키보드 Tab·Enter 도 된다) */
+.lost-table tbody tr { position: relative; }
+.lost-table tbody tr:hover { background-color: #fafafa; }
+.lost-table tbody tr:focus-within { outline: 2px solid #333; outline-offset: -2px; }
+.row-link { color: #333; font-weight: bold; text-decoration: none; }
+.row-link::after { content: ''; position: absolute; inset: 0; }
+.row-link:focus { outline: none; } /* 포커스 표시는 줄 전체에 (위 :focus-within) */
+.item-category { color: #666; font-size: 12px; }
+.item-sep { margin: 0 5px; color: #ccc; }
+.comment-count { margin-left: 4px; color: #c62828; font-size: 12px; font-weight: bold; }
+.empty-row td { padding: 100px 0; color: #767676; text-align: center; white-space: normal; }
+
+/* 探しています: 찾았음 표시, 역을 모르는 글 */
+.row-resolved td { color: #767676; }
+.badge-resolved { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 10px; background: #e8f5e9; color: #1b5e20; font-size: 11px; font-weight: bold; vertical-align: middle; }
+.station-unknown { color: #767676; }
+
+/* 머리글 안의 필터 (노선·역·忘れ物) */
+.filter-box { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+.filter-select { width: 95%; padding: 4px; border: 1px solid #949494; border-radius: 4px; font-size: 12px; font-family: inherit; color: #333; background: #fff; }
+.filter-select:focus-visible, .filter-apply:focus-visible { outline: 2px solid #333; outline-offset: 1px; }
+/* 「絞り込む」: JS 가 켜져 있으면 마우스로 고르는 즉시 적용되므로 키보드로 왔을 때만 보인다 (JS 가 꺼져 있으면 항상 보인다) */
+.filter-apply { margin-top: 2px; padding: 3px 10px; border: 1px solid #333; border-radius: 4px; background: #fff; color: #333; font-size: 12px; font-family: inherit; cursor: pointer; }
+.js .filter-apply:not(:focus) { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 정렬 머리글 (링크) */
+.sort-link { display: flex; align-items: center; justify-content: center; gap: 4px; color: inherit; text-decoration: none; }
+.sort-link:hover { text-decoration: underline; }
+.sort-icon { width: 14px; height: 14px; opacity: 0.35; transition: transform 0.3s; }
+.sort-active .sort-icon { opacity: 1; } /* 지금 정렬 중인 열은 화살표를 진하게 (색만으로 구분하지 않도록) */
+.sort-asc .sort-icon { transform: rotate(180deg); }
+.lost-table th.sort-active { color: #c62828; font-weight: bold; }
+
+/* 사이드바 */
+.sidebar-card { border: 1px solid #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 25px; }
+.sidebar-card p { font-size: 15px; color: #444; margin-bottom: 20px; }
+.sidebar-note { font-size: 12px !important; color: #666 !important; margin: -10px 0 15px !important; }
+.write-btn-link { display: block; width: 100%; padding: 12px; background-color: #f0f0f0; color: #c62828; text-decoration: none; font-weight: bold; border-radius: 6px; transition: background 0.2s; }
+.write-btn-link:hover { background-color: #e5e5e5; }
+.btn-gray { background-color: #f0f0f0; color: #333; }
+
+/* 페이지 번호 */
+.pager { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px 20px; margin-top: 40px; color: #555; font-size: 14px; }
+.pager a { color: #555; text-decoration: none; padding: 2px 4px; }
+.pager a:hover { color: #333; text-decoration: underline; }
+.pager .active { color: #333; font-weight: bold; text-decoration: underline; padding: 2px 4px; }
+.pager-disabled { color: #bbb; }
+
+/* 검색어 조건 */
+.keyword-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding: 10px 15px; background: #f7f7f7; border-radius: 6px; font-size: 14px; color: #555; }
+.keyword-bar b { color: #c62828; }
+.keyword-clear { margin-left: auto; font-size: 13px; color: #555; text-decoration: underline; }
+.keyword-clear:hover { color: #333; }
+.keyword-warn { color: #b03a2e; font-size: 12px; } /* 6번째 단어부터는 검색에 쓰지 않았다는 안내 */
+
+/* 게시판 안 검색창 */
+.board-tools { display: flex; justify-content: flex-end; margin-bottom: 15px; }
+.board-search { position: relative; width: 320px; max-width: 100%; }
+.board-search input[type="text"] { width: 100%; padding: 8px 40px 8px 16px; border: 1px solid #949494; border-radius: 20px; font-size: 13px; font-family: inherit; }
+.board-search input[type="text"]:focus-visible { outline: 2px solid #333; outline-offset: 1px; border-color: #333; }
+.board-search-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; padding: 0; border: none; background: none; color: #555; cursor: pointer; }
+.board-search-btn svg { width: 100%; height: 100%; }
+
+/* 화면에는 보이지 않고 스크린리더만 읽는 글자 */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

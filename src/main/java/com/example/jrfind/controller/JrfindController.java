@@ -90,9 +90,12 @@ public class JrfindController {
         model.addAttribute("currentKeyword", keyword);
         model.addAttribute("keywordTruncated", KeywordCondition.isTruncated(keyword)); // 단어가 너무 많아 뒤는 쓰지 않음
         model.addAttribute("currentSort", sort);
+        // 페이지 번호·정렬 머리글·「検索をやめる」 링크 (조건을 유지한 주소)
+        model.addAttribute("query", new BoardQuery("/items", line, station, category, keyword, sort));
+        model.addAttribute("pageNumbers", BoardQuery.pageNumbers(currentPage, totalPages));
 
         model.addAttribute("lines", service.getLines());
-        model.addAttribute("stations", service.getStations());
+        model.addAttribute("stationLines", BoardQuery.stationLines(service.getStations()));
         model.addAttribute("categories", service.getCategories());
 
         return "ItemList";
@@ -160,6 +163,7 @@ public class JrfindController {
         model.addAttribute("isOwner", isOwner(item, loginMember));
         model.addAttribute("comments", commentService.getComments(Board.FOUND, id));
         CommentController.restoreCommentDraft(Board.FOUND, id, loginMember, request, model);
+        model.addAttribute("listUrl", BoardQuery.listUrlFrom(request, "/items")); // 「一覧」: 보던 목록으로
         // 비회원 글 수정을 보냈는데 비밀번호 확인이 끝나 있었으면, 비밀번호 창을 바로 열어서 다시 묻는다 (입력한 내용은 보관돼 있다)
         model.addAttribute("reverify", reverify != null && item.getMemberId() == null && FormDraft.exists(request, editUrl(id)));
         return "itemDetail"; // templates/itemDetail.html 호출

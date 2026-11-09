@@ -31,13 +31,17 @@
         .result-table th { padding: 8px 5px; border-bottom: 1px solid #ddd; font-size: 13px; font-weight: normal; color: #888; }
         .result-table td { padding: 14px 10px; border-bottom: 1px solid #eee; font-size: 14px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .td-center { text-align: center; }
-        .hover-row { cursor: pointer; }
-        .hover-row:hover { background-color: #fafafa; }
+        /* 한 줄 전체를 누르면 상세로: 물건 이름 링크를 줄 전체로 넓힌다 (가운데 클릭·Ctrl+클릭으로 새 탭, 키보드 Tab·Enter 도 된다) */
+        .result-table tbody tr { position: relative; }
+        .result-table tbody tr:hover { background-color: #fafafa; }
+        .result-table tbody tr:focus-within { outline: 2px solid #333; outline-offset: -2px; }
+        .row-link::after { content: ''; position: absolute; inset: 0; }
+        .row-link:focus { outline: none; }
         .row-resolved td { color: #aaa; }
         .station-unknown { color: #aaa; }
         .category { color: #888; font-size: 12px; }
         .divider { margin: 0 5px; color: #ddd; }
-        .item-name { font-weight: bold; color: #333; }
+        .item-name { font-weight: bold; color: #333; text-decoration: none; }
         .comment-count { margin-left: 4px; color: #e63946; font-size: 12px; font-weight: bold; }
         .badge-resolved { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 10px; background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: bold; vertical-align: middle; }
         .result-empty { padding: 40px 0; text-align: center; font-size: 14px; color: #bbb; border-bottom: 1px solid #eee; }
@@ -93,15 +97,14 @@
                             <tr><th>日付</th><th>路線</th><th>駅</th><th>忘れ物</th><th>作成者</th><th>作成日</th></tr>
                         </thead>
                         <tbody>
-                            <tr th:each="item : ${foundItems}" class="hover-row"
-                                th:onclick="|location.href='@{/items/{id}(id=${item.id})}'|">
+                            <tr th:each="item : ${foundItems}">
                                 <td class="td-center" th:text="${item.foundDate}"></td>
                                 <td th:text="${item.lineName}" th:title="${item.lineName}"></td>
                                 <td th:text="${item.stationName}" th:title="${item.stationName}"></td>
                                 <td>
                                     <span class="category" th:text="${item.categoryName}"></span><span class="divider">|</span>
-                                    <span class="item-name" th:text="${item.itemName}" th:title="${item.itemName}"></span>
-                                    <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span>
+                                    <a class="item-name row-link" th:href="@{/items/{id}(id=${item.id})}" th:text="${item.itemName}" th:title="${item.itemName}"></a>
+                                    <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" th:aria-label="|コメント${item.commentCount}件|" title="コメント数"></span>
                                 </td>
                                 <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
                                 <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd')}" th:title="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
@@ -125,9 +128,7 @@
                             <tr><th>なくした日</th><th>路線</th><th>駅</th><th>忘れ物</th><th>作成者</th><th>作成日</th></tr>
                         </thead>
                         <tbody>
-                            <tr th:each="item : ${lostItems}" class="hover-row"
-                                th:classappend="${item.resolved} ? 'row-resolved'"
-                                th:onclick="|location.href='@{/lost-items/{id}(id=${item.id})}'|">
+                            <tr th:each="item : ${lostItems}" th:classappend="${item.resolved} ? 'row-resolved'">
                                 <td class="td-center" th:text="${item.lostDate}"></td>
                                 <td th:text="${item.lineName}" th:title="${item.lineName}"></td>
                                 <td th:if="${item.stationName != null}" th:text="${item.stationName}" th:title="${item.stationName}"></td>
@@ -135,8 +136,8 @@
                                 <td>
                                     <span class="badge-resolved" th:if="${item.resolved}">見つかりました</span>
                                     <span class="category" th:text="${item.categoryName}"></span><span class="divider">|</span>
-                                    <span class="item-name" th:text="${item.itemName}" th:title="${item.itemName}"></span>
-                                    <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span>
+                                    <a class="item-name row-link" th:href="@{/lost-items/{id}(id=${item.id})}" th:text="${item.itemName}" th:title="${item.itemName}"></a>
+                                    <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" th:aria-label="|コメント${item.commentCount}件|" title="コメント数"></span>
                                 </td>
                                 <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
                                 <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd')}" th:title="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>

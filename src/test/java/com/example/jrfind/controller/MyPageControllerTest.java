@@ -117,7 +117,7 @@ class MyPageControllerTest {
 		assertThat((List<LostItem>) model.get("lostItems")).extracting(LostItem::getId).containsExactly(myLost);
 
 		model = mockMvc.perform(get("/mypage").param("tab", "comments").with(user(me)))
-			.andExpect(content().string(containsString("data-href=\"/items/" + othersFound + "#comment-")))
+			.andExpect(content().string(containsString("href=\"/items/" + othersFound + "#comment-")))
 			.andReturn().getModelAndView().getModel();
 		List<Comment> comments = (List<Comment>) model.get("comments");
 		assertThat(comments).extracting(Comment::getContents)

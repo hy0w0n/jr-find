@@ -303,6 +303,28 @@ class JrfindControllerTest {
 	}
 
 	@Test
+	void 목록의_글_정렬_페이지_필터는_스크립트_없이_동작하는_링크와_폼이다() throws Exception {
+		String itemName = "リンクの財布" + System.nanoTime() % 10000;
+		mockMvc.perform(newItemRequest("itemName", itemName)).andExpect(redirectedUrl("/items"));
+		long id = (Long) latestRow().get("ID");
+
+		// 키보드(Tab·Enter), 가운데 클릭으로 새 탭, JS 를 끈 브라우저에서도 열 수 있도록
+		String html = mockMvc.perform(get("/items").param("line", "山手線").param("sort", "date_asc").param("q", itemName))
+			.andExpect(content().string(containsString("<a class=\"row-link\" href=\"/items/" + id + "\"")))
+			.andExpect(content().string(containsString("aria-sort=\"ascending\"")))
+			.andExpect(content().string(containsString("<label for=\"lineFilter\">路線</label>")))
+			.andExpect(content().string(containsString("<select class=\"filter-select\" id=\"lineFilter\" name=\"line\" form=\"filterForm\">")))
+			.andExpect(content().string(containsString("<option value=\"山手線\" selected=\"selected\">山手線</option>")))
+			.andExpect(content().string(containsString("<nav class=\"pager\" aria-label=\"ページ\">")))
+			.andReturn().getResponse().getContentAsString();
+		assertThat(html).doesNotContain("onclick").doesNotContain("<script>");
+
+		// 상세 화면의 「一覧」은 보던 목록(필터·페이지 그대로)으로
+		mockMvc.perform(get("/items/{id}", id).header("Referer", "http://localhost/items?line=%E5%B1%B1%E6%89%8B%E7%B7%9A&page=2"))
+			.andExpect(content().string(containsString("href=\"/items?line=%E5%B1%B1%E6%89%8B%E7%B7%9A&amp;page=2\" class=\"btn-list-wrapper\"")));
+	}
+
+	@Test
 	void 잘못된_페이지_번호도_목록을_보여준다() throws Exception {
 		createItem();
 

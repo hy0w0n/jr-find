@@ -43,21 +43,27 @@
         .my-table th { padding: 8px 5px; border-bottom: 1px solid #ddd; font-size: 13px; font-weight: normal; color: #888; }
         .my-table td { padding: 14px 10px; border-bottom: 1px solid #eee; font-size: 14px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .td-center { text-align: center; }
-        .hover-row { cursor: pointer; }
-        .hover-row:hover { background-color: #fafafa; }
+        /* 한 줄 전체를 누르면 상세로: 물건 이름 링크를 줄 전체로 넓힌다 (가운데 클릭·Ctrl+클릭으로 새 탭, 키보드 Tab·Enter 도 된다) */
+        .my-table tbody tr { position: relative; }
+        .my-table tbody tr:hover { background-color: #fafafa; }
+        .my-table tbody tr:focus-within { outline: 2px solid #333; outline-offset: -2px; }
+        .row-link::after { content: ''; position: absolute; inset: 0; }
+        .row-link:focus { outline: none; }
+        .comment-link { color: inherit; text-decoration: none; }
         .row-resolved td { color: #aaa; }
         .station-unknown { color: #aaa; }
         .category { color: #888; font-size: 12px; }
         .divider { margin: 0 5px; color: #ddd; }
-        .item-name { font-weight: bold; color: #333; }
+        .item-name { font-weight: bold; color: #333; text-decoration: none; }
         .comment-count { margin-left: 4px; color: #e63946; font-size: 12px; font-weight: bold; }
         .badge-resolved { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 10px; background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: bold; vertical-align: middle; }
         .board-label { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 10px; background: #f0f0f0; color: #666; font-size: 11px; vertical-align: middle; }
         .empty { padding: 60px 0; text-align: center; font-size: 14px; color: #bbb; border-bottom: 1px solid #eee; }
 
-        .pager { display: flex; justify-content: center; gap: 20px; margin-top: 30px; font-size: 14px; }
-        .pager a { color: #888; text-decoration: none; }
-        .pager a.active { color: #333; font-weight: bold; text-decoration: underline; }
+        .pager { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 20px; margin-top: 30px; font-size: 14px; color: #555; }
+        .pager a { color: #555; text-decoration: none; }
+        .pager a:hover { color: #333; text-decoration: underline; }
+        .pager .active { color: #333; font-weight: bold; text-decoration: underline; }
         .pager .disabled { color: #ccc; }
 
         /* 사이드바 */
@@ -103,10 +109,10 @@
             </section>
 
             <!-- 내가 쓴 글·댓글 -->
-            <nav class="tabs">
-                <a th:href="@{/mypage(tab='found')}" class="tab" th:classappend="${tab == 'found'} ? 'active'">見つけた<span class="tab-count" th:text="${foundCount}">0</span></a>
-                <a th:href="@{/mypage(tab='lost')}" class="tab" th:classappend="${tab == 'lost'} ? 'active'">探しています<span class="tab-count" th:text="${lostCount}">0</span></a>
-                <a th:href="@{/mypage(tab='comments')}" class="tab" th:classappend="${tab == 'comments'} ? 'active'">コメント<span class="tab-count" th:text="${commentCount}">0</span></a>
+            <nav class="tabs" aria-label="自分の投稿・コメント">
+                <a th:href="@{/mypage(tab='found')}" class="tab" th:classappend="${tab == 'found'} ? 'active'" th:aria-current="${tab == 'found'} ? 'page' : null">見つけた<span class="tab-count" th:text="${foundCount}">0</span></a>
+                <a th:href="@{/mypage(tab='lost')}" class="tab" th:classappend="${tab == 'lost'} ? 'active'" th:aria-current="${tab == 'lost'} ? 'page' : null">探しています<span class="tab-count" th:text="${lostCount}">0</span></a>
+                <a th:href="@{/mypage(tab='comments')}" class="tab" th:classappend="${tab == 'comments'} ? 'active'" th:aria-current="${tab == 'comments'} ? 'page' : null">コメント<span class="tab-count" th:text="${commentCount}">0</span></a>
             </nav>
 
             <!-- 見つけた -->
@@ -117,15 +123,14 @@
                     <colgroup><col style="width: 14%;"><col style="width: 15%;"><col style="width: 15%;"><col style="width: auto;"><col style="width: 18%;"></colgroup>
                     <thead><tr><th>日付</th><th>路線</th><th>駅</th><th>忘れ物</th><th>作成日</th></tr></thead>
                     <tbody>
-                        <tr th:each="item : ${foundItems}" class="hover-row"
-                            th:onclick="|location.href='@{/items/{id}(id=${item.id})}'|">
+                        <tr th:each="item : ${foundItems}">
                             <td class="td-center" th:text="${item.foundDate}"></td>
                             <td th:text="${item.lineName}" th:title="${item.lineName}"></td>
                             <td th:text="${item.stationName}"></td>
                             <td>
                                 <span class="category" th:text="${item.categoryName}"></span><span class="divider">|</span>
-                                <span class="item-name" th:text="${item.itemName}" th:title="${item.itemName}"></span>
-                                <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span>
+                                <a class="item-name row-link" th:href="@{/items/{id}(id=${item.id})}" th:text="${item.itemName}" th:title="${item.itemName}"></a>
+                                <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" th:aria-label="|コメント${item.commentCount}件|" title="コメント数"></span>
                             </td>
                             <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
                         </tr>
@@ -140,9 +145,7 @@
                     <colgroup><col style="width: 14%;"><col style="width: 15%;"><col style="width: 15%;"><col style="width: auto;"><col style="width: 18%;"></colgroup>
                     <thead><tr><th>なくした日</th><th>路線</th><th>駅</th><th>忘れ物</th><th>作成日</th></tr></thead>
                     <tbody>
-                        <tr th:each="item : ${lostItems}" class="hover-row"
-                            th:classappend="${item.resolved} ? 'row-resolved'"
-                            th:onclick="|location.href='@{/lost-items/{id}(id=${item.id})}'|">
+                        <tr th:each="item : ${lostItems}" th:classappend="${item.resolved} ? 'row-resolved'">
                             <td class="td-center" th:text="${item.lostDate}"></td>
                             <td th:text="${item.lineName}" th:title="${item.lineName}"></td>
                             <td th:if="${item.stationName != null}" th:text="${item.stationName}"></td>
@@ -150,8 +153,8 @@
                             <td>
                                 <span class="badge-resolved" th:if="${item.resolved}">見つかりました</span>
                                 <span class="category" th:text="${item.categoryName}"></span><span class="divider">|</span>
-                                <span class="item-name" th:text="${item.itemName}" th:title="${item.itemName}"></span>
-                                <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span>
+                                <a class="item-name row-link" th:href="@{/lost-items/{id}(id=${item.id})}" th:text="${item.itemName}" th:title="${item.itemName}"></a>
+                                <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" th:aria-label="|コメント${item.commentCount}件|" title="コメント数"></span>
                             </td>
                             <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
                         </tr>
@@ -166,10 +169,9 @@
                     <colgroup><col style="width: 38%;"><col style="width: auto;"><col style="width: 18%;"></colgroup>
                     <thead><tr><th>コメント</th><th>投稿</th><th>作成日</th></tr></thead>
                     <tbody>
-                        <!-- th:onclick 에는 문자열 변수를 쓸 수 없으므로 주소는 data 속성으로 -->
-                        <tr th:each="comment : ${comments}" class="hover-row"
-                            th:data-href="@{${comment.postUrl}}" onclick="location.href = this.dataset.href;">
-                            <td th:text="${comment.contents}" th:title="${comment.contents}"></td>
+                        <!-- 댓글 내용이 그 게시글의 댓글 위치 링크 (줄 전체로 넓혀서 어디를 눌러도 이동) -->
+                        <tr th:each="comment : ${comments}">
+                            <td><a class="comment-link row-link" th:href="@{${comment.postUrl}}" th:text="${comment.contents}" th:title="${comment.contents}"></a></td>
                             <td th:title="${comment.postTitle}">
                                 <span class="board-label" th:text="${comment.board.name() == 'FOUND'} ? '見つけた' : '探しています'"></span>
                                 <span th:text="${comment.postItemName}"></span> <!-- 제목은 날짜·노선부터 시작해서 물건 이름이 잘리므로 물건 이름만 (전체 제목은 마우스를 올리면) -->
@@ -180,16 +182,19 @@
                 </table>
             </th:block>
 
-            <div class="pager" th:if="${totalPages > 1}">
-                <a th:if="${currentPage > 1}" th:href="@{/mypage(tab=${tab}, page=${currentPage - 1})}">&lt;</a>
-                <span th:unless="${currentPage > 1}" class="disabled">&lt;</span>
-                <a th:each="pageNum : ${#numbers.sequence(1, totalPages)}"
-                   th:href="@{/mypage(tab=${tab}, page=${pageNum})}"
-                   th:text="${pageNum}"
-                   th:classappend="${pageNum == currentPage} ? 'active'"></a>
-                <a th:if="${currentPage < totalPages}" th:href="@{/mypage(tab=${tab}, page=${currentPage + 1})}">&gt;</a>
-                <span th:unless="${currentPage < totalPages}" class="disabled">&gt;</span>
-            </div>
+            <!-- 페이지 번호: 처음·끝과 지금 페이지 앞뒤 2쪽만 (나머지는 「…」) -->
+            <nav class="pager" th:if="${totalPages > 1}" aria-label="ページ">
+                <a th:if="${currentPage > 1}" th:href="@{/mypage(tab=${tab}, page=${currentPage - 1})}" aria-label="前のページ">&lt;</a>
+                <span th:unless="${currentPage > 1}" class="disabled" aria-hidden="true">&lt;</span>
+                <th:block th:each="pageNum : ${pageNumbers}">
+                    <span th:if="${pageNum == null}" aria-hidden="true">…</span>
+                    <span th:if="${pageNum != null and pageNum == currentPage}" class="active" aria-current="page" th:text="${pageNum}"></span>
+                    <a th:if="${pageNum != null and pageNum != currentPage}" th:href="@{/mypage(tab=${tab}, page=${pageNum})}"
+                       th:text="${pageNum}" th:aria-label="|${pageNum}ページ|"></a>
+                </th:block>
+                <a th:if="${currentPage < totalPages}" th:href="@{/mypage(tab=${tab}, page=${currentPage + 1})}" aria-label="次のページ">&gt;</a>
+                <span th:unless="${currentPage < totalPages}" class="disabled" aria-hidden="true">&gt;</span>
+            </nav>
         </main>
 
         <aside class="side-section">

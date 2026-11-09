@@ -77,6 +77,9 @@ Java 21 が必要です。
 ## 主な機能（見つけた 掲示板）
 
 - 投稿一覧：路線・駅・カテゴリでの絞り込み、発見日・投稿日での並べ替え、ページネーション（15件ずつ）
+  - 投稿・並べ替え・ページ番号はサーバーが生成するリンク、絞り込みはフォームのため、キーボード（Tab・Enter）・新しいタブ・JS 無効のブラウザでも動作
+  - 絞り込みはマウスで選ぶとすぐに適用し、キーボードで選ぶときは「絞り込む」で適用（↑↓ で値を変えている途中で画面が切り替わらないように）
+  - ページ番号は最初・最後と現在のページの前後2ページのみ。詳細画面の「一覧」は見ていた一覧（絞り込み・並べ替え・ページ）に戻る
 - 投稿登録：カレンダーで発見日を選択、路線に応じて駅の選択肢が切り替わる、タイトルの自動生成、写真の添付
 - 非会員の投稿：投稿者名を自動で付与（`匿名の天使 001` 形式、使われていない番号から。1,000個すべて使われている場合は任意の番号）、4桁のパスワードを確認してから編集・削除
   - 保存すると確認が解除されるため、別のタブで先に保存した場合や、保存後に「戻る」で戻って再送信した場合は、入力内容を保管したうえでパスワードを再確認し、編集画面に戻す
@@ -181,6 +184,7 @@ src/main/java/com/example/jrfind
 ├─ controller/   JrfindController（見つけた）、LostItemController（探しています）、CommentController（コメント）、
 │                SearchController（統合検索）、MemberController、MyPageController（マイページ）、
 │                MapController（駅マップ）、LoginMemberAdvice（ヘッダー用のログイン情報）、
+│                BoardQuery（一覧の条件を保持したリンクの URL）、
 │                VerifiedItems（パスワード確認状態・セッション）、FormDraft（送信できなかった入力の保管・セッション）、
 │                SubmittedForms（同じ内容の二重登録の防止・セッション）
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
@@ -192,7 +196,8 @@ src/main/java/com/example/jrfind
                  ImageStorage, PasswordAttemptLimiter
 src/main/resources
 ├─ schema.sql, data.sql, messages.properties（入力形式エラーの文言）
-├─ static/       css/mobile.css（スマートフォン表示）、js/submit-once.js（二重送信の防止）、
+├─ static/       css/mobile.css（スマートフォン表示）、css/board-list.css・js/board-list.js（両掲示板の一覧で共通）、
+│                js/submit-once.js（二重送信の防止）、
 │                js/page-restore.js（「戻る」で表示された画面の処理）、
 │                js/date-input.js（日付の直接入力の確認）、js/share-link.js（「シェア」）
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm（見つけた）

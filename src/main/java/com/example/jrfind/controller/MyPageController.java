@@ -100,6 +100,7 @@ public class MyPageController {
 		model.addAttribute("tab", currentTab);
 		model.addAttribute("currentPage", currentPage);
 		model.addAttribute("totalPages", totalPages);
+		model.addAttribute("pageNumbers", BoardQuery.pageNumbers(currentPage, totalPages)); // 앞뒤 몇 쪽만
 		return "mypage";
 	}
 

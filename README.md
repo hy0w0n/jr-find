@@ -77,6 +77,9 @@ Java 21이 필요합니다.
 ## 주요 기능 (見つけた 게시판)
 
 - 게시글 목록: 노선·역·카테고리 필터, 발견일·작성일 정렬, 페이지네이션 (15건씩)
+  - 글·정렬·페이지 번호는 서버가 만든 링크, 필터는 폼이라 키보드(Tab·Enter)·새 탭·JS 를 끈 브라우저에서도 동작
+  - 필터는 마우스로 고르면 바로 적용하고, 키보드로 고를 때는 「絞り込む」로 적용 (↑↓ 로 값을 바꾸는 중에 화면이 바뀌지 않도록)
+  - 페이지 번호는 처음·끝과 지금 페이지 앞뒤 2쪽만. 상세 화면의 「一覧」은 보던 목록(필터·정렬·페이지)으로 돌아감
 - 게시글 등록: 달력으로 발견일 선택, 노선에 따라 역 목록 변경, 제목 자동 생성, 사진 첨부
 - 비회원 글: 작성자 이름 자동 부여 (`匿名の天使 001` 형식, 쓰지 않는 번호 중에서. 1,000개가 다 차면 아무 번호나), 4자리 비밀번호 확인 후 수정·삭제
   - 저장하면 확인이 풀리므로, 다른 탭에서 먼저 저장했거나 저장 후 「뒤로」로 돌아와 다시 보내면 입력한 내용을 보관해 두고 비밀번호를 다시 물은 뒤 수정 화면에 채움
@@ -181,6 +184,7 @@ src/main/java/com/example/jrfind
 ├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
 │                SearchController (통합 검색), MemberController, MyPageController (마이페이지),
 │                MapController (駅マップ), LoginMemberAdvice (헤더용 로그인 정보),
+│                BoardQuery (목록 조건을 유지한 링크 주소),
 │                VerifiedItems (비밀번호 확인 상태 · 세션), FormDraft (보내지 못한 입력 보관 · 세션),
 │                SubmittedForms (같은 내용 중복 등록 방지 · 세션)
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
@@ -192,7 +196,8 @@ src/main/java/com/example/jrfind
                  ImageStorage, PasswordAttemptLimiter
 src/main/resources
 ├─ schema.sql, data.sql, messages.properties (입력 형식 오류 문구)
-├─ static/       css/mobile.css (휴대폰 화면), js/submit-once.js (두 번 전송 방지),
+├─ static/       css/mobile.css (휴대폰 화면), css/board-list.css · js/board-list.js (두 게시판 목록 공통),
+│                js/submit-once.js (두 번 전송 방지),
 │                js/page-restore.js (뒤로 가기로 돌아온 화면 처리),
 │                js/date-input.js (날짜 직접 입력 확인), js/share-link.js (「シェア」)
 ├─ templates/    home, ItemList, itemDetail, registerForm, editForm (見つけた)

@@ -70,7 +70,7 @@
     .lost-table thead th { display: block; padding: 0; border: none; }
     .lost-table th.th-filter { order: 1; flex: 1 1 0; min-width: 0; }
     .lost-table th.th-filter .filter-box { align-items: stretch; gap: 3px; }
-    .lost-table th.th-filter .filter-box span { font-size: 11px; }
+    .lost-table th.th-filter .filter-box label { font-size: 11px; }
     .lost-table .filter-select { width: 100%; font-size: 13px; padding: 5px 2px; }
     .lost-table thead tr::after { content: ''; order: 2; flex-basis: 100%; height: 0; } /* 선택 3개 다음에서 줄바꿈 */
     .lost-table th#header-date, .lost-table th#header-reg { order: 3; padding: 4px 12px; border: 1px solid #ddd; border-radius: 14px; font-size: 12px; }

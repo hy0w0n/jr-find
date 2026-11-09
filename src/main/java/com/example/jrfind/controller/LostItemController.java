@@ -75,7 +75,11 @@ public class LostItemController {
 		model.addAttribute("currentKeyword", keyword);
 		model.addAttribute("keywordTruncated", KeywordCondition.isTruncated(keyword)); // 단어가 너무 많아 뒤는 쓰지 않음
 		model.addAttribute("currentSort", sort);
+		// 페이지 번호·정렬 머리글·「検索をやめる」 링크 (조건을 유지한 주소)
+		model.addAttribute("query", new BoardQuery("/lost-items", line, station, category, keyword, sort));
+		model.addAttribute("pageNumbers", BoardQuery.pageNumbers(currentPage, totalPages));
 		addMasterData(model);
+		model.addAttribute("stationLines", BoardQuery.stationLines(masterService.getStations()));
 		return "lostList";
 	}
 
@@ -86,6 +90,7 @@ public class LostItemController {
 		model.addAttribute("isOwner", isOwner(item, loginMember));
 		model.addAttribute("comments", commentService.getComments(Board.LOST, id));
 		CommentController.restoreCommentDraft(Board.LOST, id, loginMember, request, model);
+		model.addAttribute("listUrl", BoardQuery.listUrlFrom(request, "/lost-items")); // 「一覧」: 보던 목록으로
 		return "lostDetail";
 	}
 
