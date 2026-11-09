@@ -37,6 +37,7 @@ import com.example.jrfind.domain.Comment;
 import com.example.jrfind.domain.FoundItem;
 import com.example.jrfind.domain.LoginMember;
 import com.example.jrfind.domain.LostItem;
+import com.example.jrfind.domain.ProfileForm;
 import com.example.jrfind.domain.SignupForm;
 import com.example.jrfind.service.MemberService;
 
@@ -339,6 +340,47 @@ class MyPageControllerTest {
 
 		assertThat(memberRow(me.getId()).get("WITHDRAWNDATE")).isNull();
 		assertThat(loginMember(loginId).getId()).isEqualTo(me.getId());
+	}
+
+	@Test
+	void 비밀번호를_바꾸면_다른_브라우저의_로그인은_끝나고_지금_브라우저는_그대로다() throws Exception {
+		String loginId = signup();
+		MockHttpSession pc = login(loginId);
+		MockHttpSession phone = login(loginId);
+
+		mockMvc.perform(passwordRequest(PASSWORD, "newpass456", "newpass456").session(pc))
+			.andExpect(redirectedUrl("/mypage?passwordChanged"));
+
+		mockMvc.perform(get("/mypage").session(pc)).andExpect(status().isOk());
+		mockMvc.perform(get("/mypage").session(phone))
+			.andExpect(redirectedUrl("/login?reauth"));
+		mockMvc.perform(get("/mypage").session(phone))
+			.andExpect(redirectedUrl("/login?required"));
+		mockMvc.perform(get("/login").param("reauth", ""))
+			.andExpect(content().string(containsString("パスワードが変更されたため、ログアウトしました。")));
+	}
+
+	@Test
+	void 닉네임을_비워_두고_가입한_회원은_정보_변경_화면의_닉네임_칸이_비어_있고_氏名을_바꾸면_작성자명도_바뀐다() throws Exception {
+		SignupForm form = new SignupForm();
+		form.setLoginId("my_" + UUID.randomUUID().toString().substring(0, 8));
+		form.setPassword(PASSWORD);
+		form.setPasswordConfirm(PASSWORD);
+		form.setRealName("高橋一子");
+		form.setNickname("");
+		form.setBirthDate(LocalDate.of(2000, 4, 16));
+		form.setPhone("090-1234-5678");
+		form.setAgree(true);
+		memberService.register(form);
+		MockHttpSession session = login(form.getLoginId());
+
+		ProfileForm profile = (ProfileForm) mockMvc.perform(get("/mypage/edit").session(session))
+			.andReturn().getModelAndView().getModel().get("profileForm");
+		assertThat(profile.getNickname()).isEmpty();
+
+		mockMvc.perform(profileRequest("中村一子", "", "2000-04-16", "090-1234-5678").session(session))
+			.andExpect(redirectedUrl("/mypage?updated"));
+		assertThat(loginMember(form.getLoginId()).getNickname()).isEqualTo("中村一子");
 	}
 
 	@Test

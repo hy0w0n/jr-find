@@ -65,14 +65,15 @@ public class SignupForm {
 	public String getRealName() {
 		return realName;
 	}
+	// 앞뒤의 전각 공백·폭 없는 글자도 지운다 (공백만 입력하면 빈 칸)
 	public void setRealName(String realName) {
-		this.realName = realName;
+		this.realName = Texts.strip(realName);
 	}
 	public String getNickname() {
 		return nickname;
 	}
 	public void setNickname(String nickname) {
-		this.nickname = nickname;
+		this.nickname = Texts.strip(nickname);
 	}
 	public LocalDate getBirthDate() {
 		return birthDate;

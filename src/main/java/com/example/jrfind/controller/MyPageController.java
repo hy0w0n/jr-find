@@ -157,6 +157,11 @@ public class MyPageController {
 
 		memberService.changePassword(memberId, form.getNewPassword());
 		refreshLoginMember(loginMember, request, response);
+		// 다른 브라우저·기기의 로그인은 끝낸다 (그쪽은 다음 요청 때 로그인 화면으로). 지금 세션은 그대로
+		String currentSessionId = request.getSession().getId();
+		sessionRegistry.getAllSessions(loginMember, false).stream()
+			.filter(session -> !session.getSessionId().equals(currentSessionId))
+			.forEach(SessionInformation::expireNow);
 		return "redirect:/mypage?passwordChanged";
 	}
 

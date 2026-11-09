@@ -41,6 +41,10 @@
         <div id="errorMessage" class="message message-error" th:if="${param.locked}">
             ログインの失敗が続いたため、<br>一時的にログインを制限しています。<br>5分ほど待ってから再度お試しください。
         </div>
+        <!-- 다른 브라우저·기기에서 비밀번호를 바꿔서 이 로그인이 끝난 경우 -->
+        <div class="message message-info" th:if="${param.reauth}">
+            パスワードが変更されたため、ログアウトしました。<br>新しいパスワードでログインしてください。
+        </div>
         <div class="message message-info" th:if="${param.registered}">
             会員登録が完了しました。ログインしてください。
         </div>

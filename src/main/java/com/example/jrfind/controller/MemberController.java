@@ -2,6 +2,8 @@ package com.example.jrfind.controller;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -13,6 +15,8 @@ import com.example.jrfind.domain.LoginMember;
 import com.example.jrfind.domain.SignupForm;
 import com.example.jrfind.service.MemberService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 @Controller
@@ -22,6 +26,8 @@ public class MemberController {
 			+ MemberService.WITHDRAWN_NAME + "」は使用できません。";
 
 	private final MemberService memberService;
+	// 로그인이 필요한 화면에서 로그인 화면으로 올 때 Spring Security 가 원래 화면을 저장해 두는 곳 (기본 설정과 같음)
+	private final RequestCache requestCache = new HttpSessionRequestCache();
 
 	public MemberController(MemberService memberService) {
 		this.memberService = memberService;
@@ -30,9 +36,15 @@ public class MemberController {
 	// 로그인 화면: http://localhost:8080/login
 	// 로그인 처리(POST /login)와 로그아웃(POST /logout)은 Spring Security 가 처리 (SecurityConfig)
 	@GetMapping("/login")
-	public String loginForm(@AuthenticationPrincipal LoginMember loginMember) {
+	public String loginForm(@AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request, HttpServletResponse response) {
 		if (loginMember != null) {
 			return "redirect:/"; // 이미 로그인 상태
+		}
+		// 헤더의 「ログイン」 등으로 직접 연 경우: 예전에 로그인이 필요해서 막혔던 화면은 잊는다
+		// (남겨 두면 한참 뒤에 로그인했을 때 그 화면, 예를 들어 탈퇴 화면으로 이동해 버린다)
+		// 로그인이 필요한 화면에서 넘어온 경우(?required)와 그 뒤의 실패·가입 완료(?error 등)는 원래 화면으로 돌아가도록 남긴다
+		if (request.getParameterMap().isEmpty()) {
+			requestCache.removeRequest(request, response);
 		}
 		return "login";
 	}

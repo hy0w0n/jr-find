@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -75,6 +76,38 @@ class MemberControllerTest {
 
 		assertThat(jdbcTemplate.queryForObject("SELECT NICKNAME FROM MEMBER WHERE LOGINID = ?", String.class, loginId))
 			.isEqualTo("山田花子");
+	}
+
+	@Test
+	void 공백이나_보이지_않는_글자만_있는_이름은_입력하지_않은_것으로_본다() throws Exception {
+		mockMvc.perform(signupRequest("realName", "　\u200b "))
+			.andExpect(status().isOk())
+			.andExpect(model().attributeHasFieldErrors("signupForm", "realName"));
+
+		// 닉네임은 비운 것과 같으므로 氏名 을 사용 (氏名 앞뒤의 전각 공백도 지운다)
+		String loginId = newLoginId();
+		mockMvc.perform(signupRequest("loginId", loginId, "nickname", "　　", "realName", "　山田花子　"))
+			.andExpect(redirectedUrl("/login?registered"));
+		assertThat(jdbcTemplate.queryForObject("SELECT NICKNAME FROM MEMBER WHERE LOGINID = ?", String.class, loginId))
+			.isEqualTo("山田花子");
+	}
+
+	@Test
+	void 사용할_수_없는_이름은_공백이나_보이지_않는_글자를_섞어도_쓸_수_없다() throws Exception {
+		for (String nickname : List.of("　退会したユーザー", "退会したユーザー　", "退会した　ユーザー", "退会した\u200bユーザー", "\u00a0匿名の天使 1")) {
+			mockMvc.perform(signupRequest("nickname", nickname))
+				.andExpect(status().isOk())
+				.andExpect(model().attributeHasFieldErrorCode("signupForm", "nickname", "reserved"));
+		}
+	}
+
+	@Test
+	void 대소문자만_다른_ID로는_가입할_수_없다() throws Exception {
+		String loginId = signup();
+
+		mockMvc.perform(signupRequest("loginId", loginId.toUpperCase()))
+			.andExpect(status().isOk())
+			.andExpect(model().attributeHasFieldErrorCode("signupForm", "loginId", "duplicate"));
 	}
 
 	@Test
@@ -161,6 +194,23 @@ class MemberControllerTest {
 	}
 
 	@Test
+	void ID_앞뒤에_공백을_붙여도_같은_ID로_세어_잠근다() throws Exception {
+		String loginId = signup();
+		String ip = newIp();
+		for (int i = 1; i <= 5; i++) {
+			mockMvc.perform(loginRequest(loginId, "wrong1234", ip));
+		}
+
+		// Spring Security 는 앞뒤 공백을 지우고 확인하므로, 공백을 붙인 ID 도 잠겨 있어야 한다
+		mockMvc.perform(loginRequest(loginId + " ", PASSWORD, ip))
+			.andExpect(unauthenticated())
+			.andExpect(redirectedUrl("/login?locked"));
+		mockMvc.perform(loginRequest(" " + loginId, PASSWORD, ip))
+			.andExpect(unauthenticated())
+			.andExpect(redirectedUrl("/login?locked"));
+	}
+
+	@Test
 	void 다른_곳에서_접속한_주인은_잠기지_않는다() throws Exception {
 		String loginId = signup();
 		String attackerIp = newIp();
@@ -225,6 +275,35 @@ class MemberControllerTest {
 		mockMvc.perform(loginRequest(loginId, PASSWORD, newIp()).session(session))
 			.andExpect(authenticated())
 			.andExpect(redirectedUrl("http://localhost/mypage?continue"));
+	}
+
+	@Test
+	void 한_번_틀린_뒤에_로그인해도_원래_가려던_화면으로_돌아간다() throws Exception {
+		String loginId = signup();
+		String ip = newIp();
+		MockHttpSession session = (MockHttpSession) mockMvc.perform(get("/mypage"))
+			.andReturn().getRequest().getSession();
+
+		mockMvc.perform(get("/login").param("required", "").session(session)).andExpect(status().isOk());
+		mockMvc.perform(loginRequest(loginId, "wrong1234", ip).session(session)).andExpect(redirectedUrl("/login?error"));
+		mockMvc.perform(get("/login").param("error", "").session(session)).andExpect(status().isOk());
+		mockMvc.perform(loginRequest(loginId, PASSWORD, ip).session(session))
+			.andExpect(redirectedUrl("http://localhost/mypage?continue"));
+	}
+
+	@Test
+	void 로그인_화면을_직접_열어서_로그인하면_예전에_막혔던_화면으로_가지_않는다() throws Exception {
+		String loginId = signup();
+		MockHttpSession session = (MockHttpSession) mockMvc.perform(get("/mypage/withdraw"))
+			.andExpect(redirectedUrl("/login?required"))
+			.andReturn().getRequest().getSession();
+
+		// 로그인하지 않고 다른 화면을 보다가, 나중에 헤더의 「ログイン」으로 로그인
+		mockMvc.perform(get("/items").session(session)).andExpect(status().isOk());
+		mockMvc.perform(get("/login").session(session)).andExpect(status().isOk());
+		mockMvc.perform(loginRequest(loginId, PASSWORD, newIp()).session(session))
+			.andExpect(authenticated())
+			.andExpect(redirectedUrl("/"));
 	}
 
 	// ---------- 회원 글 ----------

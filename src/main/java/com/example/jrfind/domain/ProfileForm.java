@@ -33,7 +33,9 @@ public class ProfileForm {
 	public static ProfileForm from(Member member) {
 		ProfileForm form = new ProfileForm();
 		form.setRealName(member.getRealName());
-		form.setNickname(member.getNickname());
+		// 닉네임을 비워 두고 가입한 회원은 氏名 이 작성자명으로 저장돼 있다. 닉네임 칸은 비워서 보여준다
+		// (채워 두면 氏名 만 바꿨을 때 예전 氏名 이 계속 작성자명으로 남는다)
+		form.setNickname(member.getNickname().equals(member.getRealName()) ? "" : member.getNickname());
 		form.setBirthDate(member.getBirthDate());
 		form.setPhone(member.getPhone());
 		return form;
@@ -42,14 +44,15 @@ public class ProfileForm {
 	public String getRealName() {
 		return realName;
 	}
+	// 앞뒤의 전각 공백·폭 없는 글자도 지운다 (공백만 입력하면 빈 칸)
 	public void setRealName(String realName) {
-		this.realName = realName;
+		this.realName = Texts.strip(realName);
 	}
 	public String getNickname() {
 		return nickname;
 	}
 	public void setNickname(String nickname) {
-		this.nickname = nickname;
+		this.nickname = Texts.strip(nickname);
 	}
 	public LocalDate getBirthDate() {
 		return birthDate;

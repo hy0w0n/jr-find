@@ -13,6 +13,7 @@ import com.example.jrfind.domain.LoginMember;
 import com.example.jrfind.domain.Member;
 import com.example.jrfind.domain.ProfileForm;
 import com.example.jrfind.domain.SignupForm;
+import com.example.jrfind.domain.Texts;
 import com.example.jrfind.repository.MemberRepository;
 
 // 회원가입, 로그인 시 회원 조회 (Spring Security 가 loadUserByUsername 을 호출한다), 로그인 연속 실패 제한, 회원정보·비밀번호 변경, 탈퇴
@@ -48,28 +49,30 @@ public class MemberService implements UserDetailsService {
 		return repository.existsByLoginId(loginId);
 	}
 
-	// 게시글에 표시될 이름: 닉네임을 비워 두면 氏名
+	// 게시글에 표시될 이름: 닉네임을 비워 두면 氏名 (전각 공백 등 보이지 않는 글자만 있어도 비운 것으로 본다)
 	public String displayNameOf(String realName, String nickname) {
-		String trimmed = (nickname == null) ? "" : nickname.trim();
-		if (!trimmed.isEmpty()) {
-			return trimmed;
+		String stripped = (nickname == null) ? "" : Texts.strip(nickname);
+		if (!stripped.isEmpty()) {
+			return stripped;
 		}
-		return (realName == null) ? "" : realName.trim();
+		return (realName == null) ? "" : Texts.strip(realName);
 	}
 
 	public String displayNameOf(SignupForm form) {
 		return displayNameOf(form.getRealName(), form.getNickname());
 	}
 
+	// 사이에 공백이나 폭 없는 글자를 넣어 비슷하게 보이게 만든 이름도 막는다 (예: 「退会した　ユーザー」)
 	public boolean isReservedName(String name) {
-		return name.startsWith(RESERVED_NAME_PREFIX) || name.equals(WITHDRAWN_NAME);
+		String visible = Texts.removeInvisible(name);
+		return visible.startsWith(RESERVED_NAME_PREFIX) || visible.equals(WITHDRAWN_NAME);
 	}
 
 	public void register(SignupForm form) {
 		Member member = new Member();
 		member.setLoginId(form.getLoginId());
 		member.setPassword(passwordEncoder.encode(form.getPassword()));
-		member.setRealName(form.getRealName().trim());
+		member.setRealName(Texts.strip(form.getRealName()));
 		member.setNickname(displayNameOf(form));
 		member.setBirthDate(form.getBirthDate());
 		member.setPhone(form.getPhone());
@@ -84,12 +87,17 @@ public class MemberService implements UserDetailsService {
 		return repository.findById(id);
 	}
 
+	public boolean isWithdrawn(Long id) {
+		Member member = repository.findById(id);
+		return member == null || member.getWithdrawnDate() != null;
+	}
+
 	// 닉네임이 바뀌면 지금까지 쓴 게시글·댓글의 작성자명도 함께 바꾼다
 	@Transactional
 	public void updateProfile(Long memberId, ProfileForm form) {
 		Member member = new Member();
 		member.setId(memberId);
-		member.setRealName(form.getRealName().trim());
+		member.setRealName(Texts.strip(form.getRealName()));
 		member.setNickname(displayNameOf(form.getRealName(), form.getNickname()));
 		member.setBirthDate(form.getBirthDate());
 		member.setPhone(form.getPhone());
@@ -139,7 +147,9 @@ public class MemberService implements UserDetailsService {
 	}
 
 	private String loginKey(String loginId, String clientIp) {
-		String id = (loginId == null) ? "" : loginId;
+		// Spring Security 는 ID 의 앞뒤 공백을 지우고 확인한다 (UsernamePasswordAuthenticationFilter).
+		// 같은 기준으로 세지 않으면 "id " 처럼 공백을 붙여 잠금을 피할 수 있다
+		String id = (loginId == null) ? "" : loginId.trim();
 		// 가입할 수 있는 ID 는 20자까지. 그보다 긴 값은 없는 ID 이므로 잘라서 하나로 센다 (아주 긴 값으로 기록이 커지지 않게)
 		if (id.length() > LOGIN_ID_MAX_LENGTH) {
 			id = id.substring(0, LOGIN_ID_MAX_LENGTH + 1);

@@ -7,11 +7,14 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.DefaultRedirectStrategy;
+import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
+import com.example.jrfind.domain.LoginMember;
 import com.example.jrfind.service.MemberService;
 
 @Configuration
@@ -20,6 +23,7 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, MemberService memberService, SessionRegistry sessionRegistry) throws Exception {
 		LoginAttemptGuard loginAttemptGuard = new LoginAttemptGuard(memberService);
+		RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 		http
 			// 探しています 게시판의 작성·수정·삭제, 댓글(두 게시판), 마이페이지(탈퇴 포함)는 회원만 가능
 			// (로그인 전이면 로그인 화면으로 보내고, 로그인 후 원래 화면으로 돌아옴)
@@ -44,11 +48,16 @@ public class SecurityConfig {
 			.addFilterBefore(loginAttemptGuard, UsernamePasswordAuthenticationFilter.class)
 			.logout(logout -> logout
 				.logoutSuccessUrl("/"))
-			// 회원별 로그인 세션 목록 (탈퇴하면 다른 브라우저·기기의 로그인도 끝낸다 → 그쪽은 다음 요청 때 로그아웃되고 홈으로)
+			// 회원별 로그인 세션 목록. 탈퇴·비밀번호 변경 때 다른 브라우저·기기의 로그인도 끝낸다
+			// → 그쪽은 다음 요청 때 로그아웃되고, 탈퇴면 홈(탈퇴 안내), 비밀번호 변경이면 로그인 화면(다시 로그인 안내)으로
 			.sessionManagement(session -> session
 				.maximumSessions(-1) // 동시 로그인 수는 제한하지 않음
 				.sessionRegistry(sessionRegistry)
-				.expiredUrl("/?withdrawn"))
+				.expiredSessionStrategy(event -> {
+					LoginMember member = (LoginMember) event.getSessionInformation().getPrincipal();
+					String url = memberService.isWithdrawn(member.getId()) ? "/?withdrawn" : "/login?reauth";
+					redirectStrategy.sendRedirect(event.getRequest(), event.getResponse(), url);
+				}))
 			// 로그인이 필요한 화면에 로그인 없이 들어오면 안내 문구가 있는 로그인 화면으로
 			.exceptionHandling(exception -> exception
 				.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login?required")))

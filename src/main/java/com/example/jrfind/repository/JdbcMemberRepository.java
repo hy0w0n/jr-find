@@ -45,8 +45,9 @@ public class JdbcMemberRepository implements MemberRepository {
     }
 
     @Override
+    // 대소문자만 다른 ID 도 이미 있는 것으로 본다 (demo_user 와 DEMO_USER 처럼 헷갈리는 ID 를 만들지 못하게)
     public boolean existsByLoginId(String loginId) {
-        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM Member WHERE LoginId = ?", Integer.class, loginId);
+        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM Member WHERE LOWER(LoginId) = LOWER(?)", Integer.class, loginId);
         return count != null && count > 0;
     }
 
