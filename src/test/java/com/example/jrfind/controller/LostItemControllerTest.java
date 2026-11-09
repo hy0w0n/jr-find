@@ -221,14 +221,15 @@ class LostItemControllerTest {
 		LoginMember member = newMember();
 		long id = createItem(member);
 
+		String share = "<button type=\"button\" class=\"btn-action js-only\" id=\"shareButton\">";
 		mockMvc.perform(get("/lost-items/{id}", id).with(user(member)))
-			.andExpect(content().string(containsString("onclick=\"shareLink()\"")))
+			.andExpect(content().string(containsString(share)))
 			.andExpect(content().string(containsString("この投稿に付いたコメントも表示されなくなります。")))
 			.andExpect(content().string(containsString("<html lang=\"ja\"")));
 		mockMvc.perform(get("/lost-items/{id}", id))
-			.andExpect(content().string(containsString("onclick=\"shareLink()\""))); // 로그인하지 않아도
+			.andExpect(content().string(containsString(share))); // 로그인하지 않아도
 		mockMvc.perform(get("/items/{id}", 1))
-			.andExpect(content().string(containsString("onclick=\"shareLink()\"")))
+			.andExpect(content().string(containsString(share)))
 			.andExpect(content().string(not(containsString("(予定)"))));
 	}
 

@@ -443,13 +443,20 @@ class MemberControllerTest {
 		mockMvc.perform(newItemRequest().with(user(owner)));
 		long id = (Long) latestItem().get("ID");
 
-		// 상세 화면: 본인에게만 버튼, 비밀번호 모달은 쓰지 않음
+		// 상세 화면: 본인에게만 버튼, 비밀번호 창은 쓰지 않음
+		String editLink = "href=\"/items/" + id + "/edit\"";
 		mockMvc.perform(get("/items/{id}", id).with(user(owner)))
-			.andExpect(content().string(containsString("onclick=\"goEdit()\"")))
-			.andExpect(content().string(not(containsString("openPwModal('delete')"))));
+			.andExpect(content().string(containsString(editLink)))
+			.andExpect(content().string(not(containsString("id=\"passwordModal\""))));
 		mockMvc.perform(get("/items/{id}", id).with(user(other)))
-			.andExpect(content().string(not(containsString("onclick=\"goEdit()\""))))
-			.andExpect(content().string(not(containsString("openPwModal('delete')"))));
+			.andExpect(content().string(not(containsString(editLink))))
+			.andExpect(content().string(not(containsString("id=\"passwordModal\""))))
+			.andExpect(content().string(not(containsString("id=\"deleteModal\"")))); // 삭제 폼도 내보내지 않음
+		// 「削除」를 JS 없이 누르면 삭제 확인 창을 연 화면 (본인만)
+		mockMvc.perform(get("/items/{id}", id).param("confirmDelete", "").with(user(owner)))
+			.andExpect(model().attribute("confirmDelete", true));
+		mockMvc.perform(get("/items/{id}", id).param("confirmDelete", "").with(user(other)))
+			.andExpect(model().attribute("confirmDelete", false));
 
 		// 다른 회원·비로그인: 수정 화면은 상세로 돌려보내고, 삭제는 403
 		mockMvc.perform(get("/items/{id}/edit", id).with(user(other)))

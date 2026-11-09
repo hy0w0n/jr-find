@@ -1,0 +1,92 @@
+/*
+  게시글 상세 화면 공통 (見つけた itemDetail, 探しています lostDetail)
+  휴대폰 화면(폭 768px 이하)은 mobile.css 가 이 뒤에서 덮어쓴다.
+*/
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
+
+.container { width: 90%; max-width: 1200px; margin: 40px auto; display: flex; gap: 40px; align-items: flex-start; }
+.content-section { flex: 3; min-width: 0; } /* 긴 URL 등이 있어도 사이드바를 밀어내지 않게 */
+.side-section { flex: 1; margin-top: 60px; }
+
+/* 제목·작성자 */
+.post-header { border-top: 2px solid #555; border-bottom: 1px solid #ccc; }
+.post-title-row { display: flex; align-items: center; padding: 12px 10px; border-bottom: 1px solid #555; background: #fff; }
+.board-label { font-weight: normal; font-size: 14px; color: #333; padding-right: 15px; margin-right: 15px; border-right: 1px solid #ccc; white-space: nowrap; }
+.post-title-text { font-weight: bold; font-size: 16px; overflow-wrap: anywhere; }
+.post-meta-bar { background-color: #f2f2f2; padding: 8px 15px; display: flex; justify-content: space-between; font-size: 13px; color: #555; }
+.edited-mark { margin-left: 5px; font-size: 12px; color: #666; }
+
+/* 探しています: 찾음 표시, 잃어버린 물건 요약 */
+.badge { display: inline-block; margin-right: 10px; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: bold; white-space: nowrap; }
+.badge-searching { background: #fff4e5; color: #9c4215; }
+.badge-resolved { background: #e8f5e9; color: #1b5e20; }
+.info-table { width: 100%; border-collapse: collapse; margin-top: 25px; font-size: 14px; }
+.info-table th { width: 140px; padding: 10px 15px; text-align: left; background: #fafafa; color: #555; font-weight: normal; border-bottom: 1px solid #eee; }
+.info-table td { padding: 10px 15px; border-bottom: 1px solid #eee; }
+.station-unknown { color: #666; }
+
+/* 본문 */
+.post-body { padding: 40px 10px; min-height: 200px; border-bottom: 1px solid #eee; }
+.info-table + .post-body { padding-top: 30px; }
+.post-text { white-space: pre-wrap; overflow-wrap: anywhere; /* 공백 없는 긴 URL 등도 줄을 바꾼다 */ line-height: 1.8; font-size: 15px; margin-bottom: 30px; }
+.post-image-area { text-align: center; margin-top: 20px; }
+.post-image { max-width: 100%; max-height: 500px; border-radius: 4px; border: 1px solid #eee; }
+
+/* 버튼 줄: 왼쪽 「一覧」, 오른쪽 수정·삭제·シェア */
+.btn-group { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 20px; }
+.btn-list-wrapper { display: inline-flex; align-items: center; background-color: #666; color: #fff; text-decoration: none; border-radius: 2px; transition: background 0.2s; height: 40px; flex-shrink: 0; }
+.btn-list-wrapper:hover { background-color: #555; }
+.btn-list-icon { padding: 0 12px; display: flex; align-items: center; }
+.btn-list-divider { width: 1px; height: 60%; background-color: #999; }
+.btn-list-text { padding: 0 20px 0 15px; font-weight: bold; font-size: 14px; white-space: nowrap; }
+.list-svg { width: 20px; height: 20px; fill: #fff; }
+.right-btns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.right-btns form { display: inline; }
+.btn-action { display: inline-flex; align-items: center; gap: 6px; background-color: #e5e5e5; color: #333; border: none; border-radius: 20px; padding: 8px 20px; font-size: 14px; font-weight: bold; font-family: inherit; white-space: nowrap; cursor: pointer; text-decoration: none; transition: background 0.2s; }
+.btn-action:hover { background-color: #d0d0d0; }
+.btn-resolve { background-color: #e8f5e9; color: #1b5e20; }
+.btn-resolve:hover { background-color: #d5ecd7; }
+.action-svg { width: 18px; height: 18px; fill: currentColor; }
+.btn-action:focus-visible, .btn-list-wrapper:focus-visible { outline: 3px solid #1a73e8; outline-offset: 2px; }
+/* JS 가 있어야 동작하는 버튼(「シェア」)은 JS 가 꺼져 있으면 숨긴다 */
+html:not(.js) .js-only { display: none; }
+
+/* 사이드바 */
+.sidebar-card { border: 1px solid #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 25px; background: #fff; }
+.sidebar-card p { font-size: 15px; color: #444; margin-bottom: 20px; }
+.write-btn-link { display: block; width: 100%; padding: 12px; background-color: #f0f0f0; color: #c62828; text-decoration: none; font-weight: bold; border-radius: 6px; transition: background 0.2s; }
+.write-btn-link:hover { background-color: #e5e5e5; }
+.btn-gray { background-color: #f0f0f0; color: #333; }
+.notice-card { border: 1px solid #f5c2c7; background-color: #fff5f5; border-radius: 15px; padding: 25px 20px; font-size: 13px; line-height: 1.7; color: #842029; }
+.notice-title { font-size: 15px; font-weight: bold; text-align: center; margin-bottom: 12px; }
+.lost-center-wrap { margin-top: 25px; }
+
+/* 확인 창 (비밀번호 확인, 삭제 확인). 창이 화면보다 높으면 배경째 스크롤 */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); display: none; overflow-y: auto; padding: 16px 0; z-index: 9999; }
+.modal-overlay.open { display: flex; }
+.modal-box { margin: auto; background: white; width: 400px; max-width: calc(100% - 32px); padding: 40px 30px; border-radius: 20px; border: 1px solid transparent; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; }
+.modal-icon-svg { width: 60px; height: 60px; fill: #1a5fb4; margin-bottom: 20px; }
+.modal-icon-danger { fill: #c62828; }
+.modal-title-text { font-size: 22px; font-weight: bold; color: #333; margin-bottom: 10px; }
+.modal-desc-text { font-size: 14px; color: #555; margin-bottom: 25px; line-height: 1.5; white-space: pre-line; }
+.modal-input-pw { width: 80%; padding: 12px; font-size: 24px; letter-spacing: 8px; text-align: center; border: 1px solid #949494; border-radius: 12px; background-color: #f9f9f9; margin-bottom: 10px; font-family: inherit; }
+.modal-input-pw:focus { border-color: #1a5fb4; background-color: #fff; }
+.modal-input-pw:focus-visible { outline: 3px solid #1a73e8; outline-offset: 1px; }
+.modal-error { color: #c62828; font-size: 13px; min-height: 20px; margin-bottom: 15px; line-height: 1.4; white-space: pre-line; }
+.modal-btn-group { display: flex; width: 100%; gap: 10px; }
+.modal-btn { flex: 1; padding: 12px; border: 1px solid transparent; border-radius: 12px; font-size: 16px; font-weight: bold; font-family: inherit; cursor: pointer; text-align: center; text-decoration: none; transition: background 0.2s; }
+.modal-btn:focus-visible { outline: 3px solid #1a73e8; outline-offset: 2px; }
+.modal-btn-cancel { background-color: #e0e0e0; color: #333; }
+.modal-btn-cancel:hover { background-color: #d0d0d0; }
+.modal-btn-ok { background-color: #1a5fb4; color: white; }
+.modal-btn-ok:hover { background-color: #164f96; }
+.modal-btn-delete { background-color: #c62828; color: white; }
+.modal-btn-delete:hover { background-color: #a51f1f; }
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 고대비 모드: 창·버튼 테두리 */
+@media (forced-colors: active) {
+    .modal-box, .modal-btn, .btn-action { border: 1px solid CanvasText; }
+}

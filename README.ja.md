@@ -152,6 +152,8 @@ Java 21 が必要です。
 
 - すべての入力欄に名前（`label` または `aria-label`）を付け、形式の案内・エラーメッセージは `aria-describedby` でその欄に関連付け。サーバー側の検証でエラーになった場合は最初のエラー欄にフォーカス
 - 確認ダイアログ（モーダル）は `role="dialog"`。開くとダイアログ内にフォーカスを移し、Tab はダイアログ内のみ、Esc で閉じ、閉じると元の位置へ（js/dialog.js）
+- 詳細画面の編集・削除ボタンはリンク（`?verify=edit`、`?confirmDelete`）：JS があれば画面内でダイアログを開き、なければサーバーがダイアログを開いた画面を返す。
+  非会員の投稿のパスワード確認もフォームのため JS なしで確認可能（`POST /items/{id}/verify`）。Enter で確認、4桁の数字でなければ失敗回数に数えない（全角数字は半角に）
 - 写真の添付は非表示のファイル欄 + `label` のため、キーボード（Tab → Enter）でも選択可能。入力欄・ボタンにフォーカス表示
 - JS を無効にしても投稿の閲覧・登録が可能：一覧はリンクと GET フォーム、駅は最初から選択でき、サーバー側の検証メッセージは画面にそのまま表示。
   探しています の投稿前の注意事項は、JS があれば最初にダイアログで、なければフォームの上に表示（チェック欄がそのまま確認の値）
@@ -206,6 +208,7 @@ src/main/java/com/example/jrfind
 src/main/resources
 ├─ schema.sql, data.sql, messages.properties（入力形式エラーの文言）
 ├─ static/       css/mobile.css（スマートフォン表示）、css/board-list.css・js/board-list.js（両掲示板の一覧で共通）、
+│                css/post-detail.css・js/post-detail.js（詳細画面で共通）、
 │                css/post-form.css・js/post-form.js（登録・編集画面で共通）、js/dialog.js（確認ダイアログ）、
 │                js/member-form.js（会員画面）、js/comments.js（コメント）、js/js-enabled.js、
 │                js/submit-once.js（二重送信の防止）、

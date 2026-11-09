@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam; // 파라미터 받
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile; // 파일 받기
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.jrfind.domain.Board;
@@ -155,7 +156,10 @@ public class JrfindController {
 
     // 상세 페이지 연결: http://localhost:8080/items/1
     @GetMapping("/items/{id}")
-    public String detail(@PathVariable("id") Long id, @RequestParam(name = "reverify", required = false) String reverify,
+    public String detail(@PathVariable("id") Long id,
+            @RequestParam(name = "verify", required = false) String verify,
+            @RequestParam(name = "reverify", required = false) String reverify,
+            @RequestParam(name = "confirmDelete", required = false) String confirmDelete,
             @AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request, Model model) {
         FoundItem item = findItemOrThrow(id);
         model.addAttribute("item", item);
@@ -165,7 +169,13 @@ public class JrfindController {
         CommentController.restoreCommentDraft(Board.FOUND, id, loginMember, request, model);
         model.addAttribute("listUrl", BoardQuery.listUrlFrom(request, "/items")); // 「一覧」: 보던 목록으로
         // 비회원 글 수정을 보냈는데 비밀번호 확인이 끝나 있었으면, 비밀번호 창을 바로 열어서 다시 묻는다 (입력한 내용은 보관돼 있다)
-        model.addAttribute("reverify", reverify != null && item.getMemberId() == null && FormDraft.exists(request, editUrl(id)));
+        boolean guestPost = item.getMemberId() == null;
+        boolean reverifying = reverify != null && guestPost && FormDraft.exists(request, editUrl(id));
+        model.addAttribute("reverify", reverifying);
+        // 비밀번호 확인 창·삭제 확인 창을 연 화면 (JS 없이 수정·삭제 버튼을 누른 경우. JS 가 있으면 화면 안에서 연다)
+        String verifyAction = reverifying ? "edit" : (guestPost && ("edit".equals(verify) || "delete".equals(verify))) ? verify : null;
+        model.addAttribute("verifyAction", verifyAction);
+        model.addAttribute("confirmDelete", confirmDelete != null && canModify(item, loginMember));
         return "itemDetail"; // templates/itemDetail.html 호출
     }
 
@@ -197,6 +207,35 @@ public class JrfindController {
             verifiedItems.add(id);
         }
         return ResponseEntity.ok(new PasswordCheckResponse(result == PasswordCheck.OK, service.remainingPasswordAttempts(clientKey), lockMinutes));
+    }
+
+    // 비밀번호 확인 (JS 를 쓰지 않는 폼 전송. 결과는 화면 이동으로)
+    // 맞으면 수정 화면 / 삭제 확인 창을 연 상세 화면으로, 틀리면 비밀번호 창을 연 상세 화면으로 안내와 함께
+    @PostMapping("/items/{id}/verify")
+    public String verifyPassword(
+            @PathVariable("id") Long id,
+            @RequestParam(name = "action", defaultValue = "edit") String action,
+            @RequestParam(name = "password", defaultValue = "") String password,
+            HttpServletRequest request,
+            RedirectAttributes redirectAttributes) {
+        boolean delete = "delete".equals(action);
+        String clientKey = id + "@" + request.getRemoteAddr();
+        PasswordCheck result = service.checkPassword(id, password, clientKey);
+        if (result == PasswordCheck.NOT_FOUND) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        if (result == PasswordCheck.OK) {
+            verifiedItems.add(id);
+            return delete ? "redirect:/items/" + id + "?confirmDelete" : "redirect:" + editUrl(id);
+        }
+        long lockMinutes = PasswordAttemptLimiter.LOCK_TIME.toMinutes();
+        int remaining = service.remainingPasswordAttempts(clientKey);
+        String message = (result == PasswordCheck.LOCKED)
+                ? "入力回数の上限を超えました。\n" + lockMinutes + "分ほど経ってから再度お試しください。"
+                : "パスワードが間違っています。\nもう一度入力してください。"
+                    + ((remaining <= 3) ? "\n(あと" + remaining + "回間違えると、" + lockMinutes + "分間入力できなくなります。)" : "");
+        redirectAttributes.addFlashAttribute("verifyError", message);
+        return "redirect:/items/" + id + "?verify=" + (delete ? "delete" : "edit");
     }
 
     // 삭제 처리

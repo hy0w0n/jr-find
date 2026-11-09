@@ -84,10 +84,13 @@ public class LostItemController {
 	}
 
 	@GetMapping("/{id}")
-	public String detail(@PathVariable("id") Long id, @AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request, Model model) {
+	public String detail(@PathVariable("id") Long id, @RequestParam(name = "confirmDelete", required = false) String confirmDelete,
+			@AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request, Model model) {
 		LostItem item = findItemOrThrow(id);
 		model.addAttribute("item", item);
 		model.addAttribute("isOwner", isOwner(item, loginMember));
+		// 삭제 확인 창을 연 화면 (JS 없이 「削除」를 누른 경우. JS 가 있으면 화면 안에서 연다)
+		model.addAttribute("confirmDelete", confirmDelete != null && isOwner(item, loginMember));
 		model.addAttribute("comments", commentService.getComments(Board.LOST, id));
 		CommentController.restoreCommentDraft(Board.LOST, id, loginMember, request, model);
 		model.addAttribute("listUrl", BoardQuery.listUrlFrom(request, "/lost-items")); // 「一覧」: 보던 목록으로

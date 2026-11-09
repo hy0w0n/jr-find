@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -338,6 +339,39 @@ class JrfindControllerTest {
 		// 서버 검증에서 걸린 안내는 JS 가 없어도 화면에 보인다
 		mockMvc.perform(newItemRequest("stationName", "横浜"))
 			.andExpect(content().string(containsString("<div id=\"serverError\" class=\"form-error\" role=\"alert\">発見した場所(路線・駅)を正しく選択してください。</div>")));
+	}
+
+	@Test
+	void JS_없이도_비밀번호를_확인하고_수정_삭제할_수_있다() throws Exception {
+		long id = createItem();
+		MockHttpSession session = new MockHttpSession();
+
+		// 「編集」「削除」는 링크: JS 가 없으면 비밀번호 창을 연 상세 화면
+		mockMvc.perform(get("/items/{id}", id).param("verify", "delete").session(session))
+			.andExpect(model().attribute("verifyAction", "delete"))
+			.andExpect(content().string(containsString("class=\"modal-overlay open\"")));
+
+		// 틀리면 안내와 함께 다시 비밀번호 창. 4자리 숫자가 아닌 값은 틀린 횟수로 세지 않는다
+		mockMvc.perform(post("/items/{id}/verify", id).with(csrf()).session(session).param("action", "delete").param("password", "ab"))
+			.andExpect(redirectedUrl("/items/" + id + "?verify=delete"))
+			.andExpect(flash().attribute("verifyError", "パスワードが間違っています。\nもう一度入力してください。"));
+		mockMvc.perform(post("/items/{id}/verify", id).with(csrf()).session(session).param("action", "delete").param("password", "0000"))
+			.andExpect(flash().attribute("verifyError", "パスワードが間違っています。\nもう一度入力してください。"));
+		mockMvc.perform(post("/items/{id}/verify", id).with(csrf()).session(session).param("action", "delete").param("password", "0000"))
+			.andExpect(flash().attribute("verifyError", "パスワードが間違っています。\nもう一度入力してください。\n(あと3回間違えると、5分間入力できなくなります。)"));
+
+		// 맞으면(전각 숫자도) 삭제 확인 창을 연 상세 화면 → 삭제
+		mockMvc.perform(post("/items/{id}/verify", id).with(csrf()).session(session).param("action", "delete").param("password", "１２３４"))
+			.andExpect(redirectedUrl("/items/" + id + "?confirmDelete"));
+		mockMvc.perform(get("/items/{id}", id).param("confirmDelete", "").session(session))
+			.andExpect(model().attribute("confirmDelete", true));
+		mockMvc.perform(post("/items/{id}/delete", id).with(csrf()).session(session))
+			.andExpect(redirectedUrl("/items"));
+
+		// 수정: 맞으면 수정 화면으로
+		long other = createItem();
+		mockMvc.perform(post("/items/{id}/verify", other).with(csrf()).param("password", PASSWORD))
+			.andExpect(redirectedUrl("/items/" + other + "/edit"));
 	}
 
 	@Test

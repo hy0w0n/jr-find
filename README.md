@@ -152,6 +152,8 @@ Java 21이 필요합니다.
 
 - 모든 입력 칸에 이름(`label` 또는 `aria-label`)을 붙이고, 형식 안내·오류 문구는 `aria-describedby` 로 그 칸에 연결. 서버 검증에서 걸리면 첫 번째로 틀린 칸으로 포커스
 - 확인 창(모달)은 `role="dialog"`, 열면 창 안으로 포커스를 옮기고 Tab 은 창 안에서만, Esc 로 닫고 닫으면 원래 자리로 (js/dialog.js)
+- 상세 화면의 수정·삭제 버튼은 링크(`?verify=edit`, `?confirmDelete`): JS 가 있으면 화면 안에서 창을 열고, 없으면 서버가 창을 연 화면을 돌려줌.
+  비회원 글의 비밀번호 창도 폼이라 JS 없이 확인 가능 (`POST /items/{id}/verify`). Enter 로 확인, 4자리 숫자가 아니면 틀린 횟수로 세지 않음(전각 숫자는 반각으로)
 - 사진 첨부는 숨긴 파일 칸 + `label` 이라 키보드(Tab → Enter)로도 고를 수 있음. 입력 칸·버튼에 포커스 표시
 - JS 를 꺼도 글 열람·등록이 가능: 목록은 링크와 GET 폼, 역 선택은 처음부터 고를 수 있고, 서버 검증 안내는 화면에 그대로 표시.
   探しています 작성 전 주의사항은 JS 가 있으면 처음에 창으로, 없으면 폼 위에 표시 (체크 칸이 그대로 확인 값)
@@ -206,6 +208,7 @@ src/main/java/com/example/jrfind
 src/main/resources
 ├─ schema.sql, data.sql, messages.properties (입력 형식 오류 문구)
 ├─ static/       css/mobile.css (휴대폰 화면), css/board-list.css · js/board-list.js (두 게시판 목록 공통),
+│                css/post-detail.css · js/post-detail.js (상세 화면 공통),
 │                css/post-form.css · js/post-form.js (등록·수정 화면 공통), js/dialog.js (확인 창),
 │                js/member-form.js (회원 화면), js/comments.js (댓글), js/js-enabled.js,
 │                js/submit-once.js (두 번 전송 방지),

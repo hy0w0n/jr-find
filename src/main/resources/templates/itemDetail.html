@@ -3,229 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- fetch 로 POST 할 때 헤더에 넣을 CSRF 토큰 -->
+    <!-- fetch 로 POST 할 때 헤더에 넣을 CSRF 토큰 (비회원 글 비밀번호 확인) -->
     <meta name="_csrf" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
-    <title>JR-Find | 詳細</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
-        
-        /* 레이아웃 */
-        .container { width: 90%; max-width: 1200px; margin: 40px auto; display: flex; gap: 40px; align-items: flex-start; }
-        .content-section { flex: 3; min-width: 0; } /* 긴 URL 등이 있어도 사이드바를 밀어내지 않게 */
-        .side-section { flex: 1; margin-top: 60px; } 
-
-        /* 헤더 스타일 */
-        .post-header {
-            border-top: 2px solid #555;
-            border-bottom: 1px solid #ccc;
-        }
-        
-        .post-title-row {
-            display: flex;
-            align-items: center;
-            padding: 12px 10px;
-            border-bottom: 1px solid #555;
-            background: #fff;
-        }
-        .board-label {
-            font-weight: normal;
-            font-size: 14px;
-            color: #333;
-            padding-right: 15px;
-            margin-right: 15px;
-            border-right: 1px solid #ccc;
-            white-space: nowrap;
-        }
-        .post-title-text {
-            font-weight: bold;
-            font-size: 16px;
-            overflow-wrap: anywhere;
-        }
-
-        /* 작성자/날짜 줄 */
-        .post-meta-bar {
-            background-color: #f2f2f2;
-            padding: 8px 15px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            color: #666;
-        }
-
-        /* 본문 영역 */
-        .post-body {
-            padding: 40px 10px;
-            min-height: 200px;
-            border-bottom: 1px solid #eee;
-        }
-        .post-text {
-            white-space: pre-wrap; 
-            overflow-wrap: anywhere; /* 공백 없는 긴 URL 등도 줄을 바꾼다 */
-            line-height: 1.8;
-            font-size: 15px;
-            margin-bottom: 30px;
-        }
-        .post-image-area {
-            text-align: center; 
-            margin-top: 20px;
-        }
-        .post-image {
-            max-width: 100%;
-            max-height: 500px;
-            border-radius: 4px;
-            border: 1px solid #eee;
-        }
-
-        /* 버튼 그룹 스타일 */
-        .btn-group {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-        }
-        
-        /* 왼쪽 목록 버튼 */
-        .btn-list-wrapper {
-            display: inline-flex;
-            align-items: center;
-            background-color: #777;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 2px;
-            transition: background 0.2s;
-            height: 40px;
-        }
-        .btn-list-wrapper:hover { background-color: #555; }
-        
-        .btn-list-icon { padding: 0 12px; display: flex; align-items: center; }
-        .btn-list-divider { width: 1px; height: 60%; background-color: #999; }
-        .btn-list-text { padding: 0 20px 0 15px; font-weight: bold; font-size: 14px; }
-        .list-svg { width: 20px; height: 20px; fill: #fff; }
-
-        /* 오른쪽 액션 버튼들 */
-        .right-btns { display: flex; gap: 10px; }
-
-        .btn-action {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background-color: #e5e5e5;
-            color: #444;
-            border: none;
-            border-radius: 20px;
-            padding: 8px 20px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn-action:hover { background-color: #d0d0d0; }
-        .action-svg { width: 18px; height: 18px; fill: #555; }
-
-        /* 사이드바 및 기타 스타일 */
-        .sidebar-card { border: 1px solid #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 25px; background: #fff; }
-        .sidebar-card p { font-size: 15px; color: #444; margin-bottom: 20px; }
-        .write-btn-link { display: block; width: 100%; padding: 12px; background-color: #f0f0f0; color: #e63946; text-decoration: none; font-weight: bold; border-radius: 6px; transition: background 0.2s; }
-        .write-btn-link:hover { background-color: #e5e5e5; }
-        .btn-gray { background-color: #f0f0f0; color: #333; }
-        
-		/* =========================================
-		   [추가] 비밀번호 확인 모달 스타일
-		   ========================================= */
-		.modal-overlay {
-		    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-		    background: rgba(0, 0, 0, 0.4);
-		    display: none; justify-content: center; align-items: center; z-index: 9999;
-		}
-
-		.modal-box {
-		    background: white; width: 400px; padding: 40px 30px;
-		    border-radius: 20px;
-		    text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-		    display: flex; flex-direction: column; align-items: center;
-		}
-
-		/* 아이콘 (파란색) */
-		.modal-icon-svg { 
-		    width: 60px; height: 60px; 
-		    fill: #6ea8fe; 
-		    margin-bottom: 20px;
-		}
-
-		/* [요청사항 반영] 제목: 크고 굵게 */
-		.modal-title-text { 
-		    font-size: 22px; 
-		    font-weight: bold; 
-		    color: #333; 
-		    margin-bottom: 10px;
-		}
-
-		/* [요청사항 반영] 설명: 작고 회색 */
-		.modal-desc-text { 
-		    font-size: 14px; 
-		    color: #999; 
-		    margin-bottom: 25px; 
-		    line-height: 1.5;
-		}
-
-		/* 비밀번호 입력창 스타일 */
-		.modal-input-pw {
-		    width: 80%;
-		    padding: 12px;
-		    font-size: 24px;
-		    letter-spacing: 8px; /* 글자 간격 넓게 */
-		    text-align: center;
-		    border: 1px solid #ddd;
-		    border-radius: 12px;
-		    outline: none;
-		    background-color: #f9f9f9;
-		    margin-bottom: 10px;
-		    transition: border 0.2s;
-		}
-		.modal-input-pw:focus {
-		    border-color: #6ea8fe;
-		    background-color: #fff;
-		}
-
-		/* 에러 메시지 */
-		.modal-error {
-		    color: #ff4d4d; 
-		    font-size: 13px; 
-		    /*height: 20px; */
-			min-height: 20px;
-		    margin-bottom: 15px;
-		    display: none; /* 평소엔 숨김 */
-			line-height: 1.4;
-		}
-
-		/* 버튼 그룹 */
-		.modal-btn-group {
-		    display: flex; width: 100%; gap: 10px;
-		}
-		.modal-btn {
-		    flex: 1; padding: 12px; border: none; border-radius: 12px;
-		    font-size: 16px; font-weight: bold; cursor: pointer;
-		    transition: background 0.2s;
-		}
-		.modal-btn-cancel { background-color: #e0e0e0; color: #333; }
-		.modal-btn-cancel:hover { background-color: #d0d0d0; }
-
-		.modal-btn-ok { background-color: #6ea8fe; color: white; }
-		.modal-btn-ok:hover { background-color: #5a95e5; }
-		
-		.modal-btn-delete {
-			background-color: rgb(255, 128, 128);
-			    color: white;
-			    transition: background-color 0.2s;
-		}
-		.modal-btn-delete:hover {
-		    background-color: #ff4d4d; /* 좀 더 어두운 빨간색 */
-		}
-		
-    </style>
-    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <title th:text="${item.itemName} + ' | 見つけた | JR-Find'">JR-Find | 詳細</title>
+    <!-- 상세 화면 공통 스타일 (探しています 상세와 같이 사용) -->
+    <link rel="stylesheet" th:href="@{/css/post-detail.css}">
+    <script th:src="@{/js/js-enabled.js}"></script>
+    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 위 스타일 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
@@ -233,75 +18,74 @@
 
     <div class="container">
         <main class="content-section">
-            
+
             <div class="post-header">
                 <div class="post-title-row">
                     <span class="board-label">見つけた 掲示板</span>
-                    <span class="post-title-text" th:text="${item.title}"></span>
+                    <h1 class="post-title-text" th:text="${item.title}"></h1>
                 </div>
-				<div class="post-meta-bar">
-				    <span th:text="${item.author}"></span>
-				    
-				    <div>
-				        <span th:text="${#temporals.format(item.registrationDate, 'yyyy.MM.dd HH:mm')}"></span>
-				        <span th:if="${item.modifiedDate != null}" style="color: #999; margin-left: 5px; font-size: 12px;">(編集済み)</span>
-				    </div>
-				</div>
+                <div class="post-meta-bar">
+                    <span th:text="${item.author}"></span>
+                    <div>
+                        <span th:text="${#temporals.format(item.registrationDate, 'yyyy.MM.dd HH:mm')}"></span>
+                        <span class="edited-mark" th:if="${item.modifiedDate != null}">(編集済み)</span>
+                    </div>
+                </div>
             </div>
 
             <div class="post-body">
                 <div class="post-text" th:text="${item.contents}">
                     내용이 들어갑니다.
                 </div>
-                
+
                 <div class="post-image-area" th:if="${item.imgPath != null}">
-                    <img th:src="|/images/${item.imgPath}|" class="post-image" alt="投稿の画像">
+                    <img th:src="|/images/${item.imgPath}|" class="post-image" th:alt="|${item.itemName}の写真|">
                 </div>
             </div>
 
             <div class="btn-group">
                 <a th:href="${listUrl}" class="btn-list-wrapper">
-                    <div class="btn-list-icon">
-                        <svg class="list-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 4H21V6H8V4ZM3 3.5H6V6.5H3V3.5ZM3 10.5H6V13.5H3V10.5ZM3 17.5H6V20.5H3V17.5ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"></path></svg>
-                    </div>
-                    <div class="btn-list-divider"></div>
-                    <div class="btn-list-text">一覧</div>
+                    <span class="btn-list-icon">
+                        <svg class="list-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 4H21V6H8V4ZM3 3.5H6V6.5H3V3.5ZM3 10.5H6V13.5H3V10.5ZM3 17.5H6V20.5H3V17.5ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"></path></svg>
+                    </span>
+                    <span class="btn-list-divider"></span>
+                    <span class="btn-list-text">一覧</span>
                 </a>
 
                 <div class="right-btns">
-                    <!-- 비회원 글: 4자리 비밀번호 확인 후 수정·삭제 -->
+                    <!-- 비회원 글: 4자리 비밀번호 확인 후 수정·삭제
+                         (JS 가 있으면 화면 안의 창을 열고, 없으면 서버가 창을 연 화면을 돌려준다. js/post-detail.js) -->
                     <th:block th:if="${item.memberId == null}">
-                    <button type="button" class="btn-action" onclick="openPwModal('edit')">
-                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.41421 15.89L16.5563 5.74785L15.1421 4.33363L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6473L14.435 2.21231C14.8256 1.82179 15.4587 1.82179 15.8492 2.21231L18.6777 5.04074C19.0682 5.43126 19.0682 6.06443 18.6777 6.45495L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z"></path></svg>
+                    <a class="btn-action" th:href="@{/items/{id}(id=${item.id}, verify='edit')}" data-dialog="passwordModal" data-action="edit">
+                        <svg class="action-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.41421 15.89L16.5563 5.74785L15.1421 4.33363L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6473L14.435 2.21231C14.8256 1.82179 15.4587 1.82179 15.8492 2.21231L18.6777 5.04074C19.0682 5.43126 19.0682 6.06443 18.6777 6.45495L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z"></path></svg>
                         編集
-                    </button>
-
-                    <button type="button" class="btn-action" onclick="openPwModal('delete')">
-                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg>
+                    </a>
+                    <a class="btn-action" th:href="@{/items/{id}(id=${item.id}, verify='delete')}" data-dialog="passwordModal" data-action="delete">
+                        <svg class="action-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg>
                         削除
-                    </button>
+                    </a>
                     </th:block>
 
-                    <!-- 회원 글: 작성자 본인에게만 표시 (비밀번호 불필요) -->
+                    <!-- 회원 글: 작성자 본인에게만 표시 (비밀번호 불필요. 권한은 서버에서도 다시 확인) -->
                     <th:block th:if="${isOwner}">
-                    <button type="button" class="btn-action" onclick="goEdit()">
-                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.41421 15.89L16.5563 5.74785L15.1421 4.33363L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6473L14.435 2.21231C14.8256 1.82179 15.4587 1.82179 15.8492 2.21231L18.6777 5.04074C19.0682 5.43126 19.0682 6.06443 18.6777 6.45495L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z"></path></svg>
+                    <a class="btn-action" th:href="@{/items/{id}/edit(id=${item.id})}">
+                        <svg class="action-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.41421 15.89L16.5563 5.74785L15.1421 4.33363L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6473L14.435 2.21231C14.8256 1.82179 15.4587 1.82179 15.8492 2.21231L18.6777 5.04074C19.0682 5.43126 19.0682 6.06443 18.6777 6.45495L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z"></path></svg>
                         編集
-                    </button>
-
-                    <button type="button" class="btn-action" onclick="openFinalModal()">
-                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg>
+                    </a>
+                    <a class="btn-action" th:href="@{/items/{id}(id=${item.id}, confirmDelete='')}" data-dialog="deleteModal">
+                        <svg class="action-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg>
                         削除
-                    </button>
+                    </a>
                     </th:block>
 
-                    <button type="button" class="btn-action" onclick="shareLink()">
-                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.1202 17.0228L8.92129 14.7324C8.19135 15.5125 7.15261 16 6 16C3.79086 16 2 14.2091 2 12C2 9.79086 3.79086 8 6 8C7.15255 8 8.19125 8.48746 8.92118 9.26746L13.1202 6.97713C13.0417 6.66441 13 6.33707 13 6C13 3.79086 14.7909 2 17 2C19.2091 2 21 3.79086 21 6C21 8.20914 19.2091 10 17 10C15.8474 10 14.8087 9.51251 14.0787 8.73246L9.87977 11.0228C9.9583 11.3355 10 11.6629 10 12C10 12.3371 9.95831 12.6644 9.87981 12.9771L14.0788 15.2675C14.8087 14.4875 15.8474 14 17 14C19.2091 14 21 15.7909 21 18C21 20.2091 19.2091 22 17 22C14.7909 22 13 20.2091 13 18C13 17.6629 13.0417 17.3355 13.1202 17.0228ZM6 14C7.10457 14 8 13.1046 8 12C8 10.8954 7.10457 10 6 10C4.89543 10 4 10.8954 4 12C4 13.1046 4.89543 14 6 14ZM17 8C18.1046 8 19 7.10457 19 6C19 4.89543 18.1046 4 17 4C15.8954 4 15 4.89543 15 6C15 7.10457 15.8954 8 17 8ZM17 20C18.1046 20 19 19.1046 19 18C19 16.8954 18.1046 16 17 16C15.8954 16 15 16.8954 15 18C15 19.1046 15.8954 20 17 20Z"></path></svg>
+                    <!-- 「シェア」: 이 글의 주소 복사 (JS 가 필요하므로 JS 가 꺼져 있으면 숨김) -->
+                    <button type="button" class="btn-action js-only" id="shareButton">
+                        <svg class="action-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.1202 17.0228L8.92129 14.7324C8.19135 15.5125 7.15261 16 6 16C3.79086 16 2 14.2091 2 12C2 9.79086 3.79086 8 6 8C7.15255 8 8.19125 8.48746 8.92118 9.26746L13.1202 6.97713C13.0417 6.66441 13 6.33707 13 6C13 3.79086 14.7909 2 17 2C19.2091 2 21 3.79086 21 6C21 8.20914 19.2091 10 17 10C15.8474 10 14.8087 9.51251 14.0787 8.73246L9.87977 11.0228C9.9583 11.3355 10 11.6629 10 12C10 12.3371 9.95831 12.6644 9.87981 12.9771L14.0788 15.2675C14.8087 14.4875 15.8474 14 17 14C19.2091 14 21 15.7909 21 18C21 20.2091 19.2091 22 17 22C14.7909 22 13 20.2091 13 18C13 17.6629 13.0417 17.3355 13.1202 17.0228ZM6 14C7.10457 14 8 13.1046 8 12C8 10.8954 7.10457 10 6 10C4.89543 10 4 10.8954 4 12C4 13.1046 4.89543 14 6 14ZM17 8C18.1046 8 19 7.10457 19 6C19 4.89543 18.1046 4 17 4C15.8954 4 15 4.89543 15 6C15 7.10457 15.8954 8 17 8ZM17 20C18.1046 20 19 19.1046 19 18C19 16.8954 18.1046 16 17 16C15.8954 16 15 16.8954 15 18C15 19.1046 15.8954 20 17 20Z"></path></svg>
                         シェア
                     </button>
                 </div>
             </div>
-            
+
             <!-- 댓글 (fragments/comments.html) -->
             <section th:replace="~{fragments/comments :: commentSection(|/items/${item.id}|, ${item.memberId})}"></section>
 
@@ -321,195 +105,51 @@
             <div th:replace="~{fragments/lostCenter :: lostCenterInfo}"></div>
         </aside>
     </div>
-	<div id="passwordModal" class="modal-overlay">
-	    <div class="modal-box">
-	        <svg class="modal-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-	            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path>
-	        </svg>
 
-	        <div class="modal-title-text">パスワード確認</div>
-	        
-	        <div class="modal-desc-text">
-	            記事を作成した時の<br>パスワード(4桁)を入力してください。
-	        </div>
-	        
-	        <input type="password" id="modalPasswordInput" class="modal-input-pw" maxlength="4" placeholder="●●●●">
-	        
-	        <div id="modalErrorMsg" class="modal-error">
-	            パスワードが一致しません。
-	        </div>
+    <!-- 비회원 글의 비밀번호 확인 창
+         JS 가 있으면 화면 안에서 확인하고(fetch → /check-password), 없으면 폼으로 보낸다(/verify → 결과 화면) -->
+    <div id="passwordModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pwModalTitle" aria-describedby="pwModalDesc"
+         th:if="${item.memberId == null}" th:classappend="${verifyAction != null} ? 'open'">
+        <form class="modal-box" id="pwForm" method="post" th:action="@{/items/{id}/verify(id=${item.id})}"
+              th:data-check-url="@{/items/{id}/check-password(id=${item.id})}" th:data-edit-url="@{/items/{id}/edit(id=${item.id})}"
+              th:data-list-url="@{/items}">
+            <svg class="modal-icon-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>
+            <h2 class="modal-title-text" id="pwModalTitle">パスワード確認</h2>
+            <!-- 수정을 보냈는데 비밀번호 확인이 풀려 있던 경우는 다른 설명 (입력한 내용은 보관돼 있다) -->
+            <p class="modal-desc-text" id="pwModalDesc" th:text="${reverify} ? '保存する前に、もう一度パスワード(4桁)を入力してください。&#10;入力していた内容は、確認後の編集画面に戻します。' : '記事を作成した時のパスワード(4桁)を入力してください。'">記事を作成した時のパスワード(4桁)を入力してください。</p>
+            <input type="hidden" name="action" id="pwAction" th:value="${verifyAction} ?: 'edit'">
+            <label for="modalPasswordInput" class="visually-hidden">パスワード(半角数字4桁)</label>
+            <input type="password" id="modalPasswordInput" name="password" class="modal-input-pw" maxlength="4" inputmode="numeric" autocomplete="off"
+                   placeholder="●●●●" aria-describedby="modalErrorMsg" data-autofocus th:aria-invalid="${verifyError != null} ? 'true' : null">
+            <!-- 오류 문구: 바뀌면 스크린리더가 바로 읽는다 -->
+            <p id="modalErrorMsg" class="modal-error" aria-live="assertive" th:text="${verifyError}"></p>
+            <div class="modal-btn-group">
+                <a class="modal-btn modal-btn-cancel" th:href="@{/items/{id}(id=${item.id})}">キャンセル</a>
+                <button type="submit" class="modal-btn modal-btn-ok">OK</button>
+            </div>
+        </form>
+    </div>
 
-	        <div class="modal-btn-group">
-	            <button class="modal-btn modal-btn-cancel" onclick="closePwModal()">キャンセル</button>
-	            <button class="modal-btn modal-btn-ok" onclick="submitPassword()">OK</button>
-	        </div>
-	    </div>
-	</div>
-	
-	<div id="finalDeleteModal" class="modal-overlay">
-	    <div class="modal-box">
-	        <svg class="modal-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="fill: #ff4d4d;">
-	            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path>
-	        </svg>
+    <!-- 삭제 확인 창 (회원 글의 작성자, 비밀번호를 확인한 비회원) -->
+    <div id="deleteModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="deleteTitle" aria-describedby="deleteDesc"
+         th:if="${item.memberId == null or isOwner}" th:classappend="${confirmDelete} ? 'open'">
+        <form class="modal-box" method="post" th:action="@{/items/{id}/delete(id=${item.id})}">
+            <svg class="modal-icon-svg modal-icon-danger" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>
+            <h2 class="modal-title-text" id="deleteTitle">削除の確認</h2>
+            <p class="modal-desc-text" id="deleteDesc">本当に削除しますか？
+削除されたデータは復元できません。
+この投稿に付いたコメントも表示されなくなります。</p>
+            <div class="modal-btn-group">
+                <a class="modal-btn modal-btn-cancel" th:href="@{/items/{id}(id=${item.id})}" data-autofocus>キャンセル</a>
+                <button type="submit" class="modal-btn modal-btn-delete">削除する</button>
+            </div>
+        </form>
+    </div>
 
-	        <div class="modal-title-text">削除の確認</div>
-	        
-	        <div class="modal-desc-text">
-	            本当に削除しますか？<br>
-	            削除されたデータは復元できません。<br>
-	            この投稿に付いたコメントも表示されなくなります。
-	        </div>
-	        
-	        <div class="modal-btn-group">
-				<button class="modal-btn modal-btn-cancel" onclick="closeFinalModal()">キャンセル</button>
-				            <button class="modal-btn modal-btn-delete" onclick="executeDelete()">削除する</button>
-	        </div>
-	    </div>
-	</div>
-
-	<form id="deleteForm" th:action="@{/items/{id}/delete(id=${item.id})}" method="post" style="display: none;"></form>
-
-<script th:inline="javascript">
-    const itemId = /*[[${item.id}]]*/ 0;
-    const reverify = /*[[${reverify}]]*/ false;
-    const pwModal = document.getElementById('passwordModal');
-	const finalModal = document.getElementById('finalDeleteModal');
-	
-    const pwInput = document.getElementById('modalPasswordInput');
-    const errorMsg = document.getElementById('modalErrorMsg');
-    const pwDesc = pwModal.querySelector('.modal-desc-text');
-    const pwDescDefault = pwDesc.innerHTML;
-    let currentAction = ''; // 'edit' 또는 'delete'
-    let afterMessage = null; // 확인할 수 없는 상태(화면이 오래됨·글이 삭제됨)를 알린 뒤 OK 를 누르면 할 일
-
-    // 1. 모달 열기 (actionType: 'edit' or 'delete')
-    function openPwModal(actionType) {
-        currentAction = actionType;
-        pwInput.value = ''; // 입력창 초기화
-        errorMsg.style.display = 'none'; // 에러메시지 숨김
-        pwDesc.innerHTML = pwDescDefault;
-        afterMessage = null; // 창을 다시 열면 처음부터 확인한다
-        pwModal.style.display = 'flex';
-        pwInput.focus();
-    }
-
-    // 수정 화면에서 보냈는데 비밀번호 확인이 끝나 있었던 경우 (다른 탭에서 먼저 저장 등): 바로 다시 묻는다
-    // 입력한 내용은 서버에 보관돼 있어서, 확인하면 수정 화면에 다시 채워진다
-    if (reverify) {
-        openPwModal('edit');
-        pwDesc.innerText = '保存する前に、もう一度パスワード(4桁)を入力してください。\n入力していた内容は、確認後の編集画面に戻します。';
-    }
-
-    // 2. 모달 닫기
-    function closePwModal() {
-        pwModal.style.display = 'none';
-    }
-
-	// 최종 확인 모달 열기 / 닫기
-    function openFinalModal() {
-        finalModal.style.display = 'flex';
-    }
-
-    function closeFinalModal() {
-        finalModal.style.display = 'none';
-    }
-
-    // 수정 화면으로 이동 (권한은 서버에서 다시 확인)
-    function goEdit() {
-        location.href = `/items/${itemId}/edit`;
-    }
-
-    // 진짜 삭제 실행 (최종 모달에서 '삭제' 클릭 시)
-    function executeDelete() {
-        const form = document.getElementById('deleteForm');
-        if (form.dataset.submitting) return; // 두 번 눌러도 한 번만 보낸다 (submit-once.js 와 같은 표시)
-        form.dataset.submitting = 'true';
-        form.submit();
-    }
-	
-	// 3. 비밀번호 확인 요청 함수
-	function submitPassword() {
-	    if (afterMessage) {
-	        afterMessage();
-	        return;
-	    }
-	    const password = pwInput.value;
-	    const errorMsgDiv = document.getElementById('modalErrorMsg'); 
-
-	    // 1. 빈 값 체크 (입력 안 하고 확인 눌렀을 때)
-	    if (!password) {
-	        // [요청 반영] "비밀번호를 입력해주세요"
-	        errorMsgDiv.innerText = "パスワードを入力してください。";
-	        errorMsgDiv.style.display = 'block';
-	        pwInput.focus();
-	        return;
-	    }
-
-	    // 2. 서버 확인 요청 (비밀번호는 URL이 아니라 요청 본문으로 보낸다)
-	    // CSRF 토큰은 <meta> 에서 읽어서 헤더로 보낸다
-	    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
-	    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
-
-	    fetch(`/items/${itemId}/check-password`, {
-	        method: 'POST',
-	        headers: { [csrfHeader]: csrfToken },
-	        body: new URLSearchParams({ password: password })
-	    })
-	    .then(response => {
-	        // 연속으로 틀려서 일정 시간 잠긴 경우 ({ ok: false, remaining: 0, lockMinutes })
-	        if (response.status === 429) return response.json().then(body => ({ ...body, locked: true }));
-	        // 화면을 오래 열어 둬서 세션이 끝난 경우 (CSRF 토큰이 맞지 않음)
-	        if (response.status === 403) return 'expired';
-	        // 다른 탭 등에서 이미 삭제된 글
-	        if (response.status === 404) return 'deleted';
-	        if (!response.ok) throw new Error(response.status);
-	        return response.json();
-	    })
-	    .then(result => {
-	        if (result === 'expired' || result === 'deleted') {
-	            errorMsgDiv.innerText = (result === 'expired')
-	                ? "画面を開いてから時間が経ったため、確認できませんでした。\n「OK」を押すと、画面を読み込み直します。"
-	                : "この投稿は削除されています。\n「OK」を押すと、一覧に戻ります。";
-	            errorMsgDiv.style.display = 'block';
-	            pwInput.value = '';
-	            afterMessage = (result === 'expired') ? () => location.reload() : () => { location.href = '/items'; };
-	            return;
-	        }
-	        if (result.locked) {
-	            errorMsgDiv.innerText = `入力回数の上限を超えました。\n${result.lockMinutes}分ほど経ってから再度お試しください。`;
-	            errorMsgDiv.style.display = 'block';
-	            pwInput.value = '';
-	            return;
-	        }
-
-	        // { ok, remaining: 몇 번 더 틀리면 잠기는지, lockMinutes }
-	        if (result.ok) {
-	            // 일치: 모달 닫고 다음 단계
-	            closePwModal(); 
-
-	            if (currentAction === 'delete') {
-	                document.getElementById('finalDeleteModal').style.display = 'flex'; 
-	            } else if (currentAction === 'edit') {
-	                location.href = `/items/${itemId}/edit`; 
-	            }
-	        } else {
-	            // 불일치: 입력값 비우고 에러 메시지 표시
-	            // [요청 반영] "비밀번호가 틀렸습니다. 다시 입력해주세요."
-	            // 잠기기까지 얼마 남지 않았으면 미리 알린다
-	            errorMsgDiv.innerText = "パスワードが間違っています。\nもう一度入力してください。"
-	                + ((result.remaining <= 3) ? `\n(あと${result.remaining}回間違えると、${result.lockMinutes}分間入力できなくなります。)` : '');
-	            errorMsgDiv.style.display = 'block';
-	            pwInput.value = ''; // 입력창 초기화
-	            pwInput.focus();
-	        }
-	    })
-	    .catch(error => {
-	        console.error('Error:', error);
-	        alert("サーバー通信エラーが発生しました。");
-	    });
-	}
-</script>
+    <script th:src="@{/js/dialog.js}"></script>
     <!-- 「シェア」: 이 글의 주소 복사 -->
     <script th:src="@{/js/share-link.js}"></script>
+    <!-- 수정·삭제 창, 비밀번호 확인 -->
+    <script th:src="@{/js/post-detail.js}"></script>
 </body>
 </html>

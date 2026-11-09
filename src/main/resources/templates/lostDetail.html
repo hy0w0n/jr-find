@@ -3,77 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JR-Find | 詳細</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
-
-        .container { width: 90%; max-width: 1200px; margin: 40px auto; display: flex; gap: 40px; align-items: flex-start; }
-        .content-section { flex: 3; min-width: 0; } /* 긴 URL 등이 있어도 사이드바를 밀어내지 않게 */
-        .side-section { flex: 1; margin-top: 60px; }
-
-        /* 제목·작성자 (見つけた 상세 화면과 같은 모양) */
-        .post-header { border-top: 2px solid #555; border-bottom: 1px solid #ccc; }
-        .post-title-row { display: flex; align-items: center; padding: 12px 10px; border-bottom: 1px solid #555; }
-        .board-label { font-size: 14px; padding-right: 15px; margin-right: 15px; border-right: 1px solid #ccc; white-space: nowrap; }
-        .post-title-text { font-weight: bold; font-size: 16px; overflow-wrap: anywhere; }
-        .post-meta-bar { background-color: #f2f2f2; padding: 8px 15px; display: flex; justify-content: space-between; font-size: 13px; color: #666; }
-
-        .badge { display: inline-block; margin-right: 10px; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: bold; white-space: nowrap; }
-        .badge-searching { background: #fff4e5; color: #c05621; }
-        .badge-resolved { background: #e8f5e9; color: #2e7d32; }
-
-        /* 잃어버린 물건 요약 */
-        .info-table { width: 100%; border-collapse: collapse; margin-top: 25px; font-size: 14px; }
-        .info-table th { width: 140px; padding: 10px 15px; text-align: left; background: #fafafa; color: #666; font-weight: normal; border-bottom: 1px solid #eee; }
-        .info-table td { padding: 10px 15px; border-bottom: 1px solid #eee; }
-        .station-unknown { color: #999; }
-
-        .post-body { padding: 30px 10px 40px; min-height: 200px; border-bottom: 1px solid #eee; }
-        .post-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; font-size: 15px; margin-bottom: 30px; }
-        .post-image-area { text-align: center; margin-top: 20px; }
-        .post-image { max-width: 100%; max-height: 500px; border-radius: 4px; border: 1px solid #eee; }
-
-        /* 버튼 */
-        .btn-group { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
-        .btn-list-wrapper { display: inline-flex; align-items: center; background-color: #777; color: #fff; text-decoration: none; border-radius: 2px; transition: background 0.2s; height: 40px; }
-        .btn-list-wrapper:hover { background-color: #555; }
-        .btn-list-icon { padding: 0 12px; display: flex; align-items: center; }
-        .btn-list-divider { width: 1px; height: 60%; background-color: #999; }
-        .btn-list-text { padding: 0 20px 0 15px; font-weight: bold; font-size: 14px; }
-        .list-svg { width: 20px; height: 20px; fill: #fff; }
-
-        .right-btns { display: flex; gap: 10px; }
-        .right-btns form { display: inline; }
-        .btn-action { display: inline-flex; align-items: center; gap: 6px; background-color: #e5e5e5; color: #444; border: none; border-radius: 20px; padding: 8px 20px; font-size: 14px; font-weight: bold; font-family: inherit; cursor: pointer; text-decoration: none; transition: background 0.2s; }
-        .btn-action:hover { background-color: #d0d0d0; }
-        .btn-resolve { background-color: #e8f5e9; color: #2e7d32; }
-        .btn-resolve:hover { background-color: #d5ecd7; }
-        .action-svg { width: 18px; height: 18px; fill: currentColor; }
-
-        /* 사이드바 */
-        .sidebar-card { border: 1px solid #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 25px; background: #fff; }
-        .sidebar-card p { font-size: 15px; color: #444; margin-bottom: 20px; }
-        .write-btn-link { display: block; width: 100%; padding: 12px; background-color: #f0f0f0; color: #e63946; text-decoration: none; font-weight: bold; border-radius: 6px; transition: background 0.2s; }
-        .write-btn-link:hover { background-color: #e5e5e5; }
-        .btn-gray { background-color: #f0f0f0; color: #333; }
-        .notice-card { border: 1px solid #f5c2c7; background-color: #fff5f5; border-radius: 15px; padding: 25px 20px; font-size: 13px; line-height: 1.7; color: #842029; }
-        .notice-title { font-size: 15px; font-weight: bold; text-align: center; margin-bottom: 12px; }
-
-        /* 삭제 확인 모달 */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); display: none; justify-content: center; align-items: center; z-index: 9999; }
-        .modal-box { background: white; width: 400px; padding: 40px 30px; border-radius: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; }
-        .modal-icon-svg { width: 60px; height: 60px; fill: #ff4d4d; margin-bottom: 20px; }
-        .modal-title-text { font-size: 22px; font-weight: bold; margin-bottom: 10px; }
-        .modal-desc-text { font-size: 14px; color: #999; margin-bottom: 25px; line-height: 1.5; }
-        .modal-btn-group { display: flex; width: 100%; gap: 10px; }
-        .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        .modal-btn-cancel { background-color: #e0e0e0; color: #333; }
-        .modal-btn-cancel:hover { background-color: #d0d0d0; }
-        .modal-btn-delete { background-color: rgb(255, 128, 128); color: white; }
-        .modal-btn-delete:hover { background-color: #ff4d4d; }
-    </style>
-    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <title th:text="${item.itemName} + ' | 探しています | JR-Find'">JR-Find | 詳細</title>
+    <!-- 상세 화면 공통 스타일 (見つけた 상세와 같이 사용) -->
+    <link rel="stylesheet" th:href="@{/css/post-detail.css}">
+    <script th:src="@{/js/js-enabled.js}"></script>
+    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 위 스타일 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
@@ -86,24 +20,24 @@
                     <span class="board-label">探しています 掲示板</span>
                     <span class="badge badge-resolved" th:if="${item.resolved}">見つかりました</span>
                     <span class="badge badge-searching" th:unless="${item.resolved}">探しています</span>
-                    <span class="post-title-text" th:text="${item.title}"></span>
+                    <h1 class="post-title-text" th:text="${item.title}"></h1>
                 </div>
                 <div class="post-meta-bar">
                     <span th:text="${item.author}"></span>
                     <div>
                         <span th:text="${#temporals.format(item.registrationDate, 'yyyy.MM.dd HH:mm')}"></span>
-                        <span th:if="${item.modifiedDate != null}" style="color: #999; margin-left: 5px; font-size: 12px;">(編集済み)</span>
+                        <span class="edited-mark" th:if="${item.modifiedDate != null}">(編集済み)</span>
                     </div>
                 </div>
             </div>
 
             <table class="info-table">
                 <tr>
-                    <th>なくした日</th>
+                    <th scope="row">なくした日</th>
                     <td th:text="${item.lostDate}"></td>
                 </tr>
                 <tr>
-                    <th>なくした場所</th>
+                    <th scope="row">なくした場所</th>
                     <td>
                         <span th:text="${item.lineName}"></span> /
                         <span th:if="${item.stationName != null}" th:text="${item.stationName}"></span>
@@ -111,7 +45,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <th>なくした物</th>
+                    <th scope="row">なくした物</th>
                     <td><span th:text="${item.categoryName}"></span> / <b th:text="${item.itemName}"></b></td>
                 </tr>
             </table>
@@ -119,17 +53,17 @@
             <div class="post-body">
                 <div class="post-text" th:text="${item.contents}"></div>
                 <div class="post-image-area" th:if="${item.imgPath != null}">
-                    <img th:src="|/images/${item.imgPath}|" class="post-image" alt="投稿の画像">
+                    <img th:src="|/images/${item.imgPath}|" class="post-image" th:alt="|${item.itemName}の写真|">
                 </div>
             </div>
 
             <div class="btn-group">
                 <a th:href="${listUrl}" class="btn-list-wrapper">
-                    <div class="btn-list-icon">
-                        <svg class="list-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 4H21V6H8V4ZM3 3.5H6V6.5H3V3.5ZM3 10.5H6V13.5H3V10.5ZM3 17.5H6V20.5H3V17.5ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"></path></svg>
-                    </div>
-                    <div class="btn-list-divider"></div>
-                    <div class="btn-list-text">一覧</div>
+                    <span class="btn-list-icon">
+                        <svg class="list-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 4H21V6H8V4ZM3 3.5H6V6.5H3V3.5ZM3 10.5H6V13.5H3V10.5ZM3 17.5H6V20.5H3V17.5ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"></path></svg>
+                    </span>
+                    <span class="btn-list-divider"></span>
+                    <span class="btn-list-text">一覧</span>
                 </a>
 
                 <div class="right-btns">
@@ -141,18 +75,20 @@
                     </form>
 
                     <a th:href="@{/lost-items/{id}/edit(id=${item.id})}" class="btn-action">
-                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.41421 15.89L16.5563 5.74785L15.1421 4.33363L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6473L14.435 2.21231C14.8256 1.82179 15.4587 1.82179 15.8492 2.21231L18.6777 5.04074C19.0682 5.43126 19.0682 6.06443 18.6777 6.45495L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z"></path></svg>
+                        <svg class="action-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.41421 15.89L16.5563 5.74785L15.1421 4.33363L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6473L14.435 2.21231C14.8256 1.82179 15.4587 1.82179 15.8492 2.21231L18.6777 5.04074C19.0682 5.43126 19.0682 6.06443 18.6777 6.45495L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z"></path></svg>
                         編集
                     </a>
 
-                    <button type="button" class="btn-action" onclick="openDeleteModal()">
-                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg>
+                    <!-- 삭제 확인 창 (JS 가 있으면 화면 안의 창을 열고, 없으면 서버가 창을 연 화면을 돌려준다. js/post-detail.js) -->
+                    <a class="btn-action" th:href="@{/lost-items/{id}(id=${item.id}, confirmDelete='')}" data-dialog="deleteModal">
+                        <svg class="action-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg>
                         削除
-                    </button>
+                    </a>
                     </th:block>
 
-                    <button type="button" class="btn-action" onclick="shareLink()">
-                        <svg class="action-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.1202 17.0228L8.92129 14.7324C8.19135 15.5125 7.15261 16 6 16C3.79086 16 2 14.2091 2 12C2 9.79086 3.79086 8 6 8C7.15255 8 8.19125 8.48746 8.92118 9.26746L13.1202 6.97713C13.0417 6.66441 13 6.33707 13 6C13 3.79086 14.7909 2 17 2C19.2091 2 21 3.79086 21 6C21 8.20914 19.2091 10 17 10C15.8474 10 14.8087 9.51251 14.0787 8.73246L9.87977 11.0228C9.9583 11.3355 10 11.6629 10 12C10 12.3371 9.95831 12.6644 9.87981 12.9771L14.0788 15.2675C14.8087 14.4875 15.8474 14 17 14C19.2091 14 21 15.7909 21 18C21 20.2091 19.2091 22 17 22C14.7909 22 13 20.2091 13 18C13 17.6629 13.0417 17.3355 13.1202 17.0228ZM6 14C7.10457 14 8 13.1046 8 12C8 10.8954 7.10457 10 6 10C4.89543 10 4 10.8954 4 12C4 13.1046 4.89543 14 6 14ZM17 8C18.1046 8 19 7.10457 19 6C19 4.89543 18.1046 4 17 4C15.8954 4 15 4.89543 15 6C15 7.10457 15.8954 8 17 8ZM17 20C18.1046 20 19 19.1046 19 18C19 16.8954 18.1046 16 17 16C15.8954 16 15 16.8954 15 18C15 19.1046 15.8954 20 17 20Z"></path></svg>
+                    <!-- 「シェア」: 이 글의 주소 복사 (JS 가 필요하므로 JS 가 꺼져 있으면 숨김) -->
+                    <button type="button" class="btn-action js-only" id="shareButton">
+                        <svg class="action-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.1202 17.0228L8.92129 14.7324C8.19135 15.5125 7.15261 16 6 16C3.79086 16 2 14.2091 2 12C2 9.79086 3.79086 8 6 8C7.15255 8 8.19125 8.48746 8.92118 9.26746L13.1202 6.97713C13.0417 6.66441 13 6.33707 13 6C13 3.79086 14.7909 2 17 2C19.2091 2 21 3.79086 21 6C21 8.20914 19.2091 10 17 10C15.8474 10 14.8087 9.51251 14.0787 8.73246L9.87977 11.0228C9.9583 11.3355 10 11.6629 10 12C10 12.3371 9.95831 12.6644 9.87981 12.9771L14.0788 15.2675C14.8087 14.4875 15.8474 14 17 14C19.2091 14 21 15.7909 21 18C21 20.2091 19.2091 22 17 22C14.7909 22 13 20.2091 13 18C13 17.6629 13.0417 17.3355 13.1202 17.0228ZM6 14C7.10457 14 8 13.1046 8 12C8 10.8954 7.10457 10 6 10C4.89543 10 4 10.8954 4 12C4 13.1046 4.89543 14 6 14ZM17 8C18.1046 8 19 7.10457 19 6C19 4.89543 18.1046 4 17 4C15.8954 4 15 4.89543 15 6C15 7.10457 15.8954 8 17 8ZM17 20C18.1046 20 19 19.1046 19 18C19 16.8954 18.1046 16 17 16C15.8954 16 15 16.8954 15 18C15 19.1046 15.8954 20 17 20Z"></path></svg>
                         シェア
                     </button>
                 </div>
@@ -177,36 +113,32 @@
                 個人間での直接の受け渡しや、お礼・手数料などの金銭の要求には応じないでください。
             </div>
             <!-- お忘れ物 문의처 (fragments/lostCenter.html) -->
-            <div style="margin-top: 25px;">
+            <div class="lost-center-wrap">
                 <div th:replace="~{fragments/lostCenter :: lostCenterInfo}"></div>
             </div>
         </aside>
     </div>
 
-    <div id="deleteModal" class="modal-overlay" th:if="${isOwner}">
-        <div class="modal-box">
-            <svg class="modal-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path>
-            </svg>
-            <div class="modal-title-text">削除の確認</div>
-            <div class="modal-desc-text">本当に削除しますか？<br>削除されたデータは復元できません。<br>この投稿に付いたコメントも表示されなくなります。</div>
+    <!-- 삭제 확인 창 (작성자 본인) -->
+    <div id="deleteModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="deleteTitle" aria-describedby="deleteDesc"
+         th:if="${isOwner}" th:classappend="${confirmDelete} ? 'open'">
+        <form class="modal-box" method="post" th:action="@{/lost-items/{id}/delete(id=${item.id})}">
+            <svg class="modal-icon-svg modal-icon-danger" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>
+            <h2 class="modal-title-text" id="deleteTitle">削除の確認</h2>
+            <p class="modal-desc-text" id="deleteDesc">本当に削除しますか？
+削除されたデータは復元できません。
+この投稿に付いたコメントも表示されなくなります。</p>
             <div class="modal-btn-group">
-                <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">キャンセル</button>
-                <button class="modal-btn modal-btn-delete" onclick="this.disabled = true; document.getElementById('deleteForm').submit()">削除する</button>
+                <a class="modal-btn modal-btn-cancel" th:href="@{/lost-items/{id}(id=${item.id})}" data-autofocus>キャンセル</a>
+                <button type="submit" class="modal-btn modal-btn-delete">削除する</button>
             </div>
-        </div>
+        </form>
     </div>
-    <form id="deleteForm" th:if="${isOwner}" th:action="@{/lost-items/{id}/delete(id=${item.id})}" method="post" style="display: none;"></form>
 
-    <script>
-        function openDeleteModal() {
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-        function closeDeleteModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-        }
-    </script>
+    <script th:src="@{/js/dialog.js}"></script>
     <!-- 「シェア」: 이 글의 주소 복사 -->
     <script th:src="@{/js/share-link.js}"></script>
+    <!-- 삭제 확인 창 -->
+    <script th:src="@{/js/post-detail.js}"></script>
 </body>
 </html>

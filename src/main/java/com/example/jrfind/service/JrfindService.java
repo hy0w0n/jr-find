@@ -1,6 +1,7 @@
 package com.example.jrfind.service;
 
 import java.io.IOException;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -211,7 +212,12 @@ public class JrfindService {
         if (attemptLimiter.isLocked(clientKey)) {
             return PasswordCheck.LOCKED;
         }
-        if (password != null && passwordEncoder.matches(password, hash)) {
+        // 전각 숫자(１２３４)는 반각으로. 4자리 숫자가 아니면 맞을 수 없으므로 틀린 횟수로 세지 않는다 (입력 실수)
+        String normalized = (password == null) ? "" : Normalizer.normalize(password, Normalizer.Form.NFKC).strip();
+        if (!normalized.matches("\\d{4}")) {
+            return PasswordCheck.MISMATCH;
+        }
+        if (passwordEncoder.matches(normalized, hash)) {
             attemptLimiter.reset(clientKey);
             return PasswordCheck.OK;
         }
