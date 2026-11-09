@@ -29,6 +29,16 @@
   </tr>
 </table>
 
+スマートフォン表示（幅390px）
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/09-mobile-list.png" alt="スマートフォン 見つけた 一覧"><br>一覧 — 表をカード形式に</td>
+    <td width="33%"><img src="docs/screenshots/10-mobile-detail.png" alt="スマートフォン 見つけた 詳細"><br>詳細</td>
+    <td width="33%"><img src="docs/screenshots/11-mobile-warning.png" alt="スマートフォン 探しています 投稿前の注意事項"><br>探しています 投稿前の注意事項</td>
+  </tr>
+</table>
+
 スクリーンショットの投稿・会員情報はすべてテスト用のデータです。
 
 ## 技術スタック

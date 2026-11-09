@@ -29,6 +29,16 @@
   </tr>
 </table>
 
+휴대폰 화면 (폭 390px)
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/09-mobile-list.png" alt="휴대폰 見つけた 목록"><br>목록 — 표를 카드 형태로</td>
+    <td width="33%"><img src="docs/screenshots/10-mobile-detail.png" alt="휴대폰 見つけた 상세"><br>상세</td>
+    <td width="33%"><img src="docs/screenshots/11-mobile-warning.png" alt="휴대폰 探しています 작성 전 주의사항"><br>探しています 작성 전 주의사항</td>
+  </tr>
+</table>
+
 스크린샷의 게시글·회원 정보는 모두 테스트용 데이터입니다.
 
 ## 기술 스택
