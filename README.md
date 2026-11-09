@@ -1,10 +1,35 @@
 # JR Find
 
+**한국어** | [日本語](README.ja.md)
+
 도쿄 JR 역의 분실물 게시판 웹 애플리케이션입니다. (화면 언어: 일본어)
 
 - **見つけた** 게시판: 주운 물건을 알리는 게시판. 로그인 없이도 글을 올릴 수 있고(작성할 때 정한 4자리 비밀번호로 수정·삭제), 회원은 로그인한 계정으로 글을 올리고 비밀번호 없이 수정·삭제합니다.
 - **探しています** 게시판: 잃어버린 물건을 찾는 게시판. 회원만 글을 쓸 수 있습니다.
 - 두 게시판 모두 회원은 댓글을 달 수 있습니다. (감사 인사, "분실물 센터에 맡겼어요" 같은 후속 소식)
+
+## 화면
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/01-home.png" alt="홈"><br>홈 — 통합 검색창과 두 게시판 입구</td>
+    <td width="50%"><img src="docs/screenshots/02-found-list.png" alt="見つけた 목록"><br>見つけた 목록 — 노선·역·카테고리 필터, 정렬, 댓글 수</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/03-found-detail.png" alt="見つけた 상세"><br>見つけた 상세 — 댓글(글쓴이는 「投稿者」 표시), お忘れ物 문의처</td>
+    <td><img src="docs/screenshots/04-lost-list.png" alt="探しています 목록"><br>探しています 목록 — 찾은 물건은 「見つかりました」 표시</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/05-lost-warning.png" alt="探しています 작성 전 주의사항"><br>探しています 작성 전 주의사항 — 사기·절도 경고를 확인해야 작성 가능</td>
+    <td><img src="docs/screenshots/06-search.png" alt="통합 검색"><br>통합 검색 — 두 게시판에서 최신 5건씩</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/07-map.jpg" alt="駅マップ"><br>駅マップ — 노선도와 역별 게시글 수, お忘れ物 문의처</td>
+    <td><img src="docs/screenshots/08-mypage.png" alt="마이페이지"><br>마이페이지 — 내 회원정보와 내가 쓴 글·댓글</td>
+  </tr>
+</table>
+
+스크린샷의 게시글·회원 정보는 모두 테스트용 데이터입니다.
 
 ## 기술 스택
 
