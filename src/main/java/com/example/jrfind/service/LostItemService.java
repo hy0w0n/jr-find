@@ -3,6 +3,7 @@ package com.example.jrfind.service;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -72,6 +73,7 @@ public class LostItemService {
 		validateMasterData(form);
 		applyForm(item, form);
 
+		String oldImage = item.getImgPath();
 		if (isImageDeleted) {
 			item.setImgPath(null);
 		} else if (file != null && !file.isEmpty()) {
@@ -80,6 +82,10 @@ public class LostItemService {
 
 		item.setModifiedDate(LocalDateTime.now());
 		repository.update(item);
+		// 바꾸거나 지운 사진의 이전 파일은 DB 에 반영한 뒤에 지운다
+		if (!Objects.equals(oldImage, item.getImgPath())) {
+			imageStorage.delete(oldImage);
+		}
 	}
 
 	// 찾았음 표시 / 해제
@@ -87,8 +93,13 @@ public class LostItemService {
 		repository.updateResolved(id, resolved);
 	}
 
+	// 게시글은 DEL_FLG 로 숨기고 사진 파일은 지운다 (삭제한 글의 사진이 /images/파일명 으로 계속 보이지 않도록)
 	public void deleteItem(Long id) {
+		LostItem item = repository.findById(id);
 		repository.delete(id);
+		if (item != null) {
+			imageStorage.delete(item.getImgPath());
+		}
 	}
 
 	// 입력값을 게시글에 반영. 제목은 서버에서 만든다.

@@ -231,7 +231,8 @@ public class JdbcJrfindRepository implements JrfindRepository {
     // 논리 삭제 메서드
     @Override
     public void delete(Long id) {
-        String sql = "UPDATE Found_Item SET DEL_FLG = TRUE WHERE ID = ?";
+        // 사진 파일은 서비스에서 지우므로 파일명도 비운다
+        String sql = "UPDATE Found_Item SET DEL_FLG = TRUE, ImgPath = NULL WHERE ID = ?";
         jdbcTemplate.update(sql, id);
     }
 

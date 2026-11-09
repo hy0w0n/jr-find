@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -105,6 +106,7 @@ public class JrfindService {
         applyForm(oldItem, form);
 
         // 이미지 처리
+        String oldImage = oldItem.getImgPath();
         if (isImageDeleted) {
             oldItem.setImgPath(null);
         } else if (file != null && !file.isEmpty()) {
@@ -113,6 +115,10 @@ public class JrfindService {
 
         oldItem.setModifiedDate(LocalDateTime.now());
         repository.update(oldItem);
+        // 바꾸거나 지운 사진의 이전 파일은 DB 에 반영한 뒤에 지운다
+        if (!Objects.equals(oldImage, oldItem.getImgPath())) {
+            imageStorage.delete(oldImage);
+        }
     }
 
     // 입력값을 게시글에 반영. 제목은 클라이언트 값이 아니라 서버에서 만든다.
@@ -193,8 +199,12 @@ public class JrfindService {
         return PasswordCheck.MISMATCH;
     }
 
-    // 삭제
+    // 삭제: 게시글은 DEL_FLG 로 숨기고 사진 파일은 지운다 (삭제한 글의 사진이 /images/파일명 으로 계속 보이지 않도록)
     public void deleteItem(Long id) {
+        FoundItem item = repository.findById(id);
         repository.delete(id);
+        if (item != null) {
+            imageStorage.delete(item.getImgPath());
+        }
     }
 }

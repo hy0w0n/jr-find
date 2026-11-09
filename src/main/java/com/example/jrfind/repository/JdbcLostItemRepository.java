@@ -152,7 +152,8 @@ public class JdbcLostItemRepository implements LostItemRepository {
 	// 논리 삭제
 	@Override
 	public void delete(Long id) {
-		jdbcTemplate.update("UPDATE Lost_Item SET DEL_FLG = TRUE WHERE ID = ?", id);
+		// 사진 파일은 서비스에서 지우므로 파일명도 비운다
+		jdbcTemplate.update("UPDATE Lost_Item SET DEL_FLG = TRUE, ImgPath = NULL WHERE ID = ?", id);
 	}
 
 	// 목록용: 게시글 + 댓글 수 (SQL 에 CommentCount 컬럼이 있어야 함)

@@ -4,19 +4,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-// 업로드 이미지 저장 담당
+// 업로드 이미지 저장·삭제 담당
 @Component
 public class ImageStorage {
+	private static final Logger log = LoggerFactory.getLogger(ImageStorage.class);
+
 	private final Path uploadDir;
 
 	public ImageStorage(@Value("${jrfind.upload-dir}") String uploadDir) {
@@ -48,6 +53,25 @@ public class ImageStorage {
 			Files.copy(in, uploadDir.resolve(storeFilename));
 		}
 		return storeFilename;
+	}
+
+	// 저장된 이미지 파일을 지운다 (사진을 바꾸거나 지웠을 때, 게시글을 삭제했을 때). 파일이 없으면 아무 일도 하지 않는다.
+	// 파일 정리는 부가 작업이므로 실패해도 게시글 처리는 그대로 두고 로그만 남긴다.
+	public void delete(String filename) {
+		if (filename == null || filename.isBlank()) {
+			return;
+		}
+		try {
+			Path file = uploadDir.resolve(filename).normalize();
+			// 업로드 폴더 바로 아래의 파일만 지운다 (DB 값에 "../" 등이 들어 있어도 다른 파일을 지우지 않도록)
+			if (!uploadDir.equals(file.getParent())) {
+				log.warn("업로드 폴더 밖의 파일은 지우지 않음: {}", filename);
+				return;
+			}
+			Files.deleteIfExists(file);
+		} catch (IOException | InvalidPathException e) {
+			log.warn("이미지 파일 삭제 실패: {}", filename, e);
+		}
 	}
 
 	// 파일 앞부분(매직 넘버)으로 실제 이미지 형식을 판별한다.
