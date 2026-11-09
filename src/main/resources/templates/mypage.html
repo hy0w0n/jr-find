@@ -79,9 +79,9 @@
     <div th:replace="~{fragments/header :: mainHeader}"></div>
 
     <div class="container">
-        <main class="mypage-section">
+        <main id="main" class="mypage-section">
             <div class="page-title-area">
-                <h2 class="page-title">マイページ</h2>
+                <h1 class="page-title">マイページ</h1>
             </div>
 
             <div class="message" th:if="${param.updated}">会員情報を変更しました。</div>

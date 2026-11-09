@@ -9,10 +9,11 @@
         body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
 
         .error-container { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 120px 20px; text-align: center; }
-        .error-code { font-size: 48px; font-weight: bold; color: #ccc; }
+        .error-code { font-size: 48px; font-weight: bold; color: #767676; }
         .error-message { font-size: 18px; line-height: 1.6; }
         .back-btn { margin-top: 20px; padding: 12px 40px; border: 1px solid #333; border-radius: 25px; color: #333; text-decoration: none; transition: all 0.2s; }
         .back-btn:hover { background: #333; color: #fff; }
+        .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     </style>
     <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
@@ -21,11 +22,11 @@
     <div th:replace="~{fragments/header :: mainHeader}"></div>
 
     <!-- Spring Boot 가 에러 발생 시 자동으로 이 화면을 사용 (status: HTTP 상태 코드) -->
-    <main class="error-container">
-        <div class="error-code" th:text="${status}">404</div>
+    <main id="main" class="error-container">
+        <h1 class="error-code"><span class="visually-hidden">エラー</span><span th:text="${status}">404</span></h1>
         <p class="error-message" th:switch="${status}">
             <span th:case="404">お探しのページは見つかりませんでした。<br>投稿が削除された可能性があります。</span>
-            <span th:case="403">この操作を行う権限がありません。<br>ページを再読み込みしてから、もう一度お試しください。</span>
+            <span th:case="403">この操作を行う権限がありません。<br>投稿の編集・削除は、投稿した本人のみ行えます。</span>
             <span th:case="413">ファイルサイズが大きすぎます。(10MBまで)</span>
             <span th:case="400">リクエストの内容が正しくありません。</span>
             <span th:case="*">エラーが発生しました。<br>しばらくしてから再度お試しください。</span>

@@ -62,11 +62,11 @@
     <div th:replace="~{fragments/header :: mainHeader}"></div>
 
     <div class="container">
-        <main class="search-section">
+        <main id="main" class="search-section">
             <!-- 검색어 없이 들어온 경우 -->
             <th:block th:if="${keyword == null}">
                 <div class="search-title-area">
-                    <h2 class="search-title">検索</h2>
+                    <h1 class="search-title">検索</h1>
                 </div>
                 <p class="no-keyword">
                     キーワードを入力してください。<br>
@@ -76,7 +76,7 @@
 
             <th:block th:if="${keyword != null}">
                 <div class="search-title-area">
-                    <h2 class="search-title">「<b th:text="${keyword}">財布</b>」の検索結果</h2>
+                    <h1 class="search-title">「<b th:text="${keyword}">財布</b>」の検索結果</h1>
                     <p class="search-hint">タイトルと本文から探します。スペースで区切ると、すべての言葉を含む投稿を表示します。</p>
                     <!-- 6번째 단어부터는 검색에 쓰지 않는다 (KeywordCondition.MAX_WORDS) -->
                     <p class="search-hint search-warn" th:if="${keywordTruncated}">※ キーワードは5語までです。最初の5語で検索しています。</p>

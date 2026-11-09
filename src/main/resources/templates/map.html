@@ -6,6 +6,7 @@
     <title>JR-Find | 駅マップ</title>
     <!-- 지도: Leaflet + OpenStreetMap (API 키 불필요) -->
     <link rel="stylesheet" th:href="@{/webjars/leaflet/dist/leaflet.css}">
+    <script th:src="@{/js/js-enabled.js}"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
@@ -15,7 +16,7 @@
 
         .map-title-area { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
         .map-title { font-size: 24px; }
-        .map-desc { font-size: 13px; color: #888; }
+        .map-desc { font-size: 13px; color: #666; }
 
         /* z-index: 0 으로 Leaflet 의 컨트롤이 고정 헤더 위로 올라오지 않게 한다 */
         #map { position: relative; z-index: 0; height: 600px; border: 1px solid #ddd; border-radius: 8px; }
@@ -25,23 +26,32 @@
         .legend-title { font-weight: bold; color: #333; }
         .legend label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
         .legend-swatch { display: inline-block; width: 22px; height: 5px; border-radius: 3px; }
-        .legend-fit { margin-left: auto; padding: 5px 14px; border: 1px solid #ccc; border-radius: 15px; background: #fff; font-size: 12px; font-family: inherit; color: #555; cursor: pointer; }
+        .legend-fit { margin-left: auto; padding: 5px 14px; border: 1px solid #949494; border-radius: 15px; background: #fff; font-size: 12px; font-family: inherit; color: #555; cursor: pointer; }
         .legend-fit:hover { background: #f5f5f5; }
         .marker-legend { display: inline-flex; align-items: center; gap: 6px; }
         .marker-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #333; }
 
         /* 선택한 역 */
         .station-panel { border: 1px solid #ddd; border-radius: 12px; padding: 25px 20px; }
-        .station-panel-hint { font-size: 14px; color: #888; line-height: 1.7; text-align: center; }
+        .station-panel-hint { font-size: 14px; color: #666; line-height: 1.7; text-align: center; }
         .station-name { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
         .line-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; }
         .line-chip { padding: 2px 10px; border-radius: 10px; font-size: 12px; color: #333; border-left: 6px solid; background: #f5f5f5; }
         .station-links { display: flex; flex-direction: column; gap: 8px; }
         .station-link { display: flex; justify-content: space-between; padding: 10px 14px; border-radius: 6px; background: #f0f0f0; color: #333; text-decoration: none; font-size: 14px; font-weight: bold; transition: background 0.2s; }
         .station-link:hover { background: #e5e5e5; }
-        .station-link b { color: #e63946; }
+        .station-link b { color: #c62828; }
         .lost-center-flag { margin-top: 12px; font-size: 12px; color: #198754; line-height: 1.5; }
-        .map-error { color: #e63946; font-size: 14px; text-align: center; }
+        .map-error { color: #c62828; font-size: 14px; text-align: center; }
+        #map > .map-error { padding: 40px 20px; }
+        /* 역 고르기 (키보드·스크린리더용, JS 가 없으면 게시판 목록으로 가는 폼) */
+        .station-picker { border: 1px solid #ddd; border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; }
+        .station-picker label { font-size: 14px; font-weight: bold; }
+        .station-picker select { padding: 8px; border: 1px solid #949494; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .station-picker-btns { display: flex; gap: 8px; }
+        .station-picker-btns button { flex: 1; padding: 8px; border: 1px solid #949494; border-radius: 6px; background: #f0f0f0; font-size: 13px; font-family: inherit; cursor: pointer; }
+        .js .station-picker-btns { display: none; } /* JS 가 있으면 고르는 즉시 아래 패널에 두 게시판의 글 수와 링크가 나온다 */
+        .station-picker select:focus-visible, .station-picker-btns button:focus-visible, .legend-fit:focus-visible { outline: 3px solid #1a73e8; outline-offset: 1px; }
     </style>
     <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
@@ -50,24 +60,41 @@
     <div th:replace="~{fragments/header :: mainHeader}"></div>
 
     <div class="container">
-        <main class="map-section">
+        <main id="main" class="map-section">
             <div class="map-title-area">
-                <h2 class="map-title">駅マップ</h2>
+                <h1 class="map-title">駅マップ</h1>
                 <span class="map-desc">駅をクリックすると、その駅の投稿を確認できます</span>
             </div>
 
-            <div id="map"></div>
+            <div id="map">
+                <noscript><p class="map-error">地図を表示するには JavaScript を有効にしてください。右の「駅を選ぶ」から駅の投稿を確認できます。</p></noscript>
+            </div>
 
             <div class="legend" id="legend">
                 <span class="legend-title">路線図</span>
                 <!-- 노선 체크박스는 데이터를 받은 뒤 JS 로 추가 -->
-                <span class="marker-legend"><span class="marker-dot" style="background: #e63946;"></span>投稿あり</span>
+                <span class="marker-legend"><span class="marker-dot" aria-hidden="true" style="background: #e63946;"></span>投稿あり</span>
                 <button type="button" class="legend-fit" id="fitAllBtn">全体を表示</button>
             </div>
         </main>
 
         <aside class="side-section">
-            <div class="station-panel" id="stationPanel">
+            <!-- 역 고르기: 지도의 역을 마우스로 누르지 않아도 (키보드·스크린리더) 같은 정보를 볼 수 있게 -->
+            <form class="station-picker" th:action="@{/items}" method="get">
+                <label for="stationPicker">駅を選ぶ</label>
+                <select id="stationPicker" name="station">
+                    <option value="">駅を選択</option>
+                    <optgroup th:each="line : ${lines}" th:label="${line.name()}">
+                        <option th:each="name : ${line.stations()}" th:value="${name}" th:text="${name}"></option>
+                    </optgroup>
+                </select>
+                <div class="station-picker-btns">
+                    <button type="submit">見つけた を見る</button>
+                    <button type="submit" th:formaction="@{/lost-items}">探しています を見る</button>
+                </div>
+            </form>
+            <!-- 고른 역: 바뀌면 스크린리더가 읽는다 -->
+            <div class="station-panel" id="stationPanel" aria-live="polite">
                 <p class="station-panel-hint">地図の駅をクリックしてください。<br>その駅で見つかった物・探している物の投稿を表示します。</p>
             </div>
             <div th:replace="~{fragments/lostCenter :: lostCenterInfo}"></div>
@@ -75,142 +102,7 @@
     </div>
 
     <script th:src="@{/webjars/leaflet/dist/leaflet.js}"></script>
-    <script>
-        // 노선 표시 색 (실제 노선 색에 가깝게 고른 값). 없는 노선은 회색
-        const LINE_COLORS = {
-            '山手線': '#80C241',
-            '京浜東北線': '#00B2E5',
-            '中央・総武緩行線': '#FFD400',
-            '埼京線': '#00AC9A',
-            '東海道線': '#F68B1E',
-            '上野東京ライン': '#B5338A'
-        };
-        // 순환선: 마지막 역과 첫 역을 잇는다
-        const LOOP_LINES = ['山手線'];
-        const colorOf = line => LINE_COLORS[line] || '#888';
-
-        const map = L.map('map').setView([35.70, 139.73], 11);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        const panel = document.getElementById('stationPanel');
-        let allPoints = [];
-        let selected = null; // { marker, station }
-
-        // 역 이름 등은 textContent 로 넣는다 (HTML 로 해석하지 않음)
-        function el(tag, className, text) {
-            const node = document.createElement(tag);
-            if (className) node.className = className;
-            if (text !== undefined) node.textContent = text;
-            return node;
-        }
-
-        function markerStyle(station, isSelected) {
-            const hasPosts = station.foundCount + station.lostCount > 0;
-            return {
-                radius: isSelected ? 10 : (hasPosts ? 8 : 6),
-                color: isSelected ? '#e63946' : '#333',
-                weight: isSelected ? 3 : 2,
-                fillColor: hasPosts ? '#e63946' : '#fff',
-                fillOpacity: 1
-            };
-        }
-
-        function countLink(href, label, count) {
-            const a = el('a', 'station-link');
-            a.href = href;
-            a.append(el('span', null, label));
-            const right = el('span');
-            right.append(el('b', null, String(count)), document.createTextNode('件'));
-            a.append(right);
-            return a;
-        }
-
-        function selectStation(station, marker) {
-            if (selected) selected.marker.setStyle(markerStyle(selected.station, false));
-            marker.setStyle(markerStyle(station, true));
-            selected = { marker, station };
-
-            panel.replaceChildren();
-            panel.append(el('div', 'station-name', station.name + '駅'));
-
-            const chips = el('div', 'line-chips');
-            station.lines.forEach(line => {
-                const chip = el('span', 'line-chip', line);
-                chip.style.borderLeftColor = colorOf(line);
-                chips.append(chip);
-            });
-            panel.append(chips);
-
-            const links = el('div', 'station-links');
-            const q = encodeURIComponent(station.name);
-            links.append(countLink('/items?station=' + q, '見つけた', station.foundCount));
-            links.append(countLink('/lost-items?station=' + q, '探しています', station.lostCount));
-            panel.append(links);
-
-            if (station.lostCenter) {
-                panel.append(el('p', 'lost-center-flag', 'この駅にはJR東日本のお忘れ物承り所があります。受付時間は下の案内をご覧ください。'));
-            }
-        }
-
-        function render(data) {
-            const byName = new Map(data.stations.map(s => [s.name, s]));
-            const legend = document.getElementById('legend');
-            const markerLegend = legend.querySelector('.marker-legend');
-
-            // 노선도: 노선 순서대로 역을 잇는다
-            data.lines.forEach(line => {
-                const points = line.stations.map(name => byName.get(name)).filter(Boolean).map(s => [s.lat, s.lng]);
-                if (LOOP_LINES.includes(line.name) && points.length > 2) points.push(points[0]);
-                // interactive: false → 선이 역 위에 겹쳐도 클릭은 역으로 간다
-                const layer = L.polyline(points, { color: colorOf(line.name), weight: 5, opacity: 0.85, interactive: false }).addTo(map);
-
-                const label = el('label');
-                const checkbox = el('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = true;
-                checkbox.dataset.line = line.name;
-                // 다시 켤 때는 역 아래에 그린다 (그냥 addTo 하면 맨 위에 그려져 역을 가린다)
-                checkbox.addEventListener('change', () => checkbox.checked ? layer.addTo(map).bringToBack() : layer.remove());
-                const swatch = el('span', 'legend-swatch');
-                swatch.style.background = colorOf(line.name);
-                label.append(checkbox, swatch, document.createTextNode(line.name));
-                legend.insertBefore(label, markerLegend);
-            });
-
-            // 역 (노선 위에 그린다)
-            data.stations.forEach(station => {
-                const total = station.foundCount + station.lostCount;
-                const marker = L.circleMarker([station.lat, station.lng], markerStyle(station, false)).addTo(map);
-                // 두 게시판의 건수를 나눠서 보여준다 (합계만 보이면 패널의 건수와 달라 보인다)
-                marker.bindTooltip(el('span', null, total > 0 ? `${station.name} (見つけた ${station.foundCount}件・探しています ${station.lostCount}件)` : station.name),
-                    { direction: 'top', offset: [0, -6] });
-                marker.on('click', () => selectStation(station, marker));
-                allPoints.push([station.lat, station.lng]);
-            });
-        }
-
-        document.getElementById('fitAllBtn').addEventListener('click', () => {
-            if (allPoints.length > 0) map.fitBounds(allPoints, { padding: [20, 20] });
-        });
-
-        fetch('/map/stations')
-            .then(response => {
-                if (!response.ok) throw new Error(response.status);
-                return response.json();
-            })
-            .then(render)
-            .catch(error => {
-                console.error(error);
-                // 다시 불러오는 버튼. 역이 없으면 「全体を表示」는 쓸 수 없으므로 막는다
-                const retry = el('button', 'legend-fit', '再読み込み');
-                retry.type = 'button';
-                retry.addEventListener('click', () => location.reload());
-                panel.replaceChildren(el('p', 'map-error', '駅の情報を読み込めませんでした。'), retry);
-                document.getElementById('fitAllBtn').disabled = true;
-            });
-    </script>
+    <!-- 지도·노선도 그리기, 역 고르기 -->
+    <script th:src="@{/js/map.js}"></script>
 </body>
 </html>

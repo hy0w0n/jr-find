@@ -74,28 +74,33 @@
 			width: 24px;
 			height: 24px;
 		}
+        /* 본문으로 건너뛰기: 평소에는 화면 밖, 포커스를 받으면 왼쪽 위에 */
+        .skip-link { position: absolute; left: -9999px; top: 8px; z-index: 10000; padding: 8px 16px; background: #fff; color: #333; border: 2px solid #1a73e8; border-radius: 6px; font-size: 14px; text-decoration: none; }
+        .skip-link:focus { left: 8px; }
+        .header-svg:focus-visible, .auth-icon:focus-visible, .auth-btn:focus-visible, .auth-name:focus-visible, .header-logo:focus-visible, .header-search-icon:focus-visible { outline: 3px solid #1a73e8; outline-offset: 2px; }
         /* 폼을 오래 열어 둬서 보내지 못한 경우의 안내 (ExpiredFormHandler) */
         .expired-notice { padding: 12px 5%; background: #fff8e1; border-bottom: 1px solid #f3d27a; color: #7a5b00; font-size: 14px; line-height: 1.6; }
     </style>
 
+    <!-- 키보드: Tab 한 번에 헤더를 건너뛰고 본문으로 (포커스를 받을 때만 보인다) -->
+    <a href="#main" class="skip-link">本文へ移動</a>
     <header class="header-wrapper">
         <a th:href="@{/}" class="header-logo">
-			<img th:src="@{/logo/logo3_1.png}" alt="JR Find Logo">
+			<img th:src="@{/logo/logo3_1.png}" alt="JRで探す トップページ">
 		</a>
 
         <!-- 통합 검색 (두 게시판의 제목·본문). 빈 칸이면 보내지 않는다 -->
         <!-- 검색어는 통합 검색 화면에서만 다시 채운다 (게시판 목록에서는 게시판 안 검색창에 표시) -->
-        <form class="header-search" th:action="@{/search}" method="get" role="search"
-              onsubmit="return this.q.value.trim() !== '';">
+        <form class="header-search" th:action="@{/search}" method="get" role="search" data-site-search>
             <input type="text" name="q" maxlength="100" placeholder="キーワードで探す" aria-label="検索"
                    th:value="${keyword}">
-            <button type="submit" class="header-search-icon" title="検索">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>
+            <button type="submit" class="header-search-icon" title="検索" aria-label="検索">
+                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>
             </button>
         </form>
 
         <div class="header-icons">
-            <a th:href="@{/map}" class="header-svg" title="駅マップ"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.8995L16.9497 15.9497C19.6834 13.2161 19.6834 8.78392 16.9497 6.05025C14.2161 3.31658 9.78392 3.31658 7.05025 6.05025C4.31658 8.78392 4.31658 13.2161 7.05025 15.9497L12 20.8995ZM12 23.7279L5.63604 17.364C2.12132 13.8492 2.12132 8.15076 5.63604 4.63604C9.15076 1.12132 14.8492 1.12132 18.364 4.63604C21.8787 8.15076 21.8787 13.8492 18.364 17.364L12 23.7279ZM12 13C13.1046 13 14 12.1046 14 11C14 9.89543 13.1046 9 12 9C10.8954 9 10 9.89543 10 11C10 12.1046 10.8954 13 12 13ZM12 15C9.79086 15 8 13.2091 8 11C8 8.79086 9.79086 7 12 7C14.2091 7 16 8.79086 16 11C16 13.2091 14.2091 15 12 15Z"></path></svg>
+            <a th:href="@{/map}" class="header-svg" title="駅マップ" aria-label="駅マップ"> <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.8995L16.9497 15.9497C19.6834 13.2161 19.6834 8.78392 16.9497 6.05025C14.2161 3.31658 9.78392 3.31658 7.05025 6.05025C4.31658 8.78392 4.31658 13.2161 7.05025 15.9497L12 20.8995ZM12 23.7279L5.63604 17.364C2.12132 13.8492 2.12132 8.15076 5.63604 4.63604C9.15076 1.12132 14.8492 1.12132 18.364 4.63604C21.8787 8.15076 21.8787 13.8492 18.364 17.364L12 23.7279ZM12 13C13.1046 13 14 12.1046 14 11C14 9.89543 13.1046 9 12 9C10.8954 9 10 9.89543 10 11C10 12.1046 10.8954 13 12 13ZM12 15C9.79086 15 8 13.2091 8 11C8 8.79086 9.79086 7 12 7C14.2091 7 16 8.79086 16 11C16 13.2091 14.2091 15 12 15Z"></path></svg>
             </a>
             <div th:replace="~{fragments/header :: authMenu}"></div>
         </div>
@@ -135,16 +140,16 @@
 
     <!-- 로그인 전: 유저 아이콘·로그인 버튼 → 로그인 화면 (로그인 후 지금 화면으로 돌아오도록 next 를 붙인다) -->
     <th:block th:if="${loginMember == null}">
-        <a th:href="${currentPath != null} ? @{/login(next=${currentPath})} : @{/login}" class="auth-icon" title="ログイン">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22C4 17.5817 7.58172 14 12 14C16.4183 14 20 17.5817 20 22H18C18 18.6863 15.3137 16 12 16C8.68629 16 6 18.6863 6 22H4ZM12 13C8.685 13 6 10.315 6 7C6 3.685 8.685 1 12 1C15.315 1 18 3.685 18 7C18 10.315 15.315 13 12 13ZM12 11C14.21 11 16 9.21 16 7C16 4.79 14.21 3 12 3C9.79 3 8 4.79 8 7C8 9.21 9.79 11 12 11Z"></path></svg>
+        <a th:href="${currentPath != null} ? @{/login(next=${currentPath})} : @{/login}" class="auth-icon" title="ログイン" aria-label="ログイン">
+            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22C4 17.5817 7.58172 14 12 14C16.4183 14 20 17.5817 20 22H18C18 18.6863 15.3137 16 12 16C8.68629 16 6 18.6863 6 22H4ZM12 13C8.685 13 6 10.315 6 7C6 3.685 8.685 1 12 1C15.315 1 18 3.685 18 7C18 10.315 15.315 13 12 13ZM12 11C14.21 11 16 9.21 16 7C16 4.79 14.21 3 12 3C9.79 3 8 4.79 8 7C8 9.21 9.79 11 12 11Z"></path></svg>
         </a>
         <a th:href="${currentPath != null} ? @{/login(next=${currentPath})} : @{/login}" class="auth-btn">ログイン</a>
     </th:block>
 
     <!-- 로그인 후: 유저 아이콘·닉네임 → 마이페이지, 로그아웃 (POST /logout. CSRF 토큰은 th:action 이 자동으로 넣어줌) -->
     <th:block th:if="${loginMember != null}">
-        <a th:href="@{/mypage}" class="auth-icon" title="マイページ">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22C4 17.5817 7.58172 14 12 14C16.4183 14 20 17.5817 20 22H18C18 18.6863 15.3137 16 12 16C8.68629 16 6 18.6863 6 22H4ZM12 13C8.685 13 6 10.315 6 7C6 3.685 8.685 1 12 1C15.315 1 18 3.685 18 7C18 10.315 15.315 13 12 13ZM12 11C14.21 11 16 9.21 16 7C16 4.79 14.21 3 12 3C9.79 3 8 4.79 8 7C8 9.21 9.79 11 12 11Z"></path></svg>
+        <a th:href="@{/mypage}" class="auth-icon" title="マイページ" aria-label="マイページ">
+            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22C4 17.5817 7.58172 14 12 14C16.4183 14 20 17.5817 20 22H18C18 18.6863 15.3137 16 12 16C8.68629 16 6 18.6863 6 22H4ZM12 13C8.685 13 6 10.315 6 7C6 3.685 8.685 1 12 1C15.315 1 18 3.685 18 7C18 10.315 15.315 13 12 13ZM12 11C14.21 11 16 9.21 16 7C16 4.79 14.21 3 12 3C9.79 3 8 4.79 8 7C8 9.21 9.79 11 12 11Z"></path></svg>
         </a>
         <a th:href="@{/mypage}" class="auth-name" th:text="|${loginMember.nickname} さん|" th:title="|${loginMember.nickname} さん|">ニックネーム さん</a>
         <form th:action="@{/logout}" method="post">
@@ -152,8 +157,9 @@
         </form>
     </th:block>
 
-    <!-- 모든 화면 공통: 같은 폼을 두 번 보내지 않게 (등록 버튼 더블클릭 등), 뒤로 가기로 돌아온 화면 처리 -->
+    <!-- 모든 화면 공통: 같은 폼을 두 번 보내지 않게 (등록 버튼 더블클릭 등), 뒤로 가기로 돌아온 화면 처리, 빈 검색어는 보내지 않기 -->
     <script th:src="@{/js/submit-once.js}"></script>
+    <script th:src="@{/js/search-form.js}"></script>
     <script th:src="@{/js/page-restore.js}"></script>
 </div>
 </html>

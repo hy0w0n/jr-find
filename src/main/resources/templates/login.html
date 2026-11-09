@@ -33,8 +33,8 @@
 <body>
     <div th:replace="~{fragments/header :: mainHeader}"></div>
 
-    <main class="auth-container">
-        <h2 class="auth-title">ログイン</h2>
+    <main id="main" class="auth-container">
+        <h1 class="auth-title">ログイン</h1>
 
         <!-- ID 가 없는지 비밀번호가 틀렸는지는 구분해서 알려주지 않는다 -->
         <div id="errorMessage" class="message message-error" role="alert" th:if="${param.error}">

@@ -14,10 +14,12 @@
     <div th:replace="~{fragments/header :: mainHeader}"></div>
 
     <div class="container">
-        <main class="board-section">
+        <main id="main" class="board-section">
             <div class="board-title-area">
-                <h2 class="board-title">探しています</h2>
+                <h1 class="board-title">探しています</h1>
                 <span class="board-desc">なくした物を探している方の投稿です</span>
+                <!-- 휴대폰 화면에서만 (PC 는 오른쪽 사이드바) -->
+                <a th:href="@{/lost-items/new}" class="write-btn-mobile">投稿する</a>
             </div>
 
             <!-- 이 게시판 안에서만 검색 (제목·본문). 헤더 검색창은 두 게시판 통합 검색 -->
