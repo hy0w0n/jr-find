@@ -148,6 +148,15 @@ Java 21이 필요합니다.
 - 목록 표는 카드 형태 (물건 이름을 첫 줄에), 등록·회원 폼은 항목 이름을 입력 칸 위에, 창(모달)은 화면 폭에 맞춤
 - PC 화면의 배치는 그대로
 
+## 접근성
+
+- 모든 입력 칸에 이름(`label` 또는 `aria-label`)을 붙이고, 형식 안내·오류 문구는 `aria-describedby` 로 그 칸에 연결. 서버 검증에서 걸리면 첫 번째로 틀린 칸으로 포커스
+- 확인 창(모달)은 `role="dialog"`, 열면 창 안으로 포커스를 옮기고 Tab 은 창 안에서만, Esc 로 닫고 닫으면 원래 자리로 (js/dialog.js)
+- 사진 첨부는 숨긴 파일 칸 + `label` 이라 키보드(Tab → Enter)로도 고를 수 있음. 입력 칸·버튼에 포커스 표시
+- JS 를 꺼도 글 열람·등록이 가능: 목록은 링크와 GET 폼, 역 선택은 처음부터 고를 수 있고, 서버 검증 안내는 화면에 그대로 표시.
+  探しています 작성 전 주의사항은 JS 가 있으면 처음에 창으로, 없으면 폼 위에 표시 (체크 칸이 그대로 확인 값)
+- 입력 중에 다른 화면으로 나가면 확인 (화면 안 링크는 이 화면의 창, 뒤로 가기·새로고침·탭 닫기는 브라우저의 확인 창). 입력이 없으면 묻지 않음
+
 ## 보안 처리
 
 - 비밀번호(회원·비회원 글 모두)는 BCrypt 해시로 저장하고, 화면(HTML)에는 내보내지 않음
@@ -197,6 +206,8 @@ src/main/java/com/example/jrfind
 src/main/resources
 ├─ schema.sql, data.sql, messages.properties (입력 형식 오류 문구)
 ├─ static/       css/mobile.css (휴대폰 화면), css/board-list.css · js/board-list.js (두 게시판 목록 공통),
+│                css/post-form.css · js/post-form.js (등록·수정 화면 공통), js/dialog.js (확인 창),
+│                js/member-form.js (회원 화면), js/comments.js (댓글), js/js-enabled.js,
 │                js/submit-once.js (두 번 전송 방지),
 │                js/page-restore.js (뒤로 가기로 돌아온 화면 처리),
 │                js/date-input.js (날짜 직접 입력 확인), js/share-link.js (「シェア」)

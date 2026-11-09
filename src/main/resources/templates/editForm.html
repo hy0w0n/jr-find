@@ -3,554 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JR-Find | 編集画面</title>
+    <title>JR-Find | 見つけた 編集</title>
     <link rel="stylesheet" th:href="@{/webjars/flatpickr/dist/flatpickr.min.css}">
-    <style>
-        /* registerForm.html과 동일한 스타일 */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
-        .container { width: 90%; max-width: 1000px; margin: 30px auto; }
-
-        .form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .action-btns { display: flex; gap: 10px; }
-        .btn { padding: 8px 25px; border-radius: 20px; border: 1px solid #ccc; cursor: pointer; font-size: 14px; text-decoration: none; color: #333; transition: all 0.2s; }
-        .btn-cancel { background: #f0f0f0; }
-        .btn-submit { background: #f0f0f0; color: #e63946; font-weight: bold; }
-        .btn:hover { background: #e5e5e5; }
-
-        .form-row { display: flex; border-bottom: 1px solid #eee; align-items: center; min-height: 70px; }
-        .form-label { width: 200px; padding: 20px; font-weight: bold; }
-        .form-input { flex: 1; padding: 15px; display: flex; gap: 10px; align-items: center; position: relative; }
-        
-        input[type="text"], input[type="password"], select { padding: 10px; border: 1px solid #333; border-radius: 4px; outline: none; }
-        .input-readonly { background-color: #f5f5f5; color: #999; cursor: not-allowed; border: 1px solid #ccc !important; }
-        .date-input-wrapper { position: relative; display: flex; align-items: center; width: fit-content; }
-        #datePicker { padding-right: 40px !important; }
-        .calendar-icon-svg { position: absolute; right: 10px; width: 24px; height: 24px; color: #333; pointer-events: none; }
-
-        .detail-row { display: flex; border-bottom: 1px solid #eee; }
-        .detail-content { flex: 1; display: flex; border: 1px solid #333; margin: 15px; border-radius: 4px; overflow: hidden; height: 250px; }
-        .detail-text { flex: 2; height: 100%; padding: 15px; border: none; resize: none; border-right: 1px solid #333; outline: none; }
-        
-        .detail-image-upload { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; cursor: pointer; overflow: hidden; text-align: center; }
-        #uploadPlaceholder { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .image-icon { width: 45px; height: 45px; margin-bottom: 10px; color: #999; }
-        .upload-placeholder { font-size: 12px; color: #999; }
-        
-        #imagePreview { width: 100%; height: 100%; object-fit: cover; display: none; }
-        .delete-img-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; display: none; align-items: center; justify-content: center; font-weight: bold; }
-
-        .red-notice { color: #ff4d4d; font-size: 12px; line-height: 1.5; margin-left: 15px; }
-
-        /* 모달 스타일 */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); display: none; justify-content: center; align-items: center; z-index: 9999; }
-        .modal-box { background: white; width: 400px; padding: 40px 30px; border-radius: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        .modal-icon-svg { width: 65px; height: 65px; fill: #6ea8fe; margin-bottom: 10px; }
-        .modal-title { display: none; } 
-        .modal-message { font-size: 20px; color: #333; line-height: 1.4; white-space: pre-wrap; font-weight: 500; }
-        .modal-btn-group { display: flex; width: 100%; gap: 10px; margin-top: 20px; }
-        .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        .modal-btn-cancel { background-color: #e0e0e0; color: #333; display: none; }
-        .modal-btn-cancel:hover { background-color: #d0d0d0; }
-        .modal-btn-ok { background-color: #6ea8fe; color: white; }
-        .modal-btn-ok:hover { background-color: #5a95e5; }
-    </style>
-    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <!-- 등록·수정 화면 공통 스타일 (見つけた 등록, 探しています 등록·수정과 같이 사용) -->
+    <link rel="stylesheet" th:href="@{/css/post-form.css}">
+    <script th:src="@{/js/js-enabled.js}"></script>
+    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 위 스타일 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
     <div th:replace="~{fragments/header :: mainHeader}"></div>
 
-    <div class="container">
+    <main class="container">
         <div class="form-header">
-            <h2 style="font-size: 24px;">編集画面</h2>
+            <h1 class="form-title">見つけた 編集</h1>
             <div class="action-btns">
-                <a href="#" id="btnCancel" class="btn btn-cancel">キャンセル</a>
+                <a th:href="@{/items/{id}(id=${item.id})}" id="btnCancel" class="btn">キャンセル</a>
                 <button type="submit" form="editForm" class="btn btn-submit">編集</button>
             </div>
         </div>
 
-        <form id="editForm" method="post" enctype="multipart/form-data" th:action="@{/items/{id}/edit(id=${item.id})}">
-            
+        <!-- 서버 검증에서 걸린 경우, 보내지 못한 입력을 다시 채운 경우 (JS 가 켜져 있으면 창으로 보여 준다) -->
+        <div id="serverError" class="form-error" role="alert" th:if="${errorMessage != null}" th:text="${errorMessage}"></div>
+
+        <!-- 확인·편의 기능은 js/post-form.js -->
+        <form id="editForm" class="post-form" method="post" enctype="multipart/form-data" th:action="@{/items/{id}/edit(id=${item.id})}"
+              th:data-dirty="${errorMessage != null}">
+            <!-- 입력 오류로 다시 열려도 지운 사진은 지운 상태 그대로 -->
+            <input type="hidden" id="isImageDeleted" name="isImageDeleted" th:value="${isImageDeleted == true}">
+
             <div class="form-row">
-                <div class="form-label">タイトル</div>
+                <label class="form-label" for="autoTitle">タイトル</label>
                 <div class="form-input">
-                    <input type="text" id="autoTitle" class="input-readonly" th:value="${item.title}" readonly style="flex: 1; color: #333; font-weight: bold;">
+                    <input type="text" id="autoTitle" class="input-readonly input-title" th:value="${item.title}" readonly aria-describedby="titleHint">
+                    <span id="titleHint" class="visually-hidden">日付・場所・忘れ物から自動で作られます。</span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">発見した日</div>
+                <label class="form-label" for="datePicker">発見した日</label>
                 <div class="form-input">
                     <div class="date-input-wrapper">
-                        <input type="text" id="datePicker" name="foundDate" th:value="${item.foundDate}" placeholder="年-月-日" style="width: 200px;">
-                        <div class="calendar-icon-svg">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 1V3H15V1H17V3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H7V1H9ZM20 11H4V19H20V11ZM7 5H4V9H20V5H17V7H15V5H9V7H7V5Z"></path></svg>
-                        </div>
+                        <input type="text" id="datePicker" name="foundDate" class="date-input" th:value="${item.foundDate}" placeholder="年-月-日"
+                               autocomplete="off" aria-describedby="dateHint" data-required="発見した日を入力してください。">
+                        <svg class="calendar-icon-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 1V3H15V1H17V3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H7V1H9ZM20 11H4V19H20V11ZM7 5H4V9H20V5H17V7H15V5H9V7H7V5Z"></path></svg>
                     </div>
+                    <span id="dateHint" class="hint">例: 2026-01-10</span>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-label">発見した場所</div>
+            <div class="form-row" role="group" aria-labelledby="placeLabel">
+                <span class="form-label" id="placeLabel">発見した場所</span>
                 <div class="form-input">
-                    <select id="lineSelect" name="lineName" style="width: 150px;">
+                    <select id="lineSelect" name="lineName" class="select-line" aria-label="発見した路線" data-required="路線を選択してください。">
                         <option value="">路線を選択</option>
                         <option th:each="line: ${lines}" th:value="${line}" th:text="${line}" th:selected="${line == item.lineName}"></option>
                     </select>
-                    <select id="stationSelect" name="stationName" style="width: 150px;">
+                    <!-- 노선을 고르면 그 노선의 역만 보인다 (data-line) -->
+                    <select id="stationSelect" name="stationName" class="select-station" aria-label="発見した駅" data-required="駅を選択してください。">
                         <option value="">駅を選択</option>
+                        <option th:each="st : ${stations}" th:value="${st.stationName}" th:text="${st.stationName}" th:data-line="${st.lineName}"
+                                th:selected="${st.lineName == item.lineName and st.stationName == item.stationName}"></option>
                     </select>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-label">発見した忘れ物</div>
+            <div class="form-row" role="group" aria-labelledby="itemLabel">
+                <span class="form-label" id="itemLabel">発見した忘れ物</span>
                 <div class="form-input">
-                    <select id="categorySelect" name="categoryName" style="width: 150px;">
+                    <select id="categorySelect" name="categoryName" class="select-category" aria-label="忘れ物のカテゴリー" data-required="カテゴリーを選択してください。">
                         <option value="">カテゴリー</option>
                         <option th:each="cat : ${categories}" th:value="${cat.categoryName}" th:text="${cat.categoryName}" th:selected="${cat.categoryName == item.categoryName}"></option>
                     </select>
-                    <input type="text" id="itemName" name="itemName" th:value="${item.itemName}" maxlength="100" placeholder="具体的な物 (例: iPhone 14)" style="flex: 1;">
+                    <input type="text" id="itemName" name="itemName" class="input-item" th:value="${item.itemName}" maxlength="100" placeholder="具体的な物 (例: iPhone 14)"
+                           aria-label="具体的な物" data-required="具体的な物を入力してください。">
                 </div>
             </div>
 
             <div class="detail-row">
-                <div class="form-label">詳細</div>
+                <label class="form-label" for="contents">詳細</label>
                 <div class="detail-content">
-                    <textarea id="contents" name="contents" class="detail-text" maxlength="500" placeholder="発見時の状況や詳しい場所などを詳しく教えてください。" th:text="${item.contents}"></textarea>
-                    
-                    <div class="detail-image-upload" onclick="document.getElementById('fileInput').click()">
-                        <input type="hidden" id="isImageDeleted" name="isImageDeleted" th:value="${isImageDeleted == true}"> <!-- 입력 오류로 다시 열려도 지운 사진은 지운 상태 그대로 -->
-                        
-                        <input type="file" id="fileInput" name="imageFile" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" onchange="previewImage(this)">
-                        
-                        <div id="uploadPlaceholder" th:style="${item.imgPath != null} ? 'display:none;' : 'display:flex;'">
-                            <div class="image-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M21 15V18H24V20H21V23H19V20H16V18H19V15H21ZM21.0082 3C21.556 3 22 3.44495 22 3.9934V13H20V5H4V18.999L14 9L17 12V14.829L14 11.8284L6.827 19H14V21H2.9918C2.44405 21 2 20.5551 2 20.0066V3.9934C2 3.44476 2.45531 3 2.9918 3H21.0082ZM8 7C9.10457 7 10 7.89543 10 9C10 10.1046 9.10457 11 8 11C6.89543 11 6 10.1046 6 9C6 7.89543 6.89543 7 8 7Z"></path>
-                                </svg>
-                            </div>
-                            <p class="upload-placeholder">写真があれば、<br>ぜひ追加してください。</p>
-                        </div>
-                        
-                        <img id="imagePreview" 
-                             th:src="${item.imgPath != null} ? |/images/${item.imgPath}| : ''" 
-                             th:style="${item.imgPath != null} ? 'display:block;' : 'display:none;'" 
-                             alt="選択した画像">
-                        
-                        <button type="button" class="delete-img-btn" id="deleteImgBtn" onclick="deleteImage(event)"
-                                th:style="${item.imgPath != null} ? 'display:flex;' : 'display:none;'">✕</button>
+                    <textarea id="contents" name="contents" class="detail-text" maxlength="500" placeholder="発見時の状況や詳しい場所などを詳しく教えてください。"
+                              th:text="${item.contents}" data-required="詳細を入力してください。"></textarea>
+
+                    <!-- 사진: 파일 칸은 숨기고 영역 전체를 그 칸의 label 로 (키보드는 파일 칸에 Tab → Enter) -->
+                    <div class="detail-image-upload">
+                        <input type="file" id="fileInput" name="imageFile" class="file-input" accept="image/jpeg,image/png,image/gif,image/webp"
+                               aria-label="写真を選ぶ（任意）" aria-describedby="uploadHint">
+                        <label for="fileInput" class="upload-label">
+                            <span id="uploadPlaceholder" th:hidden="${item.imgPath != null}">
+                                <svg class="image-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15V18H24V20H21V23H19V20H16V18H19V15H21ZM21.0082 3C21.556 3 22 3.44495 22 3.9934V13H20V5H4V18.999L14 9L17 12V14.829L14 11.8284L6.827 19H14V21H2.9918C2.44405 21 2 20.5551 2 20.0066V3.9934C2 3.44476 2.45531 3 2.9918 3H21.0082ZM8 7C9.10457 7 10 7.89543 10 9C10 10.1046 9.10457 11 8 11C6.89543 11 6 10.1046 6 9C6 7.89543 6.89543 7 8 7Z"></path></svg>
+                                <span class="upload-placeholder" id="uploadHint">写真があれば、<br>ぜひ追加してください。</span>
+                            </span>
+                        </label>
+                        <img id="imagePreview" class="image-preview" alt="投稿の画像"
+                             th:src="${item.imgPath != null} ? |/images/${item.imgPath}| : null" th:hidden="${item.imgPath == null}">
+                        <button type="button" class="delete-img-btn" id="deleteImgBtn" aria-label="写真を削除" th:hidden="${item.imgPath == null}">✕</button>
                     </div>
                 </div>
             </div>
 
             <!-- 비회원 글만 비밀번호가 있다 -->
-            <div class="form-row" th:if="${item.memberId == null}">
-                <div class="form-label">パスワード</div>
+            <div class="form-row form-row-last" th:if="${item.memberId == null}">
+                <span class="form-label">パスワード</span>
                 <div class="form-input">
                     <!-- 비밀번호 값은 화면(HTML)에 절대 내려보내지 않는다 -->
-                    <input type="text" class="input-readonly" placeholder="●●●●" disabled style="width: 150px;">
-                    <div class="red-notice">※ パスワードは変更できません。</div>
+                    <span class="notice">※ パスワードは変更できません。</span>
                 </div>
             </div>
-
         </form>
-    </div>
+    </main>
 
-    <div id="customModal" class="modal-overlay">
+    <!-- 안내·확인 창 (js/post-form.js) -->
+    <div id="customModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalMessage">
         <div class="modal-box">
-            <svg class="modal-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path>
-            </svg>
-            <h3 class="modal-title" id="modalTitle"></h3>
+            <svg class="modal-icon-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>
             <p class="modal-message" id="modalMessage"></p>
             <div class="modal-btn-group">
-                <button class="modal-btn modal-btn-cancel" id="modalCancelBtn" onclick="closeModal()">キャンセル</button>
-                <button class="modal-btn modal-btn-ok" id="modalOkBtn" onclick="confirmModal()">OK</button>
+                <button type="button" class="modal-btn modal-btn-cancel" id="modalCancelBtn" hidden>キャンセル</button>
+                <button type="button" class="modal-btn modal-btn-ok" id="modalOkBtn">OK</button>
             </div>
         </div>
     </div>
 
-	<script th:src="@{/webjars/flatpickr/dist/flatpickr.min.js}"></script>
+    <script th:src="@{/webjars/flatpickr/dist/flatpickr.min.js}"></script>
     <script th:src="@{/webjars/flatpickr/dist/l10n/ja.js}"></script>
     <!-- 직접 입력한 날짜 확인 (형식이 틀린 날짜를 다른 날짜로 바꾸지 않게) -->
     <script th:src="@{/js/date-input.js}"></script>
-
-    <script th:inline="javascript">
-        const itemId = /*[[${item.id}]]*/ 0;
-        const savedStation = /*[[${item.stationName}]]*/ "";
-        const savedLine = /*[[${item.lineName}]]*/ "";
-        const allStationsData = [
-            /*[# th:each="st : ${stations}"]*/
-            { name: /*[[${st.stationName}]]*/ "", line: /*[[${st.lineName}]]*/ "" },
-            /*[/]*/
-        ];
-    </script>
-
-    <script>
-        // 모달 관련
-        const modal = document.getElementById('customModal');
-        const modalMessage = document.getElementById('modalMessage');
-        const modalCancelBtn = document.getElementById('modalCancelBtn');
-        let onConfirmAction = null; 
-        let onCancelAction = null; 
-
-        function showModal(title, message, okCallback, hasCancel = false, cancelCallback = null) {
-            modalMessage.innerText = message;
-            modal.style.display = 'flex';
-            onConfirmAction = okCallback;
-            onCancelAction = cancelCallback;
-            if (hasCancel) modalCancelBtn.style.display = 'block';
-            else modalCancelBtn.style.display = 'none';
-        }
-
-        function confirmModal() {
-            modal.style.display = 'none';
-            if (onConfirmAction) {
-                onConfirmAction();
-                onConfirmAction = null;
-            }
-            onCancelAction = null; 
-        }
-
-        function closeModal() {
-            modal.style.display = 'none';
-            if (onCancelAction) {
-                onCancelAction();
-                onCancelAction = null;
-            }
-            onConfirmAction = null;
-        }
-
-        // =========================================================
-        // 1. 달력 설정
-        // =========================================================
-        const datePickerEl = document.getElementById("datePicker");
-
-        flatpickr("#datePicker", {
-            // 직접 입력한 날짜가 틀리면 칸을 비우고 안내 (date-input.js)
-            ...strictDateOptions(message => showModal("", message, function() { datePickerEl.focus(); }, false)),
-            locale: "ja", 
-            dateFormat: "Y-m-d", 
-            maxDate: "today", // UI 차단
-
-            onChange: function(selectedDates, dateStr) { 
-                datePickerEl.dataset.raw = dateStr; 
-                updateAutoTitle(); 
-            },
-            onReady: function(selectedDates, dateStr, instance) {
-                datePickerEl.dataset.raw = dateStr; 
-
-                const container = instance.calendarContainer;
-                const footer = document.createElement("div");
-                footer.style.cssText = "padding: 10px; display: flex; justify-content: space-between; border-top: 1px solid #eee;";
-                footer.innerHTML = `
-                    <button type="button" onclick="window.dateInst.setDate(new Date()); document.getElementById('datePicker').dataset.raw = document.getElementById('datePicker').value; updateAutoTitle();" style="cursor:pointer; border:none; background:none; color:#009dff; font-size:12px;">本日</button>
-                    <button type="button" onclick="window.dateInst.clear(); document.getElementById('datePicker').dataset.raw = ''; updateAutoTitle();" style="cursor:pointer; border:none; background:none; color:#ff4d4d; font-size:12px;">クリア</button>
-                `;
-                container.appendChild(footer);
-                window.dateInst = instance;
-            }
-        });
-
-        // 타이핑 값 추적
-        datePickerEl.addEventListener('input', function(e) {
-            this.dataset.raw = this.value;
-        });
-
-        // 2. 노선/역 필터링
-        const lineSelect = document.getElementById('lineSelect');
-        const stationSelect = document.getElementById('stationSelect');
-
-        function renderStationOptions(selectedLine) {
-            stationSelect.innerHTML = '<option value="">駅を選択</option>';
-            allStationsData.forEach(st => {
-                if (st.line === selectedLine) {
-                    const opt = document.createElement('option');
-                    opt.value = st.name;
-                    opt.text = st.name;
-                    if(st.name === savedStation) {
-                        opt.selected = true;
-                    }
-                    stationSelect.appendChild(opt);
-                }
-            });
-            stationSelect.disabled = (selectedLine === "");
-        }
-
-        lineSelect.addEventListener('change', function() {
-            renderStationOptions(this.value);
-            updateAutoTitle();
-        });
-
-        if (savedLine) {
-            renderStationOptions(savedLine);
-        }
-
-        document.getElementById('stationSelect').addEventListener('change', updateAutoTitle);
-        document.getElementById('categorySelect').addEventListener('change', updateAutoTitle);
-        document.getElementById('itemName').addEventListener('input', updateAutoTitle);
-
-        function updateAutoTitle() {
-            const date = document.getElementById('datePicker').value;
-            const line = document.getElementById('lineSelect').value;
-            const station = document.getElementById('stationSelect').value;
-            const category = document.getElementById('categorySelect').value;
-            const item = document.getElementById('itemName').value;
-
-            if(date && line && station && category && item) {
-                document.getElementById('autoTitle').value = `[${date}][${line}][${station}][${category}] ${item}`;
-            } else {
-                document.getElementById('autoTitle').value = "";
-            }
-        }
-
-        // 서버와 같은 기준으로 미리 확인 (JPG・PNG・GIF・WEBP, 10MB 이하)
-        const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-
-        function previewImage(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                if (!ALLOWED_IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_SIZE) {
-                    input.value = "";
-                    showModal("", "10MB以下の画像ファイル(JPG・PNG・GIF・WEBP)を選択してください。", null, false);
-                    return;
-                }
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    // 확장자만 바꾼 파일(.txt → .jpg 등)은 그림으로 열 수 없다 → 깨진 미리 보기 대신 안내 (서버에서도 다시 확인)
-                    const probe = new Image();
-                    probe.onload = function() {
-                        document.getElementById('imagePreview').src = e.target.result;
-                        document.getElementById('imagePreview').style.display = 'block';
-                        document.getElementById('deleteImgBtn').style.display = 'flex';
-                        document.getElementById('uploadPlaceholder').style.display = 'none';
-                        document.getElementById('isImageDeleted').value = "false";
-                    };
-                    probe.onerror = function() {
-                        input.value = "";
-                        showModal("", "画像を読み込めませんでした。\n画像ファイル(JPG・PNG・GIF・WEBP)を選択してください。", null, false);
-                    };
-                    probe.src = e.target.result;
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        function deleteImage(event) {
-            event.stopPropagation();
-            document.getElementById('fileInput').value = ""; 
-            document.getElementById('imagePreview').src = "";
-            document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('deleteImgBtn').style.display = 'none';
-            document.getElementById('uploadPlaceholder').style.display = 'flex';
-            document.getElementById('isImageDeleted').value = "true";
-        }
-
-        document.getElementById('btnCancel').addEventListener('click', function(e) {
-            e.preventDefault();
-            showModal("", "ページから移動しますか？\n変更内容は保存されません。", function() {
-                window.location.href = "/items/" + itemId; 
-            }, true); 
-        });
-
-        const homeLogo = document.querySelector('a[href="/"]'); 
-        if (homeLogo) {
-            homeLogo.addEventListener('click', function(e) {
-                e.preventDefault(); 
-                showModal("", "ページから移動しますか？\n変更内容は保存されません。", function() {
-                    window.location.href = "/"; 
-                }, true); 
-            });
-        }
-
-        // =========================================================
-        // 3. 폼 제출 검증
-        // =========================================================
-        const editFormEl = document.getElementById('editForm');
-        
-        editFormEl.addEventListener('submit', function(e) {
-            const dateEl = document.getElementById('datePicker');
-            let dateVal = dateEl.dataset.raw;
-            if (dateVal === undefined) dateVal = dateEl.value; 
-            dateVal = dateVal.trim();
-
-            if (!dateVal) {
-                e.preventDefault();
-                showModal("", "発見した日を入力してください。", function() {
-                    dateEl.focus();
-                }, false);
-                return;
-            }
-
-            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-            if (!datePattern.test(dateVal)) {
-                e.preventDefault();
-                showModal("", "日付の形式が正しくありません。\n(例: 2026-01-01)", function() {
-                    dateEl.focus();
-                }, false);
-                return;
-            }
-
-			const [inY, inM, inD] = dateVal.split('-').map(Number);
-            const inputDate = new Date(inY, inM - 1, inD); // 여기가 핵심!
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); 
-
-            const y = inputDate.getFullYear();
-            const m = inputDate.getMonth() + 1;
-            const d = inputDate.getDate();
-
-            if (y !== inY || m !== inM || d !== inD) {
-                 e.preventDefault();
-                showModal("", "存在しない日付です。", function() {
-                    dateEl.focus();
-                }, false);
-                return;
-            }
-            
-            if (y < 2000) {
-                 e.preventDefault();
-                 showModal("", "日付の形式が正しくありません。\n(例: 2026-01-01)", function() {
-                    dateEl.focus();
-                }, false);
-                return;
-            }
-
-            if (inputDate > today) {
-                e.preventDefault();
-                showModal("", "未来の日付は入力できません。", function() {
-                    dateEl.focus();
-                }, false);
-                return;
-            }
-
-            const requiredFields = [
-                { id: 'lineSelect', name: '路線' },
-                { id: 'stationSelect', name: '駅' },
-                { id: 'categorySelect', name: 'カテゴリー' },
-                { id: 'itemName', name: '具体的な物' },
-                { id: 'contents', name: '詳細' }
-            ];
-
-            for (let field of requiredFields) {
-                const el = document.getElementById(field.id);
-                if (el && !el.value.trim()) { 
-                    e.preventDefault(); 
-                    el.value = el.value.trim();
-                    showModal("", `${field.name}を入力してください。`, function() {
-                        el.focus();
-                    }, false); 
-                    return;
-                }
-            }
-        }); 
-
-		// =========================================================
-        // 4. 엔터 키 처리 로직
-        // =========================================================
-        
-        // (1) 날짜 칸 엔터 처리: "날짜만 검사" 후 통과하면 다음 칸으로 이동
-        const dateInputEl = document.getElementById('datePicker');
-        if (dateInputEl) {
-            dateInputEl.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.stopPropagation(); // Flatpickr 개입 차단
-                    e.preventDefault();  // 폼 제출 차단
-                    
-                    if(window.dateInst) window.dateInst.close(); // 달력 닫기
-
-                    // --- 날짜 단독 검증 시작 ---
-                    let dateVal = this.dataset.raw;
-                    if (dateVal === undefined) dateVal = this.value;
-                    dateVal = dateVal.trim();
-
-                    // 1. 빈 값 체크
-                    if (!dateVal) {
-                        this.blur();
-                        return;
-                    }
-
-                    // 2. 형식 체크 (1234 등)
-                    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-                    if (!datePattern.test(dateVal)) {
-                        if(window.dateInst) window.dateInst.clear();
-                        this.value = "";
-                        this.dataset.raw = ""; 
-                        showModal("", "日付の形式が正しくありません。\n(例: 2026-01-01)", function() { dateInputEl.focus(); }, false);
-                        return;
-                    }
-
-                    // 3. 유효성 및 미래 날짜 체크
-					const [inY, inM, inD] = dateVal.split('-').map(Number);
-                    const inputDate = new Date(inY, inM - 1, inD);
-
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-
-                    const y = inputDate.getFullYear();
-                    const m = inputDate.getMonth() + 1;
-                    const d = inputDate.getDate();
-
-                    if (y !== inY || m !== inM || d !== inD) {
-                        if(window.dateInst) window.dateInst.clear();
-                        this.value = "";
-                        showModal("", "存在しない日付です。", function() { dateInputEl.focus(); }, false);
-                        return;
-                    }
-                    if (inputDate > today) {
-                        if(window.dateInst) window.dateInst.clear();
-                        this.value = "";
-                        showModal("", "未来の日付は入力できません。", function() { dateInputEl.focus(); }, false);
-                        return;
-                    }
-
-                    // --- [검증 통과 시] ---
-                    // 폼을 제출하지 않고, 다음 입력 칸(노선 선택)으로 커서만 보냅니다.
-                    //const lineSelect = document.getElementById('lineSelect');
-                    //if(lineSelect) lineSelect.focus();
-					
-					this.blur();
-                }
-            }, true); // 캡처링 필수
-        }
-
-        // (2) 그 외 나머지 입력창들(제목, 물건명, 비밀번호 등) 엔터 처리
-        // 엔터 누르면 제출 안 하고 그냥 커서만 뺍니다(blur).
-        const otherInputs = document.querySelectorAll('input:not(#datePicker)');
-        otherInputs.forEach(input => {
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault(); // 폼 제출 막기
-                    this.blur();        // 입력 종료 (커서 빼기)
-                }
-            });
-        });
-        
-        // 5. 뒤로가기 방지
-        history.pushState(null, null, location.href);
-        window.addEventListener('popstate', function(event) {
-            showModal(
-                "", 
-                "ページから移動しますか？\n変更内容は保存されません。", 
-                function() {
-                    history.back(); 
-                }, 
-                true, 
-                function() {
-                    history.pushState(null, null, location.href);
-                }
-            );
-        });
-    </script>
-
-    <script th:inline="javascript">
-        // 서버 측 검증에서 걸린 경우 메시지를 모달로 표시
-        const serverError = /*[[${errorMessage}]]*/ null;
-        if (serverError) showModal("", serverError, null, false);
-    </script>
+    <script th:src="@{/js/dialog.js}"></script>
+    <script th:src="@{/js/post-form.js}"></script>
 </body>
 </html>

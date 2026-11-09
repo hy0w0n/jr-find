@@ -13,11 +13,12 @@
 
         .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
         .field label { font-size: 14px; font-weight: bold; }
-        .field input { padding: 12px; border: 1px solid #333; border-radius: 4px; font-size: 15px; outline: none; }
+        .field input { padding: 12px; border: 1px solid #333; border-radius: 4px; font-size: 15px; }
+        .field input:focus-visible { outline: 3px solid #1a73e8; outline-offset: 1px; }
 
         /* 안내 메시지 (에러: 빨강 / 안내: 파랑) */
         .message { padding: 12px 15px; border-radius: 8px; font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
-        .message-error { background: #fff0f0; color: #e63946; }
+        .message-error { background: #fff0f0; color: #b71c1c; }
         .message-info { background: #eef5ff; color: #2b6cb0; }
 
         .submit-btn { width: 100%; padding: 14px; border: none; border-radius: 25px; background: #333; color: #fff; font-size: 16px; font-weight: bold; font-family: inherit; cursor: pointer; transition: background 0.2s; }
@@ -36,7 +37,7 @@
         <h2 class="auth-title">ログイン</h2>
 
         <!-- ID 가 없는지 비밀번호가 틀렸는지는 구분해서 알려주지 않는다 -->
-        <div id="errorMessage" class="message message-error" th:if="${param.error}">
+        <div id="errorMessage" class="message message-error" role="alert" th:if="${param.error}">
             IDまたはパスワードが正しくありません。<br>もう一度入力してください。
             <!-- 잠기기까지 얼마 남지 않았으면 미리 알린다 (LoginAttemptGuard) -->
             <th:block th:if="${remainingAttempts != null and remainingAttempts <= 3}">
@@ -44,7 +45,7 @@
             </th:block>
         </div>
         <!-- 연속으로 틀려서 잠시 막힌 경우 (LoginAttemptGuard). 잠긴 동안은 맞는 비밀번호도 확인하지 않는다 -->
-        <div id="errorMessage" class="message message-error" th:if="${param.locked}">
+        <div id="errorMessage" class="message message-error" role="alert" th:if="${param.locked}">
             ログインの失敗が続いたため、<br>一時的にログインを制限しています。<br>5分ほど待ってから再度お試しください。
         </div>
         <!-- 다른 브라우저·기기에서 비밀번호를 바꿔서 이 로그인이 끝난 경우 -->
@@ -77,36 +78,7 @@
         <p class="sub-link">アカウントをお持ちでない方は <a th:href="@{/signup}">会員登録</a></p>
     </main>
 
-    <script>
-        // 빈 칸이면 서버로 보내지 않고 안내
-        const loginForm = document.getElementById('loginForm');
-
-        loginForm.addEventListener('submit', function(e) {
-            const requiredFields = [
-                { id: 'loginId', message: 'IDを入力してください。' },
-                { id: 'password', message: 'パスワードを入力してください。' }
-            ];
-            for (let field of requiredFields) {
-                const el = document.getElementById(field.id);
-                if (!el.value.trim()) {
-                    e.preventDefault();
-                    showError(field.message);
-                    el.focus();
-                    return;
-                }
-            }
-        });
-
-        function showError(text) {
-            let box = document.getElementById('errorMessage');
-            if (!box) {
-                box = document.createElement('div');
-                box.id = 'errorMessage';
-                box.className = 'message message-error';
-                loginForm.before(box);
-            }
-            box.textContent = text;
-        }
-    </script>
+    <!-- 오류 칸으로 포커스, 생년월일 상한, 탈퇴 확인, 로그인 빈 칸 안내 -->
+    <script th:src="@{/js/member-form.js}"></script>
 </body>
 </html>

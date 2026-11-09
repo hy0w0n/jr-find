@@ -106,6 +106,9 @@ class LostItemControllerTest {
 		LoginMember member = newMember();
 		int before = countRows();
 
+		// 작성 전 주의사항의 체크 칸이 그대로 warningConfirmed 로 간다 (JS 가 꺼져 있어도 확인하고 등록할 수 있도록)
+		mockMvc.perform(get("/lost-items/new").with(user(member)))
+			.andExpect(content().string(containsString("<input type=\"checkbox\" id=\"warningCheck\" name=\"warningConfirmed\" value=\"true\" form=\"lostForm\">")));
 		mockMvc.perform(newItemRequest("warningConfirmed", "false").with(user(member)))
 			.andExpect(status().isOk())
 			.andExpect(model().attribute("errorMessage", "投稿の前に注意事項を確認してください。"));

@@ -1,7 +1,5 @@
 // 게시판 목록 공통 (見つけた ItemList, 探しています lostList)
 // 필터·정렬·페이지는 모두 서버가 만든 링크와 폼이라 JS 없이도 동작한다. 여기서는 사용 편의만 더한다.
-document.documentElement.classList.add('js'); // 「絞り込む」 버튼을 키보드로 왔을 때만 보이게 (board-list.css)
-
 (() => {
     const form = document.getElementById('filterForm');
     const lineSelect = document.getElementById('lineFilter');

@@ -31,9 +31,10 @@
         .form-label { width: 180px; padding: 20px; font-weight: bold; }
         .form-input { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 6px; }
 
-        input[type="password"] { width: 280px; padding: 10px; border: 1px solid #333; border-radius: 4px; outline: none; font-family: inherit; }
+        input[type="password"] { width: 280px; padding: 10px; border: 1px solid #333; border-radius: 4px; font-family: inherit; }
+        input:focus-visible { outline: 3px solid #1a73e8; outline-offset: 1px; }
         .input-error { border-color: #e63946 !important; }
-        .field-error { font-size: 13px; color: #e63946; }
+        .field-error { font-size: 13px; color: #c62828; }
         .agree-row { margin-top: 20px; font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
         .agree-row label { cursor: pointer; }
     </style>
@@ -69,17 +70,17 @@
         <!-- 비밀번호는 에러가 나도 다시 채워 넣지 않는다 -->
         <form id="withdrawForm" th:action="@{/mypage/withdraw}" th:object="${withdrawForm}" method="post" novalidate>
             <div class="form-row">
-                <div class="form-label">現在のパスワード</div>
+                <label class="form-label" for="currentPassword">現在のパスワード</label>
                 <div class="form-input">
                     <input type="password" id="currentPassword" name="currentPassword" maxlength="64" autocomplete="current-password"
-                           th:classappend="${#fields.hasErrors('currentPassword')} ? 'input-error'">
-                    <span class="field-error" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></span>
+                           th:classappend="${#fields.hasErrors('currentPassword')} ? 'input-error'" th:aria-describedby="${#fields.hasErrors('currentPassword')} ? 'currentPassword-error' : null" th:aria-invalid="${#fields.hasErrors('currentPassword')} ? 'true' : null">
+                    <span class="field-error" id="currentPassword-error" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></span>
                 </div>
             </div>
 
             <div class="agree-row">
-                <label><input type="checkbox" id="agree" name="agree" value="true" th:checked="*{agree}"> 上記の内容を確認しました</label>
-                <span class="field-error" th:if="${#fields.hasErrors('agree')}" th:errors="*{agree}"></span>
+                <label><input type="checkbox" id="agree" name="agree" value="true" th:checked="*{agree}" th:aria-describedby="${#fields.hasErrors('agree')} ? 'agree-error' : null" th:aria-invalid="${#fields.hasErrors('agree')} ? 'true' : null"> 上記の内容を確認しました</label>
+                <span class="field-error" id="agree-error" th:if="${#fields.hasErrors('agree')}" th:errors="*{agree}"></span>
             </div>
 
             <div class="action-btns">
@@ -89,15 +90,7 @@
         </form>
     </main>
 
-    <script>
-        // 되돌릴 수 없으므로 한 번 더 확인 (입력값 확인은 서버에서)
-        // 비밀번호가 비었거나 확인에 체크하지 않았으면 확인창 없이 보내서 서버의 안내를 먼저 보여준다
-        document.getElementById('withdrawForm').addEventListener('submit', function(e) {
-            const filled = document.getElementById('currentPassword').value !== '' && document.getElementById('agree').checked;
-            if (filled && !confirm('本当に退会しますか？\nこの操作は取り消せません。')) {
-                e.preventDefault();
-            }
-        });
-    </script>
+    <!-- 오류 칸으로 포커스, 생년월일 상한, 탈퇴 확인, 로그인 빈 칸 안내 -->
+    <script th:src="@{/js/member-form.js}"></script>
 </body>
 </html>

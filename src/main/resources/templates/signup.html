@@ -19,13 +19,14 @@
         /* 폼 공통 레이아웃 */
         .form-row { display: flex; border-bottom: 1px solid #eee; align-items: center; min-height: 70px; }
         .form-label { width: 180px; padding: 20px; font-weight: bold; }
-        .form-label .optional { font-size: 12px; font-weight: normal; color: #999; }
+        .form-label .optional { font-size: 12px; font-weight: normal; color: #666; }
         .form-input { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 6px; }
 
-        input[type="text"], input[type="password"], input[type="date"], input[type="tel"] { width: 280px; padding: 10px; border: 1px solid #333; border-radius: 4px; outline: none; font-family: inherit; }
+        input[type="text"], input[type="password"], input[type="date"], input[type="tel"] { width: 280px; padding: 10px; border: 1px solid #333; border-radius: 4px; font-family: inherit; }
+        input:focus-visible { outline: 3px solid #1a73e8; outline-offset: 1px; }
         .input-error { border-color: #e63946 !important; }
-        .field-note { font-size: 12px; color: #999; }
-        .field-error { font-size: 13px; color: #e63946; }
+        .field-note { font-size: 12px; color: #666; }
+        .field-error { font-size: 13px; color: #c62828; }
 
         /* 개인정보 동의 */
         .agree-box { margin-top: 25px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background: #fafafa; font-size: 13px; line-height: 1.7; }
@@ -46,64 +47,64 @@
         <!-- 서버 검증에서 걸리면 입력값을 유지한 채 항목별 에러 메시지를 보여준다 -->
         <form id="signupForm" th:action="@{/signup}" th:object="${signupForm}" method="post" novalidate>
             <div class="form-row">
-                <div class="form-label">ID</div>
+                <label class="form-label" for="loginId">ID</label>
                 <div class="form-input">
-                    <input type="text" th:field="*{loginId}" maxlength="20" autocomplete="username" th:errorclass="input-error">
-                    <span class="field-note">半角英数字と _ (4〜20文字)</span>
-                    <span class="field-error" th:if="${#fields.hasErrors('loginId')}" th:errors="*{loginId}"></span>
+                    <input type="text" th:field="*{loginId}" maxlength="20" autocomplete="username" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('loginId')} ? 'loginId-note loginId-error' : 'loginId-note'" th:aria-invalid="${#fields.hasErrors('loginId')} ? 'true' : null">
+                    <span class="field-note" id="loginId-note">半角英数字と _ (4〜20文字)</span>
+                    <span class="field-error" id="loginId-error" th:if="${#fields.hasErrors('loginId')}" th:errors="*{loginId}"></span>
                 </div>
             </div>
 
             <!-- 비밀번호는 에러가 나도 다시 채워 넣지 않는다 -->
             <div class="form-row">
-                <div class="form-label">パスワード</div>
+                <label class="form-label" for="password">パスワード</label>
                 <div class="form-input">
                     <input type="password" id="password" name="password" maxlength="64" autocomplete="new-password"
-                           th:classappend="${#fields.hasErrors('password')} ? 'input-error'">
-                    <span class="field-note">英字と数字を含む8〜64文字(半角)</span>
-                    <span class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+                           th:classappend="${#fields.hasErrors('password')} ? 'input-error'" th:aria-describedby="${#fields.hasErrors('password')} ? 'password-note password-error' : 'password-note'" th:aria-invalid="${#fields.hasErrors('password')} ? 'true' : null">
+                    <span class="field-note" id="password-note">英字と数字を含む8〜64文字(半角)</span>
+                    <span class="field-error" id="password-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">パスワード確認</div>
+                <label class="form-label" for="passwordConfirm">パスワード確認</label>
                 <div class="form-input">
                     <input type="password" id="passwordConfirm" name="passwordConfirm" maxlength="64" autocomplete="new-password"
-                           th:classappend="${#fields.hasErrors('passwordConfirm')} ? 'input-error'">
-                    <span class="field-error" th:if="${#fields.hasErrors('passwordConfirm')}" th:errors="*{passwordConfirm}"></span>
+                           th:classappend="${#fields.hasErrors('passwordConfirm')} ? 'input-error'" th:aria-describedby="${#fields.hasErrors('passwordConfirm')} ? 'passwordConfirm-error' : null" th:aria-invalid="${#fields.hasErrors('passwordConfirm')} ? 'true' : null">
+                    <span class="field-error" id="passwordConfirm-error" th:if="${#fields.hasErrors('passwordConfirm')}" th:errors="*{passwordConfirm}"></span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">氏名</div>
+                <label class="form-label" for="realName">氏名</label>
                 <div class="form-input">
-                    <input type="text" th:field="*{realName}" maxlength="20" autocomplete="name" th:errorclass="input-error">
-                    <span class="field-error" th:if="${#fields.hasErrors('realName')}" th:errors="*{realName}"></span>
+                    <input type="text" th:field="*{realName}" maxlength="20" autocomplete="name" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('realName')} ? 'realName-error' : null" th:aria-invalid="${#fields.hasErrors('realName')} ? 'true' : null">
+                    <span class="field-error" id="realName-error" th:if="${#fields.hasErrors('realName')}" th:errors="*{realName}"></span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">ニックネーム <span class="optional">(任意)</span></div>
+                <label class="form-label" for="nickname">ニックネーム <span class="optional">(任意)</span></label>
                 <div class="form-input">
-                    <input type="text" th:field="*{nickname}" maxlength="20" th:errorclass="input-error">
-                    <span class="field-note">投稿者名として表示されます。未入力の場合は氏名が表示されます。</span>
-                    <span class="field-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></span>
+                    <input type="text" th:field="*{nickname}" maxlength="20" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('nickname')} ? 'nickname-note nickname-error' : 'nickname-note'" th:aria-invalid="${#fields.hasErrors('nickname')} ? 'true' : null">
+                    <span class="field-note" id="nickname-note">投稿者名として表示されます。未入力の場合は氏名が表示されます。</span>
+                    <span class="field-error" id="nickname-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">生年月日</div>
+                <label class="form-label" for="birthDate">生年月日</label>
                 <div class="form-input">
-                    <input type="date" th:field="*{birthDate}" id="birthDate" min="1900-01-01" th:errorclass="input-error">
-                    <span class="field-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
+                    <input type="date" th:field="*{birthDate}" id="birthDate" min="1900-01-01" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('birthDate')} ? 'birthDate-error' : null" th:aria-invalid="${#fields.hasErrors('birthDate')} ? 'true' : null">
+                    <span class="field-error" id="birthDate-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">電話番号</div>
+                <label class="form-label" for="phone">電話番号</label>
                 <div class="form-input">
-                    <input type="tel" th:field="*{phone}" maxlength="13" placeholder="090-1234-5678" autocomplete="tel" th:errorclass="input-error">
-                    <span class="field-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
+                    <input type="tel" th:field="*{phone}" maxlength="13" placeholder="090-1234-5678" autocomplete="tel" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('phone')} ? 'phone-error' : null" th:aria-invalid="${#fields.hasErrors('phone')} ? 'true' : null">
+                    <span class="field-error" id="phone-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
                 </div>
             </div>
 
@@ -114,10 +115,10 @@
                     ニックネーム(未入力の場合は氏名)は、投稿者名として他の利用者に公開されます。
                 </p>
                 <label class="agree-check">
-                    <input type="checkbox" th:field="*{agree}">
+                    <input type="checkbox" th:field="*{agree}" id="agree" th:aria-describedby="${#fields.hasErrors('agree')} ? 'agree-error' : null" th:aria-invalid="${#fields.hasErrors('agree')} ? 'true' : null">
                     個人情報の取り扱いに同意します
                 </label>
-                <span class="field-error" th:if="${#fields.hasErrors('agree')}" th:errors="*{agree}"></span>
+                <span class="field-error" id="agree-error" th:if="${#fields.hasErrors('agree')}" th:errors="*{agree}"></span>
             </div>
 
             <div class="action-btns">
@@ -127,11 +128,7 @@
         </form>
     </main>
 
-    <script>
-        // 생년월일은 오늘 이후를 고를 수 없게
-        const today = new Date();
-        const pad = n => String(n).padStart(2, '0');
-        document.getElementById('birthDate').max = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-    </script>
+    <!-- 오류 칸으로 포커스, 생년월일 상한, 탈퇴 확인, 로그인 빈 칸 안내 -->
+    <script th:src="@{/js/member-form.js}"></script>
 </body>
 </html>

@@ -148,6 +148,15 @@ Java 21 が必要です。
 - 一覧の表はカード形式（物の名前を1行目に）、登録・会員フォームは項目名を入力欄の上に、ダイアログは画面幅に合わせる
 - PC 画面のレイアウトはそのまま
 
+## アクセシビリティ
+
+- すべての入力欄に名前（`label` または `aria-label`）を付け、形式の案内・エラーメッセージは `aria-describedby` でその欄に関連付け。サーバー側の検証でエラーになった場合は最初のエラー欄にフォーカス
+- 確認ダイアログ（モーダル）は `role="dialog"`。開くとダイアログ内にフォーカスを移し、Tab はダイアログ内のみ、Esc で閉じ、閉じると元の位置へ（js/dialog.js）
+- 写真の添付は非表示のファイル欄 + `label` のため、キーボード（Tab → Enter）でも選択可能。入力欄・ボタンにフォーカス表示
+- JS を無効にしても投稿の閲覧・登録が可能：一覧はリンクと GET フォーム、駅は最初から選択でき、サーバー側の検証メッセージは画面にそのまま表示。
+  探しています の投稿前の注意事項は、JS があれば最初にダイアログで、なければフォームの上に表示（チェック欄がそのまま確認の値）
+- 入力中にほかの画面へ移動しようとすると確認（画面内のリンクはこの画面のダイアログ、戻る・再読み込み・タブを閉じる場合はブラウザの確認）。入力がなければ確認しない
+
 ## セキュリティ対策
 
 - パスワード（会員・非会員の投稿とも）は BCrypt ハッシュで保存し、画面（HTML）には出力しない
@@ -197,6 +206,8 @@ src/main/java/com/example/jrfind
 src/main/resources
 ├─ schema.sql, data.sql, messages.properties（入力形式エラーの文言）
 ├─ static/       css/mobile.css（スマートフォン表示）、css/board-list.css・js/board-list.js（両掲示板の一覧で共通）、
+│                css/post-form.css・js/post-form.js（登録・編集画面で共通）、js/dialog.js（確認ダイアログ）、
+│                js/member-form.js（会員画面）、js/comments.js（コメント）、js/js-enabled.js、
 │                js/submit-once.js（二重送信の防止）、
 │                js/page-restore.js（「戻る」で表示された画面の処理）、
 │                js/date-input.js（日付の直接入力の確認）、js/share-link.js（「シェア」）

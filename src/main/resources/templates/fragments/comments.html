@@ -10,37 +10,38 @@
     <style>
         .comment-section { margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; scroll-margin-top: 110px; }
         .comment-heading { font-size: 15px; font-weight: bold; color: #333; margin-bottom: 10px; }
-        .comment-heading-count { color: #e63946; margin-left: 4px; }
-        .comment-empty { padding: 25px 10px; font-size: 14px; color: #aaa; border-bottom: 1px solid #eee; }
+        .comment-heading-count { color: #c62828; margin-left: 4px; }
+        .comment-empty { padding: 25px 10px; font-size: 14px; color: #767676; border-bottom: 1px solid #eee; }
 
         .comment-list { list-style: none; margin: 0; padding: 0; }
         .comment-item { padding: 18px 10px; border-bottom: 1px solid #eee; }
         .comment-author { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 6px; }
-        .comment-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; background: #fdecee; color: #e63946; font-size: 11px; font-weight: bold; vertical-align: middle; }
+        .comment-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; background: #fdecee; color: #b71c1c; font-size: 11px; font-weight: bold; vertical-align: middle; }
         .comment-text { font-size: 14px; line-height: 1.7; color: #444; white-space: pre-wrap; word-break: break-all; }
-        .comment-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; color: #999; }
+        .comment-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; color: #767676; }
         .comment-meta form { display: inline; }
-        .comment-delete { background: none; border: none; padding: 0; font-size: 12px; font-family: inherit; color: #999; text-decoration: underline; cursor: pointer; }
-        .comment-delete:hover { color: #e63946; }
+        .comment-delete { background: none; border: none; padding: 0; font-size: 12px; font-family: inherit; color: #666; text-decoration: underline; cursor: pointer; }
+        .comment-delete:hover { color: #c62828; }
 
         /* 입력창: 테두리 안에 입력 칸, 그 아래 줄에 글자 수와 등록 버튼
            (버튼을 입력 칸 위에 겹쳐 두면 긴 글이 버튼·글자 수 밑으로 지나가서 읽기 어렵다) */
         .comment-form { margin-top: 20px; }
-        .comment-error { margin-bottom: 8px; font-size: 13px; color: #e63946; }
+        .comment-error { margin-bottom: 8px; font-size: 13px; color: #c62828; }
         .comment-error:empty { display: none; }
-        .comment-wrapper { width: 100%; border: 1px solid #ddd; border-radius: 4px; }
-        .comment-wrapper:focus-within { border-color: #aaa; }
+        .comment-wrapper { width: 100%; border: 1px solid #949494; border-radius: 4px; }
+        .comment-wrapper:focus-within { border-color: #333; outline: 3px solid #1a73e8; outline-offset: 1px; } /* 입력 칸 자체의 포커스 표시 대신 테두리 전체에 */
         .comment-textarea { display: block; width: 100%; height: 100px; min-height: 70px; padding: 15px 15px 5px; border: none; border-radius: 4px; resize: vertical; font-size: 14px; font-family: inherit; outline: none; }
-        .comment-textarea::placeholder { color: #aaa; }
+        .comment-textarea::placeholder { color: #767676; }
         .comment-footer { display: flex; justify-content: space-between; align-items: center; padding: 0 15px 12px; }
-        .comment-length { font-size: 12px; color: #aaa; }
+        .comment-length { font-size: 12px; color: #767676; }
         .comment-btn { background-color: #fff; border: 1px solid #ccc; border-radius: 20px; padding: 6px 25px; font-size: 14px; font-family: inherit; color: #555; cursor: pointer; transition: all 0.2s; }
         .comment-btn:hover { background-color: #f9f9f9; border-color: #bbb; }
 
         /* 로그인 전 */
-        .comment-login { margin-top: 20px; padding: 25px 15px; border: 1px dashed #ddd; border-radius: 4px; text-align: center; font-size: 14px; color: #888; }
+        .comment-login { margin-top: 20px; padding: 25px 15px; border: 1px dashed #ccc; border-radius: 4px; text-align: center; font-size: 14px; color: #666; }
         .comment-login a { display: inline-block; margin-left: 10px; padding: 6px 22px; border: 1px solid #ccc; border-radius: 20px; color: #555; text-decoration: none; transition: all 0.2s; }
         .comment-login a:hover { background-color: #f9f9f9; border-color: #bbb; }
+        .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     </style>
 
     <h3 class="comment-heading">コメント<span class="comment-heading-count" th:text="${#lists.size(comments)}">0</span></h3>
@@ -57,10 +58,10 @@
             <div class="comment-meta">
                 <span th:text="${#temporals.format(comment.registrationDate, 'yyyy-MM-dd HH:mm')}"></span>
                 <!-- 쓴 본인에게만 표시 (권한은 서버에서도 다시 확인) -->
+                <!-- 지우기 전에 한 번 더 확인 (js/comments.js) -->
                 <form th:if="${loginMember != null and comment.memberId == loginMember.id}"
-                      th:action="@{|${postUrl}/comments/${comment.id}/delete|}" method="post"
-                      onsubmit="return confirm('コメントを削除しますか？');">
-                    <button type="submit" class="comment-delete">削除</button>
+                      th:action="@{|${postUrl}/comments/${comment.id}/delete|}" method="post" class="comment-delete-form">
+                    <button type="submit" class="comment-delete" aria-label="このコメントを削除">削除</button>
                 </form>
             </div>
         </li>
@@ -69,12 +70,15 @@
     <!-- 작성 (로그인한 회원만) -->
     <form th:if="${loginMember != null}" th:action="@{|${postUrl}/comments|}" method="post"
           class="comment-form" id="commentForm" novalidate>
-        <div class="comment-error" id="commentError" th:text="${commentError}"></div>
+        <!-- 오류 문구: 바뀌면 스크린리더가 바로 읽는다 -->
+        <div class="comment-error" id="commentError" aria-live="assertive" th:text="${commentError}"></div>
         <div class="comment-wrapper">
             <textarea name="contents" id="commentContents" class="comment-textarea" maxlength="500"
+                      aria-label="コメント" aria-describedby="commentError commentLengthNote"
+                      th:aria-invalid="${commentError != null} ? 'true' : null"
                       placeholder="コメントを入力してください" th:text="${commentDraft}"></textarea>
             <div class="comment-footer">
-                <span class="comment-length"><span id="commentLength">0</span> / 500</span>
+                <span class="comment-length" id="commentLengthNote"><span id="commentLength">0</span> / 500<span class="visually-hidden">文字まで</span></span>
                 <button type="submit" class="comment-btn">登録</button>
             </div>
         </div>
@@ -85,26 +89,7 @@
         <a th:href="@{|${postUrl}/comments|}">ログイン</a>
     </div>
 
-    <script th:if="${loginMember != null}">
-        (() => {
-            const form = document.getElementById('commentForm');
-            const textarea = document.getElementById('commentContents');
-            const length = document.getElementById('commentLength');
-            const error = document.getElementById('commentError');
-
-            const updateLength = () => { length.innerText = textarea.value.length; };
-            textarea.addEventListener('input', updateLength);
-            updateLength();
-
-            // 빈 댓글은 보내지 않는다 (서버에서도 다시 확인)
-            form.addEventListener('submit', (e) => {
-                if (textarea.value.trim() === '') {
-                    e.preventDefault();
-                    error.innerText = 'コメントを入力してください。';
-                    textarea.focus();
-                }
-            });
-        })();
-    </script>
+    <!-- 글자 수, 빈 댓글 확인, 삭제 전 확인 -->
+    <script th:if="${loginMember != null}" th:src="@{/js/comments.js}"></script>
 </section>
 </html>

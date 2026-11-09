@@ -141,6 +141,20 @@ class MemberControllerTest {
 			.andExpect(model().attributeHasFieldErrors("signupForm", "loginId"));
 	}
 
+	@Test
+	void 가입_화면의_입력_칸에는_이름표가_있고_오류는_그_칸에_연결된다() throws Exception {
+		// 스크린리더가 칸 이름과 오류 문구를 함께 읽도록 (label for, aria-describedby, aria-invalid)
+		mockMvc.perform(signupRequest("loginId", "ab"))
+			.andExpect(content().string(containsString("<label class=\"form-label\" for=\"loginId\">ID</label>")))
+			.andExpect(content().string(containsString("aria-describedby=\"loginId-note loginId-error\" aria-invalid=\"true\"")))
+			.andExpect(content().string(containsString("<span class=\"field-error\" id=\"loginId-error\">")))
+			.andExpect(content().string(containsString("<label class=\"form-label\" for=\"password\">パスワード</label>")));
+		// 오류가 없는 칸은 안내 문구만 연결
+		mockMvc.perform(get("/signup"))
+			.andExpect(content().string(containsString("aria-describedby=\"loginId-note\"")))
+			.andExpect(content().string(not(containsString("aria-invalid"))));
+	}
+
 	// ---------- 로그인 / 로그아웃 ----------
 
 	@Test

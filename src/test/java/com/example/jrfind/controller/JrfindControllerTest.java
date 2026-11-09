@@ -325,6 +325,22 @@ class JrfindControllerTest {
 	}
 
 	@Test
+	void 등록_화면의_입력_칸에는_이름이_있고_인라인_스크립트가_없다() throws Exception {
+		String html = mockMvc.perform(get("/items/new")).andReturn().getResponse().getContentAsString();
+		assertThat(html)
+			.contains("<label class=\"form-label\" for=\"datePicker\">発見した日</label>")
+			.contains("aria-label=\"発見した路線\"", "aria-label=\"発見した駅\"", "aria-label=\"具体的な物\"", "aria-label=\"写真を選ぶ（任意）\"")
+			.contains("<label class=\"form-label\" for=\"password\">")
+			// 역 선택은 처음부터 고를 수 있다 (JS 가 꺼져 있어도 등록할 수 있도록)
+			.doesNotContain("disabled")
+			.doesNotContain("onclick").doesNotContain("<script>");
+
+		// 서버 검증에서 걸린 안내는 JS 가 없어도 화면에 보인다
+		mockMvc.perform(newItemRequest("stationName", "横浜"))
+			.andExpect(content().string(containsString("<div id=\"serverError\" class=\"form-error\" role=\"alert\">発見した場所(路線・駅)を正しく選択してください。</div>")));
+	}
+
+	@Test
 	void 잘못된_페이지_번호도_목록을_보여준다() throws Exception {
 		createItem();
 

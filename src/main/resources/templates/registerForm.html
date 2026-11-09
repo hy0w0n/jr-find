@@ -3,682 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JR-Find | 登録画面</title>
+    <title>JR-Find | 見つけた 投稿</title>
     <link rel="stylesheet" th:href="@{/webjars/flatpickr/dist/flatpickr.min.css}">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
-        .container { width: 90%; max-width: 1000px; margin: 30px auto; }
-
-        /* 헤더 및 버튼 */
-        .form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .action-btns { display: flex; gap: 10px; }
-        .btn { padding: 8px 25px; border-radius: 20px; border: 1px solid #ccc; cursor: pointer; font-size: 14px; text-decoration: none; color: #333; transition: all 0.2s; }
-        .btn-cancel { background: #f0f0f0; }
-        .btn-submit { background: #f0f0f0; color: #e63946; font-weight: bold; }
-        .btn:hover { background: #e5e5e5; }
-
-        /* 폼 공통 레이아웃 */
-        .form-row { display: flex; border-bottom: 1px solid #eee; align-items: center; min-height: 70px; }
-        .form-label { width: 200px; padding: 20px; font-weight: bold; }
-        .form-input { flex: 1; padding: 15px; display: flex; gap: 10px; align-items: center; position: relative; }
-        
-        input[type="text"], input[type="password"], select { padding: 10px; border: 1px solid #333; border-radius: 4px; outline: none; }
-        .input-readonly { background-color: #f5f5f5; color: #999; cursor: not-allowed; border: 1px solid #ccc !important; }
-		.date-input-wrapper {
-		    position: relative;      /* 내부 요소의 절대 위치 기준점 */
-		    display: flex;
-		    align-items: center;
-		    width: fit-content;      /* 입력창 너비에 딱 맞게 */
-		}
-		#datePicker {
-		    padding-right: 40px !important; 
-		}
-		.calendar-icon-svg {
-		    position: absolute;      /* 겹쳐서 배치 */
-		    right: 10px;             /* 오른쪽 끝에서 10px 떨어짐 */
-		    width: 24px;
-		    height: 24px;
-		    color: #333;
-		    pointer-events: none;    /* 아이콘을 클릭해도 뒤쪽의 입력창이 클릭되도록 설정 */
-		}
-
-        /* 상세 내용 및 이미지 업로드 영역 */
-        .detail-row { display: flex; border-bottom: 1px solid #eee; }
-        .detail-content { flex: 1; display: flex; border: 1px solid #333; margin: 15px; border-radius: 4px; overflow: hidden; height: 250px; }
-        .detail-text { flex: 2; height: 100%; padding: 15px; border: none; resize: none; border-right: 1px solid #333; outline: none; }
-        
-        /* [수정 1] 이미지 업로드 컨테이너 중앙 정렬 강화 */
-        .detail-image-upload { 
-            flex: 1; 
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; /* 가로 중앙 */
-            justify-content: center; /* 세로 중앙 */
-            background: #fff; 
-            cursor: pointer; 
-            overflow: hidden; 
-            text-align: center;
-        }
-        /* 내부 컨텐츠도 flex로 중앙 정렬 */
-        #uploadPlaceholder {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .image-icon { width: 45px; height: 45px; margin-bottom: 10px; color: #999; }
-        .upload-placeholder { font-size: 12px; color: #999; }
-        
-        #imagePreview { width: 100%; height: 100%; object-fit: cover; display: none; }
-        .delete-img-btn { 
-            position: absolute; top: 10px; right: 10px; 
-            background: rgba(0,0,0,0.6); color: #fff; 
-            border: none; border-radius: 50%; width: 25px; height: 25px; 
-            cursor: pointer; display: none; align-items: center; justify-content: center; font-weight: bold;
-        }
-
-        /* 비밀번호 에러 메시지 스타일 */
-        .pw-error-msg { display: flex; align-items: center; gap: 5px; color: #ff4d4d; font-size: 13px; margin-left: 10px; display: none; }
-        .pw-error-icon { width: 18px; height: 18px; fill: currentColor; }
-        .red-notice { color: #ff4d4d; font-size: 12px; line-height: 1.5; margin-left: 15px; }
-
-        /* =========================================
-           [수정 2] 커스텀 모달 스타일 (예시 이미지 반영)
-           ========================================= */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            display: none; justify-content: center; align-items: center; z-index: 9999;
-        }
-
-        .modal-box {
-            background: white; width: 400px; padding: 40px 30px;
-            border-radius: 20px;
-            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            display: flex; flex-direction: column; align-items: center; gap: 20px;
-        }
-
-        /* 아이콘 SVG 자체 스타일 (배경 원 제거, 아이콘 색상 변경) */
-        .modal-icon-svg { 
-            width: 65px; height: 65px; 
-            fill: #6ea8fe; /* 예시 이미지의 파란색 적용 */
-            margin-bottom: 10px;
-        }
-
-        /* 제목은 숨김 (메시지를 크게 보여주기 위함) */
-        .modal-title { display: none; } 
-        
-        /* 메시지 스타일: 크고 진하게 */
-        .modal-message { 
-            font-size: 20px; /* 글씨 크기 확대 */
-            color: #333; 
-            line-height: 1.4; 
-            white-space: pre-wrap; 
-            font-weight: 500; /* 약간 굵게 */
-        }
-		
-		.modal-btn-group {
-		    display: flex;
-		    width: 100%;
-		    gap: 10px;          /* 버튼 사이 간격 */
-		    margin-top: 20px;
-		}
-		.modal-btn {
-		    flex: 1;            /* 50:50 비율로 꽉 차게 */
-		    padding: 12px;
-		    border: none;
-		    border-radius: 12px;
-		    font-size: 16px;
-		    font-weight: bold;
-		    cursor: pointer;
-		    transition: background 0.2s;
-		}
-		.modal-btn-cancel {
-		    background-color: #e0e0e0;
-		    color: #333;
-		    display: none;      /* 기본적으로는 숨김 (필요할 때만 JS로 보여줌) */
-		}
-		.modal-btn-cancel:hover { background-color: #d0d0d0; }
-		
-		.modal-btn-ok {
-		    background-color: #6ea8fe;
-		    color: white;
-		}
-		.modal-btn-ok:hover { background-color: #5a95e5; }
-
-    </style>
-    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <!-- 등록·수정 화면 공통 스타일 (見つけた 수정, 探しています 등록·수정과 같이 사용) -->
+    <link rel="stylesheet" th:href="@{/css/post-form.css}">
+    <script th:src="@{/js/js-enabled.js}"></script>
+    <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 위 스타일 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
     <div th:replace="~{fragments/header :: mainHeader}"></div>
 
-    <div class="container">
+    <main class="container">
         <div class="form-header">
-            <h2 style="font-size: 24px;">登録画面</h2>
+            <h1 class="form-title">見つけた 投稿</h1>
             <div class="action-btns">
-                <a href="#" id="btnCancel" class="btn btn-cancel">キャンセル</a>
+                <a th:href="@{/items}" id="btnCancel" class="btn">キャンセル</a>
                 <button type="submit" form="regForm" class="btn btn-submit">登録</button>
             </div>
         </div>
 
-        <!-- th:action 을 쓰면 CSRF 토큰(hidden)이 자동으로 들어간다 -->
-        <form id="regForm" th:action="@{/items/new}" method="post" enctype="multipart/form-data">
-            
+        <!-- 서버 검증에서 걸린 경우 (JS 가 켜져 있으면 창으로 보여 준다) -->
+        <div id="serverError" class="form-error" role="alert" th:if="${errorMessage != null}" th:text="${errorMessage}"></div>
+
+        <!-- th:action 을 쓰면 CSRF 토큰(hidden)이 자동으로 들어간다. 확인·편의 기능은 js/post-form.js -->
+        <form id="regForm" class="post-form" th:action="@{/items/new}" method="post" enctype="multipart/form-data"
+              th:data-dirty="${errorMessage != null}">
+
             <div class="form-row">
-                <div class="form-label">タイトル</div>
+                <label class="form-label" for="autoTitle">タイトル</label>
                 <div class="form-input">
-                    <input type="text" id="autoTitle" class="input-readonly" value="" readonly style="flex: 1; color: #333; font-weight: bold;">
+                    <input type="text" id="autoTitle" class="input-readonly input-title" readonly aria-describedby="titleHint">
+                    <span id="titleHint" class="visually-hidden">日付・場所・忘れ物から自動で作られます。</span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">発見した日</div>
+                <label class="form-label" for="datePicker">発見した日</label>
                 <div class="form-input">
                     <div class="date-input-wrapper">
-                        <input type="text" id="datePicker" name="foundDate" th:value="${form?.foundDate}" placeholder="年-月-日" style="width: 200px;">
-                        <div class="calendar-icon-svg">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 1V3H15V1H17V3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H7V1H9ZM20 11H4V19H20V11ZM7 5H4V9H20V5H17V7H15V5H9V7H7V5Z"></path></svg>
-                        </div>
+                        <input type="text" id="datePicker" name="foundDate" class="date-input" th:value="${form?.foundDate}" placeholder="年-月-日"
+                               autocomplete="off" aria-describedby="dateHint" data-required="発見した日を入力してください。">
+                        <svg class="calendar-icon-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 1V3H15V1H17V3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H7V1H9ZM20 11H4V19H20V11ZM7 5H4V9H20V5H17V7H15V5H9V7H7V5Z"></path></svg>
                     </div>
+                    <span id="dateHint" class="hint">例: 2026-01-10</span>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-label">発見した場所</div>
+            <div class="form-row" role="group" aria-labelledby="placeLabel">
+                <span class="form-label" id="placeLabel">発見した場所</span>
                 <div class="form-input">
-                    <select id="lineSelect" name="lineName" style="width: 150px;">
+                    <select id="lineSelect" name="lineName" class="select-line" aria-label="発見した路線" data-required="路線を選択してください。">
                         <option value="">路線を選択</option>
                         <option th:each="line: ${lines}" th:value="${line}" th:text="${line}" th:selected="${line == form?.lineName}"></option>
                     </select>
-                    <select id="stationSelect" name="stationName" style="width: 150px;" disabled>
+                    <!-- 노선을 고르면 그 노선의 역만 보인다 (data-line) -->
+                    <select id="stationSelect" name="stationName" class="select-station" aria-label="発見した駅" data-required="駅を選択してください。">
                         <option value="">駅を選択</option>
-                        <option th:each="st : ${stations}" th:value="${st.stationName}" th:text="${st.stationName}" th:data-line="${st.lineName}" class="station-option"></option>
+                        <option th:each="st : ${stations}" th:value="${st.stationName}" th:text="${st.stationName}" th:data-line="${st.lineName}"
+                                th:selected="${st.lineName == form?.lineName and st.stationName == form?.stationName}"></option>
                     </select>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-label">発見した忘れ物</div>
+            <div class="form-row" role="group" aria-labelledby="itemLabel">
+                <span class="form-label" id="itemLabel">発見した忘れ物</span>
                 <div class="form-input">
-                    <select id="categorySelect" name="categoryName" style="width: 150px;">
+                    <select id="categorySelect" name="categoryName" class="select-category" aria-label="忘れ物のカテゴリー" data-required="カテゴリーを選択してください。">
                         <option value="">カテゴリー</option>
                         <option th:each="cat : ${categories}" th:value="${cat.categoryName}" th:text="${cat.categoryName}" th:selected="${cat.categoryName == form?.categoryName}"></option>
                     </select>
-                    <input type="text" id="itemName" name="itemName" th:value="${form?.itemName}" maxlength="100" placeholder="具体的な物 (例: iPhone 14)" style="flex: 1;">
+                    <input type="text" id="itemName" name="itemName" class="input-item" th:value="${form?.itemName}" maxlength="100" placeholder="具体的な物 (例: iPhone 14)"
+                           aria-label="具体的な物" data-required="具体的な物を入力してください。">
                 </div>
             </div>
 
             <div class="detail-row">
-                <div class="form-label">詳細</div>
+                <label class="form-label" for="contents">詳細</label>
                 <div class="detail-content">
-                    <textarea id="contents" name="contents" class="detail-text" maxlength="500" placeholder="発見時の状況や詳しい場所などを詳しく教えてください。" th:text="${form?.contents}"></textarea>
+                    <textarea id="contents" name="contents" class="detail-text" maxlength="500" placeholder="発見時の状況や詳しい場所などを詳しく教えてください。"
+                              th:text="${form?.contents}" data-required="詳細を入力してください。"></textarea>
 
-                    <div class="detail-image-upload" onclick="document.getElementById('fileInput').click()">
-                        <input type="file" id="fileInput" name="imageFile" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" onchange="previewImage(this)">
-                        <div id="uploadPlaceholder">
-                            <div class="image-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M21 15V18H24V20H21V23H19V20H16V18H19V15H21ZM21.0082 3C21.556 3 22 3.44495 22 3.9934V13H20V5H4V18.999L14 9L17 12V14.829L14 11.8284L6.827 19H14V21H2.9918C2.44405 21 2 20.5551 2 20.0066V3.9934C2 3.44476 2.45531 3 2.9918 3H21.0082ZM8 7C9.10457 7 10 7.89543 10 9C10 10.1046 9.10457 11 8 11C6.89543 11 6 10.1046 6 9C6 7.89543 6.89543 7 8 7Z"></path>
-                                </svg>
-                            </div>
-                            <p class="upload-placeholder">写真があれば、<br>ぜひ追加してください。</p>
-                        </div>
-                        <img id="imagePreview" src="" alt="選択した画像">
-                        <button type="button" class="delete-img-btn" id="deleteImgBtn" onclick="deleteImage(event)">✕</button>
+                    <!-- 사진: 파일 칸은 숨기고 영역 전체를 그 칸의 label 로 (키보드는 파일 칸에 Tab → Enter) -->
+                    <div class="detail-image-upload">
+                        <input type="file" id="fileInput" name="imageFile" class="file-input" accept="image/jpeg,image/png,image/gif,image/webp"
+                               aria-label="写真を選ぶ（任意）" aria-describedby="uploadHint">
+                        <label for="fileInput" class="upload-label">
+                            <span id="uploadPlaceholder">
+                                <svg class="image-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15V18H24V20H21V23H19V20H16V18H19V15H21ZM21.0082 3C21.556 3 22 3.44495 22 3.9934V13H20V5H4V18.999L14 9L17 12V14.829L14 11.8284L6.827 19H14V21H2.9918C2.44405 21 2 20.5551 2 20.0066V3.9934C2 3.44476 2.45531 3 2.9918 3H21.0082ZM8 7C9.10457 7 10 7.89543 10 9C10 10.1046 9.10457 11 8 11C6.89543 11 6 10.1046 6 9C6 7.89543 6.89543 7 8 7Z"></path></svg>
+                                <span class="upload-placeholder" id="uploadHint">写真があれば、<br>ぜひ追加してください。</span>
+                            </span>
+                        </label>
+                        <img id="imagePreview" class="image-preview" alt="選択した画像" hidden>
+                        <button type="button" class="delete-img-btn" id="deleteImgBtn" aria-label="選択した写真を取り消す" hidden>✕</button>
                     </div>
                 </div>
             </div>
 
             <!-- 회원: 로그인한 계정(닉네임)으로 작성, 비밀번호 불필요 -->
-            <div class="form-row" style="border-bottom: 2px solid #333;" th:if="${loginMember != null}">
-                <div class="form-label">投稿者</div>
+            <div class="form-row form-row-last" th:if="${loginMember != null}">
+                <span class="form-label">投稿者</span>
                 <div class="form-input">
-                    <span style="font-weight: bold;" th:text="${loginMember.nickname}">ニックネーム</span>
-                    <div class="red-notice">ログイン中のアカウントで投稿します。<br>編集・削除にパスワードは不要です。</div>
+                    <span class="author-name" th:text="${loginMember.nickname}">ニックネーム</span>
+                    <div class="notice">ログイン中のアカウントで投稿します。<br>編集・削除にパスワードは不要です。</div>
                 </div>
             </div>
 
             <!-- 비회원: 수정·삭제용 4자리 비밀번호 -->
             <th:block th:if="${loginMember == null}">
             <div class="form-row">
-                <div class="form-label">パスワード (4桁)</div>
+                <label class="form-label" for="password">パスワード (4桁)</label>
                 <div class="form-input">
-                    <input type="password" id="password" name="password" maxlength="4" inputmode="numeric" style="width: 150px;">
-                    <div class="red-notice">投稿の編集・削除に使用します。<br>半角数字で入力してください。</div>
+                    <input type="password" id="password" name="password" class="input-password" maxlength="4" inputmode="numeric" autocomplete="new-password"
+                           aria-describedby="pwNote" data-required="パスワードを入力してください。">
+                    <div class="notice" id="pwNote">投稿の編集・削除に使用します。<br>半角数字で入力してください。</div>
                 </div>
             </div>
 
-            <div class="form-row" style="border-bottom: 2px solid #333;">
-                <div class="form-label">パスワード確認</div>
+            <div class="form-row form-row-last">
+                <label class="form-label" for="confirmPassword">パスワード確認</label>
                 <div class="form-input">
-                    <input type="password" id="confirmPassword" maxlength="4" inputmode="numeric" style="width: 150px;">
-                    <div id="pwErrorMsg" class="pw-error-msg">
-                        <svg class="pw-error-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path>
-                        </svg>
-                        <span>パスワードが一致しません。</span>
+                    <!-- 확인 칸은 서버로 보내지 않는다 (name 없음) -->
+                    <input type="password" id="confirmPassword" class="input-password" maxlength="4" inputmode="numeric" autocomplete="new-password"
+                           aria-describedby="pwErrorMsg" data-required="パスワード確認を入力してください。">
+                    <div aria-live="polite">
+                        <div id="pwErrorMsg" class="pw-error-msg" hidden>
+                            <svg class="pw-error-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>
+                            <span>パスワードが一致しません。</span>
+                        </div>
                     </div>
                 </div>
             </div>
             </th:block>
         </form>
-    </div>
+    </main>
 
-	<div id="customModal" class="modal-overlay">
-	    <div class="modal-box">
-	        <svg class="modal-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-	            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path>
-	        </svg>
-	        
-	        <h3 class="modal-title" id="modalTitle"></h3>
-	        <p class="modal-message" id="modalMessage"></p>
-	        
-	        <div class="modal-btn-group">
-	            <button class="modal-btn modal-btn-cancel" id="modalCancelBtn" onclick="closeModal()">キャンセル</button>
-	            <button class="modal-btn modal-btn-ok" id="modalOkBtn" onclick="confirmModal()">OK</button>
-	        </div>
-	    </div>
-	</div>
+    <!-- 안내·확인 창 (js/post-form.js) -->
+    <div id="customModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalMessage">
+        <div class="modal-box">
+            <svg class="modal-icon-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>
+            <p class="modal-message" id="modalMessage"></p>
+            <div class="modal-btn-group">
+                <button type="button" class="modal-btn modal-btn-cancel" id="modalCancelBtn" hidden>キャンセル</button>
+                <button type="button" class="modal-btn modal-btn-ok" id="modalOkBtn">OK</button>
+            </div>
+        </div>
+    </div>
 
     <script th:src="@{/webjars/flatpickr/dist/flatpickr.min.js}"></script>
     <script th:src="@{/webjars/flatpickr/dist/l10n/ja.js}"></script>
     <!-- 직접 입력한 날짜 확인 (형식이 틀린 날짜를 다른 날짜로 바꾸지 않게) -->
     <script th:src="@{/js/date-input.js}"></script>
-
-	<script>
-        // 모달 관련
-        const modal = document.getElementById('customModal');
-        const modalMessage = document.getElementById('modalMessage');
-        const modalCancelBtn = document.getElementById('modalCancelBtn');
-        let onConfirmAction = null; 
-        let onCancelAction = null; 
-
-        function showModal(title, message, okCallback, hasCancel = false, cancelCallback = null) {
-            modalMessage.innerText = message;
-            modal.style.display = 'flex';
-            onConfirmAction = okCallback;
-            onCancelAction = cancelCallback;
-            if (hasCancel) modalCancelBtn.style.display = 'block';
-            else modalCancelBtn.style.display = 'none';
-        }
-
-        function confirmModal() {
-            modal.style.display = 'none';
-            if (onConfirmAction) {
-                onConfirmAction();
-                onConfirmAction = null;
-            }
-            onCancelAction = null; 
-        }
-
-        function closeModal() {
-            modal.style.display = 'none';
-            if (onCancelAction) {
-                onCancelAction();
-                onCancelAction = null;
-            }
-            onConfirmAction = null;
-        }
-
-        // =========================================================
-        // 1. 달력 설정
-        // =========================================================
-        const datePickerEl = document.getElementById("datePicker");
-
-        flatpickr("#datePicker", {
-            // 직접 입력한 날짜가 틀리면 칸을 비우고 안내 (date-input.js)
-            ...strictDateOptions(message => showModal("", message, function() { datePickerEl.focus(); }, false)),
-            locale: "ja", 
-            dateFormat: "Y-m-d", 
-            maxDate: "today", // UI 차단
-            
-            onChange: function(selectedDates, dateStr) { 
-                datePickerEl.dataset.raw = dateStr; 
-                updateAutoTitle(); 
-            },
-            onReady: function(selectedDates, dateStr, instance) {
-                const container = instance.calendarContainer;
-                const footer = document.createElement("div");
-                footer.style.cssText = "padding: 10px; display: flex; justify-content: space-between; border-top: 1px solid #eee;";
-                footer.innerHTML = `
-                    <button type="button" onclick="window.dateInst.setDate(new Date()); document.getElementById('datePicker').dataset.raw = document.getElementById('datePicker').value; updateAutoTitle();" style="cursor:pointer; border:none; background:none; color:#009dff; font-size:12px;">本日</button>
-                    <button type="button" onclick="window.dateInst.clear(); document.getElementById('datePicker').dataset.raw = ''; updateAutoTitle();" style="cursor:pointer; border:none; background:none; color:#ff4d4d; font-size:12px;">クリア</button>
-                `;
-                container.appendChild(footer);
-                window.dateInst = instance;
-            }
-        });
-
-        // 타이핑 값 추적
-        datePickerEl.addEventListener('input', function(e) {
-            this.dataset.raw = this.value;
-        });
-
-        // 2. 노선/역 필터링
-        const stationSelect = document.getElementById('stationSelect');
-        const allStationOptions = Array.from(stationSelect.options); 
-        const lineSelect = document.getElementById('lineSelect');
-
-        lineSelect.addEventListener('change', function() {
-            const selectedLine = this.value;
-            stationSelect.innerHTML = '';
-            allStationOptions.forEach(opt => {
-                if (opt.value === "" || opt.getAttribute('data-line') === selectedLine) {
-                    stationSelect.appendChild(opt);
-                }
-            });
-            stationSelect.disabled = (selectedLine === "");
-            stationSelect.value = "";
-            updateAutoTitle();
-        });
-
-        document.getElementById('stationSelect').addEventListener('change', updateAutoTitle);
-        document.getElementById('categorySelect').addEventListener('change', updateAutoTitle);
-        document.getElementById('itemName').addEventListener('input', updateAutoTitle);
-
-        function updateAutoTitle() {
-            const date = document.getElementById('datePicker').value;
-            const line = document.getElementById('lineSelect').value;
-            const station = document.getElementById('stationSelect').value;
-            const category = document.getElementById('categorySelect').value;
-            const item = document.getElementById('itemName').value;
-
-            if(date && line && station && category && item) {
-                document.getElementById('autoTitle').value = `[${date}][${line}][${station}][${category}] ${item}`;
-            } else {
-                document.getElementById('autoTitle').value = "";
-            }
-        }
-
-        // 서버와 같은 기준으로 미리 확인 (JPG・PNG・GIF・WEBP, 10MB 이하)
-        const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-
-        function previewImage(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                if (!ALLOWED_IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_SIZE) {
-                    input.value = "";
-                    showModal("", "10MB以下の画像ファイル(JPG・PNG・GIF・WEBP)を選択してください。", null, false);
-                    return;
-                }
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    // 확장자만 바꾼 파일(.txt → .jpg 등)은 그림으로 열 수 없다 → 깨진 미리 보기 대신 안내 (서버에서도 다시 확인)
-                    const probe = new Image();
-                    probe.onload = function() {
-                        document.getElementById('imagePreview').src = e.target.result;
-                        document.getElementById('imagePreview').style.display = 'block';
-                        document.getElementById('deleteImgBtn').style.display = 'flex';
-                        document.getElementById('uploadPlaceholder').style.display = 'none';
-                    };
-                    probe.onerror = function() {
-                        input.value = "";
-                        showModal("", "画像を読み込めませんでした。\n画像ファイル(JPG・PNG・GIF・WEBP)を選択してください。", null, false);
-                    };
-                    probe.src = e.target.result;
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        function deleteImage(event) {
-            event.stopPropagation();
-            document.getElementById('fileInput').value = "";
-            document.getElementById('imagePreview').src = "";
-            document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('deleteImgBtn').style.display = 'none';
-            document.getElementById('uploadPlaceholder').style.display = 'flex'; 
-        }
-
-        // 비밀번호 확인
-        const pwInput = document.getElementById('password');
-        const confirmPwInput = document.getElementById('confirmPassword');
-        const pwErrorMsg = document.getElementById('pwErrorMsg');
-
-        function checkPassword() {
-            const pw = pwInput.value;
-            const confirmPw = confirmPwInput.value;
-            if (confirmPw !== "" && pw !== confirmPw) {
-                pwErrorMsg.style.display = 'flex';
-            } else {
-                pwErrorMsg.style.display = 'none';
-            }
-        }
-        if(pwInput && confirmPwInput) {
-            pwInput.addEventListener('input', checkPassword);
-            confirmPwInput.addEventListener('input', checkPassword);
-        }
-
-        // 이탈 방지
-        document.getElementById('btnCancel').addEventListener('click', function(e) {
-            e.preventDefault();
-            showModal("", "ページから移動しますか？\n変更内容は保存されません。", function() {
-                window.location.href = "/items"; 
-            }, true); 
-        });
-
-        const homeLogo = document.querySelector('a[href="/"]'); 
-        if (homeLogo) {
-            homeLogo.addEventListener('click', function(e) {
-                e.preventDefault(); 
-                showModal("", "ページから移動しますか？\n変更内容は保存されません。", function() {
-                    window.location.href = "/"; 
-                }, true); 
-            });
-        }
-
-        // =========================================================
-        // 3. 폼 제출 검증 (등록 버튼 클릭 시 전체 검사)
-        // =========================================================
-        const formEl = document.getElementById('regForm');
-        
-        formEl.addEventListener('submit', function(e) {
-            
-            // [1단계] 날짜 먼저 검사
-            const dateEl = document.getElementById('datePicker');
-            let dateVal = dateEl.dataset.raw;
-            if (dateVal === undefined) dateVal = dateEl.value; 
-            dateVal = dateVal.trim();
-
-            if (!dateVal) {
-                e.preventDefault();
-                showModal("", "発見した日を入力してください。", function() {
-                    dateEl.focus();
-                }, false);
-                return;
-            }
-
-            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-            if (!datePattern.test(dateVal)) {
-                e.preventDefault();
-                showModal("", "日付の形式が正しくありません。\n(例: 2026-01-01)", function() {
-                    dateEl.focus();
-                }, false);
-                return;
-            }
-
-			const [inY, inM, inD] = dateVal.split('-').map(Number);
-            const inputDate = new Date(inY, inM - 1, inD); // 로컬 시간 00:00:00 보장
-            
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); 
-
-            const y = inputDate.getFullYear();
-            const m = inputDate.getMonth() + 1;
-            const d = inputDate.getDate();
-
-            if (y !== inY || m !== inM || d !== inD) {
-                 e.preventDefault();
-                showModal("", "存在しない日付です。", function() {
-                    dateEl.focus();
-                }, false);
-                return;
-            }
-
-            if (inputDate > today) {
-                e.preventDefault();
-                showModal("", "未来の日付は入力できません。", function() {
-                    dateEl.focus();
-                }, false);
-                return;
-            }
-
-            // [2단계] 나머지 필수 항목 체크
-            const requiredFields = [
-                { id: 'lineSelect', name: '路線' },
-                { id: 'stationSelect', name: '駅' },
-                { id: 'categorySelect', name: 'カテゴリー' },
-                { id: 'itemName', name: '具体的な物' },
-                { id: 'contents', name: '詳細' },
-                { id: 'password', name: 'パスワード' },
-                { id: 'confirmPassword', name: 'パスワード確認' }
-            ];
-
-            for (let field of requiredFields) {
-                const el = document.getElementById(field.id);
-                if (el && !el.value.trim()) { 
-                    e.preventDefault(); 
-                    el.value = el.value.trim();
-                    showModal("", `${field.name}を入力してください。`, function() {
-                        el.focus(); 
-                    }, false); 
-                    return;
-                }
-            }
-
-            // 비밀번호 칸은 비회원일 때만 있다
-            if (pwInput && !/^\d{4}$/.test(pwInput.value)) {
-                e.preventDefault();
-                showModal("", "パスワードは半角数字4桁で入力してください。", function() {
-                    pwInput.focus();
-                }, false);
-                return;
-            }
-
-            if (pwInput && pwInput.value !== confirmPwInput.value) {
-                e.preventDefault();
-                showModal("", "パスワードが一致しません。", function() {
-                    confirmPwInput.focus();
-                }, false);
-                return;
-            }
-        });
-
-		// =========================================================
-        // 4. 엔터 키 처리 로직
-        // =========================================================
-        
-        // (1) 날짜 칸 엔터 처리: "날짜만 검사" 후 통과하면 다음 칸으로 이동
-        const dateInputEl = document.getElementById('datePicker');
-        if (dateInputEl) {
-            dateInputEl.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.stopPropagation(); // Flatpickr 개입 차단
-                    e.preventDefault();  // 폼 제출 차단
-                    
-                    if(window.dateInst) window.dateInst.close(); // 달력 닫기
-
-                    // --- 날짜 단독 검증 시작 ---
-                    let dateVal = this.dataset.raw;
-                    if (dateVal === undefined) dateVal = this.value;
-                    dateVal = dateVal.trim();
-
-                    // 1. 빈 값 체크
-                    if (!dateVal) {
-                        this.blur();
-                        return;
-                    }
-
-                    // 2. 형식 체크 (1234 등)
-                    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-                    if (!datePattern.test(dateVal)) {
-                        if(window.dateInst) window.dateInst.clear();
-                        this.value = "";
-                        this.dataset.raw = ""; 
-                        showModal("", "日付の形式が正しくありません。\n(例: 2026-01-01)", function() { dateInputEl.focus(); }, false);
-                        return;
-                    }
-
-                    // 3. 유효성 및 미래 날짜 체크
-					const [inY, inM, inD] = dateVal.split('-').map(Number);
-                    const inputDate = new Date(inY, inM - 1, inD);
-
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-
-                    const y = inputDate.getFullYear();
-                    const m = inputDate.getMonth() + 1;
-                    const d = inputDate.getDate();
-
-                    if (y !== inY || m !== inM || d !== inD) {
-                        if(window.dateInst) window.dateInst.clear();
-                        this.value = "";
-                        showModal("", "存在しない日付です。", function() { dateInputEl.focus(); }, false);
-                        return;
-                    }
-                    if (inputDate > today) {
-                        if(window.dateInst) window.dateInst.clear();
-                        this.value = "";
-                        showModal("", "未来の日付は入力できません。", function() { dateInputEl.focus(); }, false);
-                        return;
-                    }
-
-                    // --- [검증 통과 시] ---
-                    // 폼을 제출하지 않고, 다음 입력 칸(노선 선택)으로 커서만 보냅니다.
-                    //const lineSelect = document.getElementById('lineSelect');
-                    //if(lineSelect) lineSelect.focus();
-					this.blur();
-                }
-            }, true); // 캡처링 필수
-        }
-
-        // (2) 그 외 나머지 입력창들(제목, 물건명, 비밀번호 등) 엔터 처리
-        // 엔터 누르면 제출 안 하고 그냥 커서만 뺍니다(blur).
-        const otherInputs = document.querySelectorAll('input:not(#datePicker)');
-        otherInputs.forEach(input => {
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault(); // 폼 제출 막기
-                    this.blur();        // 입력 종료 (커서 빼기)
-                }
-            });
-        });
-        
-        // 5. 뒤로가기 방지
-        history.pushState(null, null, location.href);
-        window.addEventListener('popstate', function(event) {
-            showModal(
-                "", 
-                "ページから移動しますか？\n変更内容は保存されません。", 
-                function() {
-                    history.back(); 
-                }, 
-                true, 
-                function() {
-                    history.pushState(null, null, location.href);
-                }
-            );
-        });
-    </script>
-
-    <script th:inline="javascript">
-        // 서버 측 검증에서 걸린 경우 메시지를 모달로 표시
-        const serverError = /*[[${errorMessage}]]*/ null;
-        if (serverError) showModal("", serverError, null, false);
-
-        // 서버 측 검증에서 걸려 다시 열린 경우: 고른 노선의 역 목록을 채우고, 고른 역을 다시 선택
-        const savedStation = /*[[${form?.stationName}]]*/ null;
-        if (lineSelect.value) {
-            lineSelect.dispatchEvent(new Event('change'));
-            stationSelect.value = savedStation || "";
-            updateAutoTitle();
-        }
-    </script>
+    <script th:src="@{/js/dialog.js}"></script>
+    <script th:src="@{/js/post-form.js}"></script>
 </body>
 </html>

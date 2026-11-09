@@ -18,14 +18,15 @@
 
         .form-row { display: flex; border-bottom: 1px solid #eee; align-items: center; min-height: 70px; }
         .form-label { width: 180px; padding: 20px; font-weight: bold; }
-        .form-label .optional { font-size: 12px; font-weight: normal; color: #999; }
+        .form-label .optional { font-size: 12px; font-weight: normal; color: #666; }
         .form-input { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 6px; }
         .readonly-value { color: #888; }
 
-        input[type="text"], input[type="date"], input[type="tel"] { width: 280px; padding: 10px; border: 1px solid #333; border-radius: 4px; outline: none; font-family: inherit; }
+        input[type="text"], input[type="date"], input[type="tel"] { width: 280px; padding: 10px; border: 1px solid #333; border-radius: 4px; font-family: inherit; }
+        input:focus-visible { outline: 3px solid #1a73e8; outline-offset: 1px; }
         .input-error { border-color: #e63946 !important; }
-        .field-note { font-size: 12px; color: #999; }
-        .field-error { font-size: 13px; color: #e63946; }
+        .field-note { font-size: 12px; color: #666; }
+        .field-error { font-size: 13px; color: #c62828; }
     </style>
     <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
@@ -41,7 +42,7 @@
         <!-- 서버 검증에서 걸리면 입력값을 유지한 채 항목별 에러 메시지를 보여준다 -->
         <form id="profileForm" th:action="@{/mypage/edit}" th:object="${profileForm}" method="post" novalidate>
             <div class="form-row">
-                <div class="form-label">ID</div>
+                <span class="form-label">ID</span>
                 <div class="form-input">
                     <span class="readonly-value" th:text="${loginMember.username}">loginId</span>
                     <span class="field-note">IDは変更できません。</span>
@@ -49,35 +50,35 @@
             </div>
 
             <div class="form-row">
-                <div class="form-label">氏名</div>
+                <label class="form-label" for="realName">氏名</label>
                 <div class="form-input">
-                    <input type="text" th:field="*{realName}" maxlength="20" autocomplete="name" th:errorclass="input-error">
-                    <span class="field-error" th:if="${#fields.hasErrors('realName')}" th:errors="*{realName}"></span>
+                    <input type="text" th:field="*{realName}" maxlength="20" autocomplete="name" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('realName')} ? 'realName-error' : null" th:aria-invalid="${#fields.hasErrors('realName')} ? 'true' : null">
+                    <span class="field-error" id="realName-error" th:if="${#fields.hasErrors('realName')}" th:errors="*{realName}"></span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">ニックネーム <span class="optional">(任意)</span></div>
+                <label class="form-label" for="nickname">ニックネーム <span class="optional">(任意)</span></label>
                 <div class="form-input">
-                    <input type="text" th:field="*{nickname}" maxlength="20" th:errorclass="input-error">
-                    <span class="field-note">投稿者名として表示されます。未入力の場合は氏名が表示されます。<br>変更すると、これまでの投稿・コメントの投稿者名も変わります。</span>
-                    <span class="field-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></span>
+                    <input type="text" th:field="*{nickname}" maxlength="20" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('nickname')} ? 'nickname-note nickname-error' : 'nickname-note'" th:aria-invalid="${#fields.hasErrors('nickname')} ? 'true' : null">
+                    <span class="field-note" id="nickname-note">投稿者名として表示されます。未入力の場合は氏名が表示されます。<br>変更すると、これまでの投稿・コメントの投稿者名も変わります。</span>
+                    <span class="field-error" id="nickname-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">生年月日</div>
+                <label class="form-label" for="birthDate">生年月日</label>
                 <div class="form-input">
-                    <input type="date" th:field="*{birthDate}" id="birthDate" min="1900-01-01" th:errorclass="input-error">
-                    <span class="field-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
+                    <input type="date" th:field="*{birthDate}" id="birthDate" min="1900-01-01" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('birthDate')} ? 'birthDate-error' : null" th:aria-invalid="${#fields.hasErrors('birthDate')} ? 'true' : null">
+                    <span class="field-error" id="birthDate-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-label">電話番号</div>
+                <label class="form-label" for="phone">電話番号</label>
                 <div class="form-input">
-                    <input type="tel" th:field="*{phone}" maxlength="13" placeholder="090-1234-5678" autocomplete="tel" th:errorclass="input-error">
-                    <span class="field-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
+                    <input type="tel" th:field="*{phone}" maxlength="13" placeholder="090-1234-5678" autocomplete="tel" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('phone')} ? 'phone-error' : null" th:aria-invalid="${#fields.hasErrors('phone')} ? 'true' : null">
+                    <span class="field-error" id="phone-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
                 </div>
             </div>
 
@@ -88,11 +89,7 @@
         </form>
     </main>
 
-    <script>
-        // 생년월일은 오늘 이후를 고를 수 없게
-        const today = new Date();
-        const pad = n => String(n).padStart(2, '0');
-        document.getElementById('birthDate').max = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-    </script>
+    <!-- 오류 칸으로 포커스, 생년월일 상한, 탈퇴 확인, 로그인 빈 칸 안내 -->
+    <script th:src="@{/js/member-form.js}"></script>
 </body>
 </html>
