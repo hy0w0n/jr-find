@@ -177,7 +177,7 @@
                 <div class="form-label">発見した日</div>
                 <div class="form-input">
                     <div class="date-input-wrapper">
-                        <input type="text" id="datePicker" name="foundDate" placeholder="年-月-日" style="width: 200px;">
+                        <input type="text" id="datePicker" name="foundDate" th:value="${form?.foundDate}" placeholder="年-月-日" style="width: 200px;">
                         <div class="calendar-icon-svg">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 1V3H15V1H17V3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H7V1H9ZM20 11H4V19H20V11ZM7 5H4V9H20V5H17V7H15V5H9V7H7V5Z"></path></svg>
                         </div>
@@ -190,7 +190,7 @@
                 <div class="form-input">
                     <select id="lineSelect" name="lineName" style="width: 150px;">
                         <option value="">路線を選択</option>
-                        <option th:each="line: ${lines}" th:value="${line}" th:text="${line}"></option>
+                        <option th:each="line: ${lines}" th:value="${line}" th:text="${line}" th:selected="${line == form?.lineName}"></option>
                     </select>
                     <select id="stationSelect" name="stationName" style="width: 150px;" disabled>
                         <option value="">駅を選択</option>
@@ -204,16 +204,16 @@
                 <div class="form-input">
                     <select id="categorySelect" name="categoryName" style="width: 150px;">
                         <option value="">カテゴリー</option>
-                        <option th:each="cat : ${categories}" th:value="${cat.categoryName}" th:text="${cat.categoryName}"></option>
+                        <option th:each="cat : ${categories}" th:value="${cat.categoryName}" th:text="${cat.categoryName}" th:selected="${cat.categoryName == form?.categoryName}"></option>
                     </select>
-                    <input type="text" id="itemName" name="itemName" maxlength="100" placeholder="具体的な物 (例: iPhone 14)" style="flex: 1;">
+                    <input type="text" id="itemName" name="itemName" th:value="${form?.itemName}" maxlength="100" placeholder="具体的な物 (例: iPhone 14)" style="flex: 1;">
                 </div>
             </div>
 
             <div class="detail-row">
                 <div class="form-label">詳細</div>
                 <div class="detail-content">
-                    <textarea id="contents" name="contents" class="detail-text" maxlength="500" placeholder="発見時の状況や詳しい場所などを詳しく教えてください。"></textarea>
+                    <textarea id="contents" name="contents" class="detail-text" maxlength="500" placeholder="発見時の状況や詳しい場所などを詳しく教えてください。" th:text="${form?.contents}"></textarea>
 
                     <div class="detail-image-upload" onclick="document.getElementById('fileInput').click()">
                         <input type="file" id="fileInput" name="imageFile" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" onchange="previewImage(this)">
@@ -284,6 +284,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
+    <!-- 직접 입력한 날짜 확인 (형식이 틀린 날짜를 다른 날짜로 바꾸지 않게) -->
+    <script th:src="@{/js/date-input.js}"></script>
 
 	<script>
         // 모달 관련
@@ -326,9 +328,10 @@
         const datePickerEl = document.getElementById("datePicker");
 
         flatpickr("#datePicker", {
+            // 직접 입력한 날짜가 틀리면 칸을 비우고 안내 (date-input.js)
+            ...strictDateOptions(message => showModal("", message, function() { datePickerEl.focus(); }, false)),
             locale: "ja", 
             dateFormat: "Y-m-d", 
-            allowInput: true,
             maxDate: "today", // UI 차단
             
             onChange: function(selectedDates, dateStr) { 
@@ -656,6 +659,14 @@
         // 서버 측 검증에서 걸린 경우 메시지를 모달로 표시
         const serverError = /*[[${errorMessage}]]*/ null;
         if (serverError) showModal("", serverError, null, false);
+
+        // 서버 측 검증에서 걸려 다시 열린 경우: 고른 노선의 역 목록을 채우고, 고른 역을 다시 선택
+        const savedStation = /*[[${form?.stationName}]]*/ null;
+        if (lineSelect.value) {
+            lineSelect.dispatchEvent(new Event('change'));
+            stationSelect.value = savedStation || "";
+            updateAutoTitle();
+        }
     </script>
 </body>
 </html>

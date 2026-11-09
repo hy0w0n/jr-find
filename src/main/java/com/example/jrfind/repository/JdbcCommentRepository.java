@@ -1,5 +1,6 @@
 package com.example.jrfind.repository;
 
+import java.sql.PreparedStatement;
 import java.util.List;
 
 import javax.sql.DataSource;
@@ -7,6 +8,8 @@ import javax.sql.DataSource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import com.example.jrfind.domain.Board;
@@ -21,16 +24,21 @@ public class JdbcCommentRepository implements CommentRepository {
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
+	// 새 댓글 번호를 돌려준다 (등록 후 그 댓글 위치로 이동하기 위해)
 	@Override
-	public void save(Board board, Long postId, Comment comment) {
+	public Long save(Board board, Long postId, Comment comment) {
 		String sql = "INSERT INTO Post_Comment (" + board.getCommentColumn() + ", Contents, Author, MemberId, RegistrationDate) VALUES (?, ?, ?, ?, ?)";
-		jdbcTemplate.update(sql,
-			postId,
-			comment.getContents(),
-			comment.getAuthor(),
-			comment.getMemberId(),
-			comment.getRegistrationDate()
-		);
+		KeyHolder keyHolder = new GeneratedKeyHolder();
+		jdbcTemplate.update(connection -> {
+			PreparedStatement ps = connection.prepareStatement(sql, new String[] { "ID" });
+			ps.setLong(1, postId);
+			ps.setString(2, comment.getContents());
+			ps.setString(3, comment.getAuthor());
+			ps.setLong(4, comment.getMemberId());
+			ps.setObject(5, comment.getRegistrationDate());
+			return ps;
+		}, keyHolder);
+		return keyHolder.getKey().longValue();
 	}
 
 	@Override

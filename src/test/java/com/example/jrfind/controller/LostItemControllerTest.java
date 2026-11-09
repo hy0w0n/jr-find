@@ -148,6 +148,17 @@ class LostItemControllerTest {
 		assertThat(countRows()).isEqualTo(before);
 	}
 
+	@Test
+	void 본문의_줄바꿈은_화면과_같이_1글자로_센다() throws Exception {
+		LoginMember member = newMember();
+		// 브라우저는 줄바꿈을 CRLF(2글자)로 보낸다. 49자 + 줄바꿈을 10번 = 화면 기준 500자
+		String contents = ("あ".repeat(49) + "\r\n").repeat(10);
+
+		mockMvc.perform(newItemRequest("contents", contents).with(user(member)))
+			.andExpect(redirectedUrl("/lost-items"));
+		assertThat(latestRow().get("CONTENTS")).isEqualTo(contents.replace("\r\n", "\n"));
+	}
+
 	// ---------- 수정·삭제·찾음 표시 ----------
 
 	@Test

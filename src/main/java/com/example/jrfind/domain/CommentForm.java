@@ -12,7 +12,8 @@ public class CommentForm {
 	public String getContents() {
 		return contents;
 	}
+	// 줄바꿈은 LF 로 맞추고(화면의 글자 수와 같게), 앞뒤 공백·폭 없는 글자는 지운다 (보이지 않는 글자만 있으면 빈 댓글)
 	public void setContents(String contents) {
-		this.contents = contents;
+		this.contents = Texts.strip(Texts.normalizeNewlines(contents));
 	}
 }

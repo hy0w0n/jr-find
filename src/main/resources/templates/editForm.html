@@ -118,7 +118,7 @@
                     <textarea id="contents" name="contents" class="detail-text" maxlength="500" placeholder="発見時の状況や詳しい場所などを詳しく教えてください。" th:text="${item.contents}"></textarea>
                     
                     <div class="detail-image-upload" onclick="document.getElementById('fileInput').click()">
-                        <input type="hidden" id="isImageDeleted" name="isImageDeleted" value="false">
+                        <input type="hidden" id="isImageDeleted" name="isImageDeleted" th:value="${isImageDeleted == true}"> <!-- 입력 오류로 다시 열려도 지운 사진은 지운 상태 그대로 -->
                         
                         <input type="file" id="fileInput" name="imageFile" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" onchange="previewImage(this)">
                         
@@ -171,6 +171,8 @@
 
 	<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
+    <!-- 직접 입력한 날짜 확인 (형식이 틀린 날짜를 다른 날짜로 바꾸지 않게) -->
+    <script th:src="@{/js/date-input.js}"></script>
 
     <script th:inline="javascript">
         const itemId = /*[[${item.id}]]*/ 0;
@@ -224,9 +226,10 @@
         const datePickerEl = document.getElementById("datePicker");
 
         flatpickr("#datePicker", {
+            // 직접 입력한 날짜가 틀리면 칸을 비우고 안내 (date-input.js)
+            ...strictDateOptions(message => showModal("", message, function() { datePickerEl.focus(); }, false)),
             locale: "ja", 
             dateFormat: "Y-m-d", 
-            allowInput: true,
             maxDate: "today", // UI 차단
 
             onChange: function(selectedDates, dateStr) { 

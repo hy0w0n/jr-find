@@ -163,14 +163,16 @@
             data.lines.forEach(line => {
                 const points = line.stations.map(name => byName.get(name)).filter(Boolean).map(s => [s.lat, s.lng]);
                 if (LOOP_LINES.includes(line.name) && points.length > 2) points.push(points[0]);
-                const layer = L.polyline(points, { color: colorOf(line.name), weight: 5, opacity: 0.85 }).addTo(map);
+                // interactive: false → 선이 역 위에 겹쳐도 클릭은 역으로 간다
+                const layer = L.polyline(points, { color: colorOf(line.name), weight: 5, opacity: 0.85, interactive: false }).addTo(map);
 
                 const label = el('label');
                 const checkbox = el('input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = true;
                 checkbox.dataset.line = line.name;
-                checkbox.addEventListener('change', () => checkbox.checked ? layer.addTo(map) : layer.remove());
+                // 다시 켤 때는 역 아래에 그린다 (그냥 addTo 하면 맨 위에 그려져 역을 가린다)
+                checkbox.addEventListener('change', () => checkbox.checked ? layer.addTo(map).bringToBack() : layer.remove());
                 const swatch = el('span', 'legend-swatch');
                 swatch.style.background = colorOf(line.name);
                 label.append(checkbox, swatch, document.createTextNode(line.name));

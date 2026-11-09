@@ -74,6 +74,8 @@
 			width: 24px;
 			height: 24px;
 		}
+        /* 폼을 오래 열어 둬서 보내지 못한 경우의 안내 (ExpiredFormHandler) */
+        .expired-notice { padding: 12px 5%; background: #fff8e1; border-bottom: 1px solid #f3d27a; color: #7a5b00; font-size: 14px; line-height: 1.6; }
     </style>
 
     <header class="header-wrapper">
@@ -98,6 +100,11 @@
             <div th:replace="~{fragments/header :: authMenu}"></div>
         </div>
     </header>
+
+    <div class="expired-notice" th:if="${param.expired != null}">
+        時間が経過したため、送信できませんでした。お手数ですが、もう一度お試しください。
+        <th:block th:if="${loginMember == null}"><br>ログインが必要な操作は、もう一度ログインしてからお試しください。</th:block>
+    </div>
 </div>
 
 <!-- 유저 아이콘 + 로그인/로그아웃 (공통 헤더와 홈 화면에서 같이 사용) -->
@@ -143,5 +150,8 @@
             <button type="submit" class="auth-btn">ログアウト</button>
         </form>
     </th:block>
+
+    <!-- 모든 화면 공통: 같은 폼을 두 번 보내지 않게 (등록 버튼 더블클릭 등) -->
+    <script th:src="@{/js/submit-once.js}"></script>
 </div>
 </html>

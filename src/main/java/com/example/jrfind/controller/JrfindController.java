@@ -106,22 +106,23 @@ public class JrfindController {
             @AuthenticationPrincipal LoginMember loginMember,
             Model model) {
         // 서버 측 입력 검증 (화면 JS 검증을 거치지 않고 직접 보낸 요청 대비)
+        // 오류로 다시 보여줄 때 입력한 값은 form 으로 다시 채우고, 고른 사진은 다시 고르도록 안내한다
         if (bindingResult.hasErrors()) {
-            return showRegisterForm(model, FormErrors.firstMessage(bindingResult));
+            return showRegisterForm(model, FormErrors.withImageNotice(FormErrors.firstMessage(bindingResult), file));
         }
         // 비회원은 수정·삭제용 4자리 비밀번호 필수
         if (loginMember == null && (password == null || !password.matches("\\d{4}"))) {
-            return showRegisterForm(model, "パスワードは半角数字4桁で入力してください。");
+            return showRegisterForm(model, FormErrors.withImageNotice("パスワードは半角数字4桁で入力してください。", file));
         }
 
         try {
             // 서비스에게 데이터와 파일을 넘겨서 저장하라고 시킴
             service.saveItem(form, password, loginMember, file);
         } catch (InvalidPostException e) {
-            return showRegisterForm(model, e.getMessage());
+            return showRegisterForm(model, FormErrors.withImageNotice(e.getMessage(), file));
         } catch (IOException e) {
             e.printStackTrace(); // 파일 저장 실패 시 에러 로그 출력
-            return showRegisterForm(model, "画像の保存に失敗しました。");
+            return showRegisterForm(model, FormErrors.withImageNotice("画像の保存に失敗しました。", file));
         }
 
         // 저장이 끝나면 목록 화면으로 리다이렉트 (새로고침 중복 등록 방지)
@@ -195,16 +196,16 @@ public class JrfindController {
         requireModifiable(item, loginMember);
 
         if (bindingResult.hasErrors()) {
-            return showEditForm(model, item, FormErrors.firstMessage(bindingResult));
+            return showEditFormError(model, item, form, FormErrors.firstMessage(bindingResult), file, isImageDeleted);
         }
 
         try {
             service.updateItem(id, form, file, isImageDeleted);
         } catch (InvalidPostException e) {
-            return showEditForm(model, item, e.getMessage());
+            return showEditFormError(model, item, form, e.getMessage(), file, isImageDeleted);
         } catch (IOException e) {
             e.printStackTrace();
-            return showEditForm(model, item, "画像の保存に失敗しました。");
+            return showEditFormError(model, item, form, "画像の保存に失敗しました。", file, isImageDeleted);
         }
 
         verifiedItems.remove(id); // 비회원 글은 다시 수정하려면 비밀번호를 다시 확인
@@ -228,6 +229,24 @@ public class JrfindController {
         model.addAttribute("stations", service.getStations());
         model.addAttribute("errorMessage", errorMessage);
         return "editForm";
+    }
+
+    // 입력 오류로 수정 화면을 다시 보여줄 때
+    // - 수정 화면은 item 의 값을 보여주므로, DB 값이 아니라 입력한 값으로 바꿔서 보여준다 (DB 는 그대로)
+    // - 지운 사진은 지운 상태로 보여준다 (되살아난 채로 저장되지 않게), 고른 사진은 다시 고르도록 안내
+    private String showEditFormError(Model model, FoundItem item, FoundItemForm form, String errorMessage,
+            MultipartFile file, boolean isImageDeleted) {
+        item.setFoundDate(form.getFoundDate());
+        item.setLineName(form.getLineName());
+        item.setStationName(form.getStationName());
+        item.setCategoryName(form.getCategoryName());
+        item.setItemName(form.getItemName());
+        item.setContents(form.getContents());
+        if (isImageDeleted) {
+            item.setImgPath(null);
+            model.addAttribute("isImageDeleted", true);
+        }
+        return showEditForm(model, item, FormErrors.withImageNotice(errorMessage, file));
     }
 
     // 없는 글·삭제된 글이면 404 화면

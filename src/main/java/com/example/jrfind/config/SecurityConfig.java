@@ -59,8 +59,10 @@ public class SecurityConfig {
 					redirectStrategy.sendRedirect(event.getRequest(), event.getResponse(), url);
 				}))
 			// 로그인이 필요한 화면에 로그인 없이 들어오면 안내 문구가 있는 로그인 화면으로
+			// 폼을 오래 열어 둬서 보낼 수 없게 된 경우(CSRF 토큰 불일치)는 403 대신 보던 화면으로 돌려보내고 안내 (ExpiredFormHandler)
 			.exceptionHandling(exception -> exception
-				.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login?required")))
+				.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login?required"))
+				.accessDeniedHandler(new ExpiredFormHandler()))
 			// POST 요청에는 CSRF 토큰이 필요하다 (th:action 폼은 자동으로 들어감, fetch 는 헤더로 보냄)
 			// H2 콘솔은 자체 화면이라 토큰을 넣을 수 없으므로 제외 (localhost 에서만 접속 가능)
 			.csrf(csrf -> csrf

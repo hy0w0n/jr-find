@@ -90,18 +90,20 @@ class CommentControllerTest {
 		long foundId = createFoundPost(null);
 		long lostId = createLostPost(newMember());
 
-		mockMvc.perform(commentRequest("/items/{id}/comments", foundId, "  新宿駅の忘れ物取扱所に届けました。  ").with(user(member)))
-			.andExpect(redirectedUrl("/items/" + foundId + "#comments"));
+		String redirect = mockMvc.perform(commentRequest("/items/{id}/comments", foundId, "  新宿駅の忘れ物取扱所に届けました。  ").with(user(member)))
+			.andReturn().getResponse().getRedirectedUrl();
 		Map<String, Object> row = latestComment();
+		assertThat(redirect).isEqualTo("/items/" + foundId + "#comment-" + row.get("ID")); // 등록한 댓글 위치로
 		assertThat(row.get("FOUNDITEMID")).isEqualTo(foundId);
 		assertThat(row.get("LOSTITEMID")).isNull();
 		assertThat(row.get("CONTENTS")).isEqualTo("新宿駅の忘れ物取扱所に届けました。"); // 앞뒤 공백 제거
 		assertThat(row.get("AUTHOR")).isEqualTo(member.getNickname());
 		assertThat(row.get("MEMBERID")).isEqualTo(member.getId());
 
-		mockMvc.perform(commentRequest("/lost-items/{id}/comments", lostId, "<script>alert(1)</script>").with(user(member)))
-			.andExpect(redirectedUrl("/lost-items/" + lostId + "#comments"));
+		redirect = mockMvc.perform(commentRequest("/lost-items/{id}/comments", lostId, "<script>alert(1)</script>").with(user(member)))
+			.andReturn().getResponse().getRedirectedUrl();
 		row = latestComment();
+		assertThat(redirect).isEqualTo("/lost-items/" + lostId + "#comment-" + row.get("ID"));
 		assertThat(row.get("LOSTITEMID")).isEqualTo(lostId);
 		assertThat(row.get("FOUNDITEMID")).isNull();
 
@@ -118,8 +120,9 @@ class CommentControllerTest {
 		long postId = createLostPost(member);
 		int before = countComments();
 
+		// 오류 메시지가 보이도록 댓글 입력 칸 위치로
 		mockMvc.perform(commentRequest("/lost-items/{id}/comments", postId, "   ").with(user(member)))
-			.andExpect(redirectedUrl("/lost-items/" + postId + "#comments"))
+			.andExpect(redirectedUrl("/lost-items/" + postId + "#commentForm"))
 			.andExpect(flash().attribute("commentError", "コメントを入力してください。"));
 
 		String tooLong = "あ".repeat(501);
@@ -131,6 +134,27 @@ class CommentControllerTest {
 
 		// 500자는 저장된다
 		mockMvc.perform(commentRequest("/lost-items/{id}/comments", postId, "あ".repeat(500)).with(user(member)));
+		assertThat(countComments()).isEqualTo(before + 1);
+	}
+
+	@Test
+	void 줄바꿈은_화면과_같이_1글자로_세고_보이지_않는_글자만_있는_댓글은_빈_댓글로_본다() throws Exception {
+		LoginMember member = newMember();
+		long postId = createLostPost(member);
+		int before = countComments();
+
+		// 브라우저는 줄바꿈을 CRLF(2글자)로 보낸다. 49자 + 줄바꿈을 10번 = 화면(글자 수 표시·maxlength) 기준 500자
+		String paragraphs = ("あ".repeat(49) + "\r\n").repeat(10);
+		mockMvc.perform(commentRequest("/lost-items/{id}/comments", postId, paragraphs).with(user(member)))
+			.andExpect(flash().attributeCount(0));
+		assertThat(countComments()).isEqualTo(before + 1);
+		assertThat(latestComment().get("CONTENTS")).isEqualTo(paragraphs.replace("\r\n", "\n").strip());
+
+		// 폭 없는 공백, NBSP, 전각 공백과 줄바꿈만 있는 댓글
+		for (String invisible : List.of("\u200b", "\u00a0", "　\u200b\r\n")) {
+			mockMvc.perform(commentRequest("/lost-items/{id}/comments", postId, invisible).with(user(member)))
+				.andExpect(flash().attribute("commentError", "コメントを入力してください。"));
+		}
 		assertThat(countComments()).isEqualTo(before + 1);
 	}
 

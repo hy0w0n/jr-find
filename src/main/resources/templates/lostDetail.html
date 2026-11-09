@@ -8,14 +8,14 @@
         body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff; color: #333; }
 
         .container { width: 90%; max-width: 1200px; margin: 40px auto; display: flex; gap: 40px; align-items: flex-start; }
-        .content-section { flex: 3; }
+        .content-section { flex: 3; min-width: 0; } /* 긴 URL 등이 있어도 사이드바를 밀어내지 않게 */
         .side-section { flex: 1; margin-top: 60px; }
 
         /* 제목·작성자 (見つけた 상세 화면과 같은 모양) */
         .post-header { border-top: 2px solid #555; border-bottom: 1px solid #ccc; }
         .post-title-row { display: flex; align-items: center; padding: 12px 10px; border-bottom: 1px solid #555; }
         .board-label { font-size: 14px; padding-right: 15px; margin-right: 15px; border-right: 1px solid #ccc; white-space: nowrap; }
-        .post-title-text { font-weight: bold; font-size: 16px; }
+        .post-title-text { font-weight: bold; font-size: 16px; overflow-wrap: anywhere; }
         .post-meta-bar { background-color: #f2f2f2; padding: 8px 15px; display: flex; justify-content: space-between; font-size: 13px; color: #666; }
 
         .badge { display: inline-block; margin-right: 10px; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: bold; white-space: nowrap; }
@@ -29,7 +29,7 @@
         .station-unknown { color: #999; }
 
         .post-body { padding: 30px 10px 40px; min-height: 200px; border-bottom: 1px solid #eee; }
-        .post-text { white-space: pre-wrap; line-height: 1.8; font-size: 15px; margin-bottom: 30px; }
+        .post-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; font-size: 15px; margin-bottom: 30px; }
         .post-image-area { text-align: center; margin-top: 20px; }
         .post-image { max-width: 100%; max-height: 500px; border-radius: 4px; border: 1px solid #eee; }
 
@@ -182,7 +182,7 @@
             <div class="modal-desc-text">本当に削除しますか？<br>削除されたデータは復元できません。</div>
             <div class="modal-btn-group">
                 <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">キャンセル</button>
-                <button class="modal-btn modal-btn-delete" onclick="document.getElementById('deleteForm').submit()">削除する</button>
+                <button class="modal-btn modal-btn-delete" onclick="this.disabled = true; document.getElementById('deleteForm').submit()">削除する</button>
             </div>
         </div>
     </div>

@@ -86,7 +86,8 @@ public class LostItemForm {
 	public String getContents() {
 		return contents;
 	}
+	// 줄바꿈은 LF 로 맞춘다 (브라우저는 CRLF 로 보내서, 화면에서는 500자 이내여도 서버에서 넘칠 수 있다)
 	public void setContents(String contents) {
-		this.contents = contents;
+		this.contents = Texts.normalizeNewlines(contents);
 	}
 }

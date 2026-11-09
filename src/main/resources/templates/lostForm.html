@@ -84,7 +84,8 @@
                 <input type="hidden" id="warningConfirmed" name="warningConfirmed" th:value="${warningConfirmed == true}">
             </th:block>
             <th:block th:if="${item != null}">
-                <input type="hidden" id="isImageDeleted" name="isImageDeleted" value="false">
+                <!-- 입력 오류로 다시 열린 경우에도 지운 사진은 지운 상태 그대로 -->
+                <input type="hidden" id="isImageDeleted" name="isImageDeleted" th:value="${isImageDeleted == true}">
             </th:block>
 
             <div class="form-row">
@@ -199,6 +200,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
+    <!-- 직접 입력한 날짜 확인 (형식이 틀린 날짜를 다른 날짜로 바꾸지 않게) -->
+    <script th:src="@{/js/date-input.js}"></script>
 
     <script th:inline="javascript">
         const isNew = /*[[${item == null}]]*/ true;
@@ -242,9 +245,9 @@
 
         // ---------- 달력 ----------
         flatpickr('#lostDate', {
+            ...strictDateOptions(message => showModal(message, () => document.getElementById('lostDate').focus())),
             locale: 'ja',
             dateFormat: 'Y-m-d',
-            allowInput: true,
             maxDate: 'today',
             onChange: updateAutoTitle
         });

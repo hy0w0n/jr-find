@@ -99,19 +99,19 @@ public class LostItemController {
 		// 입력 오류로 화면을 다시 보여줄 때 주의사항을 또 묻지 않도록
 		model.addAttribute("warningConfirmed", warningConfirmed);
 		if (!warningConfirmed) {
-			return showForm(model, null, "投稿の前に注意事項を確認してください。");
+			return showFormError(model, null, "投稿の前に注意事項を確認してください。", file, false);
 		}
 		if (bindingResult.hasErrors()) {
-			return showForm(model, null, FormErrors.firstMessage(bindingResult));
+			return showFormError(model, null, FormErrors.firstMessage(bindingResult), file, false);
 		}
 
 		try {
 			service.saveItem(form, loginMember, file);
 		} catch (InvalidPostException e) {
-			return showForm(model, null, e.getMessage());
+			return showFormError(model, null, e.getMessage(), file, false);
 		} catch (IOException e) {
 			e.printStackTrace();
-			return showForm(model, null, "画像の保存に失敗しました。");
+			return showFormError(model, null, "画像の保存に失敗しました。", file, false);
 		}
 		return "redirect:/lost-items";
 	}
@@ -140,16 +140,16 @@ public class LostItemController {
 		requireOwner(item, loginMember);
 
 		if (bindingResult.hasErrors()) {
-			return showForm(model, item, FormErrors.firstMessage(bindingResult));
+			return showFormError(model, item, FormErrors.firstMessage(bindingResult), file, isImageDeleted);
 		}
 
 		try {
 			service.updateItem(item, form, file, isImageDeleted);
 		} catch (InvalidPostException e) {
-			return showForm(model, item, e.getMessage());
+			return showFormError(model, item, e.getMessage(), file, isImageDeleted);
 		} catch (IOException e) {
 			e.printStackTrace();
-			return showForm(model, item, "画像の保存に失敗しました。");
+			return showFormError(model, item, "画像の保存に失敗しました。", file, isImageDeleted);
 		}
 		return "redirect:/lost-items/" + id;
 	}
@@ -182,6 +182,17 @@ public class LostItemController {
 		model.addAttribute("errorMessage", errorMessage);
 		addMasterData(model);
 		return "lostForm";
+	}
+
+	// 입력 오류로 화면을 다시 보여줄 때 (입력한 값은 form 으로 그대로 다시 채워진다)
+	// - 고른 사진은 다시 고르도록 안내
+	// - 수정 화면에서 지운 사진은 지운 상태로 보여준다 (되살아난 채로 저장되지 않게)
+	private String showFormError(Model model, LostItem item, String errorMessage, MultipartFile file, boolean isImageDeleted) {
+		if (item != null && isImageDeleted) {
+			item.setImgPath(null); // 화면 표시용 (DB 는 그대로)
+			model.addAttribute("isImageDeleted", true);
+		}
+		return showForm(model, item, FormErrors.withImageNotice(errorMessage, file));
 	}
 
 	private void addMasterData(Model model) {

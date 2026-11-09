@@ -29,13 +29,14 @@ public class CommentService {
 		return repository.findById(board, postId, commentId);
 	}
 
-	public void addComment(Board board, Long postId, CommentForm form, LoginMember loginMember) {
+	// 새 댓글 번호를 돌려준다
+	public Long addComment(Board board, Long postId, CommentForm form, LoginMember loginMember) {
 		Comment comment = new Comment();
 		comment.setContents(form.getContents().strip());
 		comment.setAuthor(loginMember.getNickname());
 		comment.setMemberId(loginMember.getId());
 		comment.setRegistrationDate(LocalDateTime.now());
-		repository.save(board, postId, comment);
+		return repository.save(board, postId, comment);
 	}
 
 	public void deleteComment(Long commentId) {

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.jrfind.config.ExpiredFormHandler;
 import com.example.jrfind.domain.Board;
 import com.example.jrfind.domain.Comment;
 import com.example.jrfind.domain.CommentForm;
@@ -19,6 +20,8 @@ import com.example.jrfind.service.CommentService;
 import com.example.jrfind.service.JrfindService;
 import com.example.jrfind.service.LostItemService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 // 댓글 작성·삭제 (見つけた / 探しています 게시판 공통)
@@ -42,9 +45,9 @@ public class CommentController {
 	// 로그인하지 않은 사람이 댓글 영역의 「ログイン」을 누르면 이 주소로 온다.
 	// 로그인 화면을 거쳐 다시 여기로 돌아오면 상세 화면의 댓글 위치로 보낸다.
 	@GetMapping("/items/{id}/comments")
-	public String foundComments(@PathVariable("id") Long id) {
+	public String foundComments(@PathVariable("id") Long id, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 		requirePost(Board.FOUND, id);
-		return backToPost(Board.FOUND, id);
+		return backToCommentArea(Board.FOUND, id, request, redirectAttributes);
 	}
 
 	@PostMapping("/items/{id}/comments")
@@ -68,9 +71,9 @@ public class CommentController {
 	// ---------- 探しています 게시판 ----------
 
 	@GetMapping("/lost-items/{id}/comments")
-	public String lostComments(@PathVariable("id") Long id) {
+	public String lostComments(@PathVariable("id") Long id, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 		requirePost(Board.LOST, id);
-		return backToPost(Board.LOST, id);
+		return backToCommentArea(Board.LOST, id, request, redirectAttributes);
 	}
 
 	@PostMapping("/lost-items/{id}/comments")
@@ -97,13 +100,15 @@ public class CommentController {
 			LoginMember loginMember, RedirectAttributes redirectAttributes) {
 		requirePost(board, postId);
 		if (bindingResult.hasErrors()) {
-			// 상세 화면으로 돌아가서 오류 메시지를 보여주고, 입력한 내용은 지우지 않는다
+			// 상세 화면의 댓글 입력 칸으로 돌아가서 오류 메시지를 보여주고, 입력한 내용은 지우지 않는다
+			// (댓글이 많아도 오류 메시지가 화면에 보이도록 입력 칸 위치로)
 			redirectAttributes.addFlashAttribute("commentError", FormErrors.firstMessage(bindingResult));
 			redirectAttributes.addFlashAttribute("commentDraft", form.getContents());
-		} else {
-			commentService.addComment(board, postId, form, loginMember);
+			return "redirect:" + board.postUrl(postId) + "#commentForm";
 		}
-		return backToPost(board, postId);
+		// 등록한 댓글 위치로 (댓글 영역 맨 위로 가면 댓글이 많을 때 새 댓글이 화면 밖에 있다)
+		Long commentId = commentService.addComment(board, postId, form, loginMember);
+		return "redirect:" + board.postUrl(postId) + "#comment-" + commentId;
 	}
 
 	private String deleteComment(Board board, Long postId, Long commentId, LoginMember loginMember) {
@@ -118,6 +123,18 @@ public class CommentController {
 		}
 
 		commentService.deleteComment(commentId);
+		return backToPost(board, postId);
+	}
+
+	// 로그인 링크로 돌아왔을 때: 로그인이 끝나서 보내지 못한 댓글(ExpiredFormHandler)이 있으면 입력 칸에 다시 채운다
+	private String backToCommentArea(Board board, Long postId, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+		HttpSession session = request.getSession(false);
+		String attribute = ExpiredFormHandler.pendingDraftAttribute(request.getRequestURI());
+		if (session != null && session.getAttribute(attribute) instanceof String draft) {
+			session.removeAttribute(attribute);
+			redirectAttributes.addFlashAttribute("commentDraft", draft);
+			return "redirect:" + board.postUrl(postId) + "#commentForm";
+		}
 		return backToPost(board, postId);
 	}
 

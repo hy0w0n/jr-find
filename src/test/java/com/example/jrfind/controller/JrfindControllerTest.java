@@ -149,9 +149,30 @@ class JrfindControllerTest {
 
 		mockMvc.perform(newItemRequest().file(html))
 			.andExpect(status().isOk())
-			.andExpect(model().attribute("errorMessage", "画像ファイル(JPG・PNG・GIF・WEBP)のみアップロードできます。"));
+			.andExpect(model().attribute("errorMessage",
+				"画像ファイル(JPG・PNG・GIF・WEBP)のみアップロードできます。\n(選択した画像は、もう一度選択してください。)"));
 
 		assertThat(countItems()).isEqualTo(before);
+	}
+
+	@Test
+	void 입력_오류로_등록_화면을_다시_보여줄_때_입력한_값을_유지한다() throws Exception {
+		int before = countItems();
+
+		mockMvc.perform(newItemRequest("password", "12ab", "itemName", "青いハンカチ", "contents", "改札の近くにありました。"))
+			.andExpect(status().isOk())
+			.andExpect(model().attribute("errorMessage", "パスワードは半角数字4桁で入力してください。"))
+			.andExpect(content().string(containsString("value=\"2026-01-10\"")))
+			.andExpect(content().string(containsString("<option value=\"山手線\" selected=\"selected\">")))
+			.andExpect(content().string(containsString("<option value=\"財布\" selected=\"selected\">")))
+			.andExpect(content().string(containsString("value=\"青いハンカチ\"")))
+			.andExpect(content().string(containsString(">改札の近くにありました。</textarea>")))
+			.andExpect(content().string(not(containsString("value=\"12ab\"")))); // 비밀번호는 다시 채우지 않음
+
+		// 본문의 줄바꿈은 1글자로 센다 (화면 기준 500자)
+		mockMvc.perform(newItemRequest("contents", ("あ".repeat(49) + "\r\n").repeat(10)))
+			.andExpect(redirectedUrl("/items"));
+		assertThat(countItems()).isEqualTo(before + 1);
 	}
 
 	@Test
