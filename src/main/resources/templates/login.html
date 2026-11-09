@@ -38,6 +38,10 @@
         <!-- ID 가 없는지 비밀번호가 틀렸는지는 구분해서 알려주지 않는다 -->
         <div id="errorMessage" class="message message-error" th:if="${param.error}">
             IDまたはパスワードが正しくありません。<br>もう一度入力してください。
+            <!-- 잠기기까지 얼마 남지 않았으면 미리 알린다 (LoginAttemptGuard) -->
+            <th:block th:if="${remainingAttempts != null and remainingAttempts <= 3}">
+                <br><span th:text="|あと${remainingAttempts}回間違えると、5分間ログインできなくなります。|">あと3回間違えると、5分間ログインできなくなります。</span>
+            </th:block>
         </div>
         <!-- 연속으로 틀려서 잠시 막힌 경우 (LoginAttemptGuard). 잠긴 동안은 맞는 비밀번호도 확인하지 않는다 -->
         <div id="errorMessage" class="message message-error" th:if="${param.locked}">

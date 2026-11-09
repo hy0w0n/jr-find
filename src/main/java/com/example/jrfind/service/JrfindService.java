@@ -25,8 +25,8 @@ public class JrfindService {
 	// 한 페이지당 보여줄 게시글 수
 	public static final int PAGE_SIZE = 15;
 
-	// 비밀번호 확인 결과
-	public enum PasswordCheck { OK, MISMATCH, LOCKED }
+	// 비밀번호 확인 결과 (NOT_FOUND: 없는 글·삭제된 글·회원 글이라 확인할 비밀번호가 없음)
+	public enum PasswordCheck { OK, MISMATCH, LOCKED, NOT_FOUND }
 
 	private final JrfindRepository repository;
 	private final ImageStorage imageStorage;
@@ -202,18 +202,26 @@ public class JrfindService {
 
     // 비밀번호 확인 (clientKey: 시도 횟수를 세는 단위. 게시글 ID + 접속 IP)
     public PasswordCheck checkPassword(Long id, String password, String clientKey) {
+        // 확인할 비밀번호가 없는 글은 틀린 횟수로 세지 않는다
+        // (다른 탭에서 지운 글에 맞는 비밀번호를 넣어도 「間違っています」가 나오고 잠기거나, 없는 글 번호로 기록이 쌓였다)
+        String hash = repository.findPasswordHash(id);
+        if (hash == null) {
+            return PasswordCheck.NOT_FOUND;
+        }
         if (attemptLimiter.isLocked(clientKey)) {
             return PasswordCheck.LOCKED;
         }
-
-        String hash = repository.findPasswordHash(id);
-        if (hash != null && password != null && passwordEncoder.matches(password, hash)) {
+        if (password != null && passwordEncoder.matches(password, hash)) {
             attemptLimiter.reset(clientKey);
             return PasswordCheck.OK;
         }
+        // 이번에 틀려서 잠기면 바로 잠겼다고 알린다 (다음 시도에서야 알리면 갑자기 막힌 것처럼 보인다)
+        return attemptLimiter.recordFailure(clientKey) ? PasswordCheck.LOCKED : PasswordCheck.MISMATCH;
+    }
 
-        attemptLimiter.recordFailure(clientKey);
-        return PasswordCheck.MISMATCH;
+    // 몇 번 더 틀리면 잠기는지 (화면 안내용)
+    public int remainingPasswordAttempts(String clientKey) {
+        return attemptLimiter.remainingAttempts(clientKey);
     }
 
     // 삭제: 게시글은 DEL_FLG 로 숨기고 사진 파일은 지운다 (삭제한 글의 사진이 /images/파일명 으로 계속 보이지 않도록)

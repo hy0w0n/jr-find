@@ -14,10 +14,12 @@ import org.springframework.stereotype.Component;
 // 틀리면 LOCK_TIME 동안 확인을 막는다. 마지막으로 틀린 뒤 LOCK_TIME 이 지나면 횟수를 처음부터 센다.
 @Component
 public class PasswordAttemptLimiter {
-	private static final int MAX_FAILURES = 5;
-	private static final Duration LOCK_TIME = Duration.ofMinutes(5);
+	public static final int MAX_FAILURES = 5;
+	public static final Duration LOCK_TIME = Duration.ofMinutes(5);
 	// 기록이 이만큼 쌓이면 기간이 지난 기록을 지운다 (로그인 ID 처럼 key 를 요청하는 쪽이 정할 수 있는 경우 대비)
+	// 지우는 데 전체를 훑으므로 CLEANUP_INTERVAL 에 한 번만 (그대로 많이 남아 있으면 실패할 때마다 훑어서 느려졌다)
 	private static final int CLEANUP_THRESHOLD = 10_000;
+	private static final Duration CLEANUP_INTERVAL = Duration.ofMinutes(1);
 
 	private record Attempt(int failures, Instant lastFailure, Instant lockedUntil) {
 		boolean isExpired(Instant now) {
@@ -28,6 +30,7 @@ public class PasswordAttemptLimiter {
 
 	private final Map<String, Attempt> attempts = new ConcurrentHashMap<>();
 	private final Clock clock;
+	private volatile Instant nextCleanup = Instant.EPOCH;
 
 	public PasswordAttemptLimiter() {
 		this(Clock.systemUTC());
@@ -57,7 +60,8 @@ public class PasswordAttemptLimiter {
 
 	public boolean recordFailure(String key, int maxFailures) {
 		Instant now = clock.instant();
-		if (attempts.size() >= CLEANUP_THRESHOLD) {
+		if (attempts.size() >= CLEANUP_THRESHOLD && !now.isBefore(nextCleanup)) {
+			nextCleanup = now.plus(CLEANUP_INTERVAL);
 			attempts.values().removeIf(attempt -> attempt.isExpired(now));
 		}
 		Attempt updated = attempts.compute(key, (k, attempt) -> {
@@ -70,6 +74,19 @@ public class PasswordAttemptLimiter {
 
 	public void reset(String key) {
 		attempts.remove(key);
+	}
+
+	// 몇 번 더 틀리면 잠기는지 (화면 안내용)
+	public int remainingAttempts(String key) {
+		return remainingAttempts(key, MAX_FAILURES);
+	}
+
+	public int remainingAttempts(String key, int maxFailures) {
+		Attempt attempt = attempts.get(key);
+		if (attempt == null || attempt.isExpired(clock.instant())) {
+			return maxFailures;
+		}
+		return Math.max(0, maxFailures - attempt.failures());
 	}
 
 	// 테스트 확인용

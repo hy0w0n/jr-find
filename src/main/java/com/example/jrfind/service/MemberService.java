@@ -141,6 +141,12 @@ public class MemberService implements UserDetailsService {
 		return idLocked || ipLocked;
 	}
 
+	// 몇 번 더 틀리면 잠기는지 (ID+IP, IP 중 적은 쪽. 로그인 화면 안내용)
+	public int remainingLoginAttempts(String loginId, String clientIp) {
+		return Math.min(attemptLimiter.remainingAttempts(loginKey(loginId, clientIp)),
+			attemptLimiter.remainingAttempts(loginIpKey(clientIp), LOGIN_IP_MAX_FAILURES));
+	}
+
 	// IP 단위 횟수는 남겨 둔다 (자기 계정에 로그인해서 횟수를 지우고 다시 시도하지 못하도록)
 	public void recordLoginSuccess(String loginId, String clientIp) {
 		attemptLimiter.reset(loginKey(loginId, clientIp));

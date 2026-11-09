@@ -193,8 +193,13 @@ class MemberControllerTest {
 		String ip = newIp();
 
 		for (int i = 1; i <= 4; i++) {
-			mockMvc.perform(loginRequest(loginId, "wrong1234", ip))
+			MockHttpSession session = new MockHttpSession();
+			mockMvc.perform(loginRequest(loginId, "wrong1234", ip).session(session))
 				.andExpect(redirectedUrl("/login?error"));
+			// 잠기기까지 3번 이하로 남으면 로그인 화면에서 미리 알린다
+			String notice = "あと" + (5 - i) + "回間違えると、5分間ログインできなくなります。";
+			mockMvc.perform(get("/login").param("error", "").session(session))
+				.andExpect(content().string((5 - i <= 3) ? containsString(notice) : not(containsString("回間違えると"))));
 		}
 		mockMvc.perform(loginRequest(loginId, "wrong1234", ip))
 			.andExpect(unauthenticated())
@@ -436,9 +441,9 @@ class MemberControllerTest {
 			.andExpect(status().isForbidden());
 		mockMvc.perform(post("/items/{id}/delete", id).with(csrf()))
 			.andExpect(status().isForbidden());
-		// 회원 글에는 4자리 비밀번호가 없으므로 비밀번호 확인도 통과하지 않는다
+		// 회원 글에는 4자리 비밀번호가 없으므로 비밀번호 확인도 통과하지 않는다 (확인할 비밀번호가 없는 글)
 		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).param("password", "1234"))
-			.andExpect(content().string("false"));
+			.andExpect(status().isNotFound());
 
 		// 본인: 비밀번호 없이 수정 화면 → 삭제
 		mockMvc.perform(get("/items/{id}/edit", id).with(user(owner)))

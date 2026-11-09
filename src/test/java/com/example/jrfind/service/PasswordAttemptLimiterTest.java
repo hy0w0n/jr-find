@@ -85,6 +85,37 @@ class PasswordAttemptLimiterTest {
 		assertThat(limiter.size()).isEqualTo(1);
 	}
 
+	@Test
+	void 기간이_지난_기록은_1분에_한_번만_훑어서_지운다() {
+		for (int i = 0; i < 10_000; i++) {
+			limiter.recordFailure("old-" + i);
+		}
+		clock.advance(Duration.ofMinutes(6));
+		limiter.recordFailure("a"); // 여기서 지운다
+		assertThat(limiter.size()).isEqualTo(1);
+
+		// 1분 안에는 다시 많이 쌓여도 훑지 않는다 (실패할 때마다 전체를 훑으면 느려진다)
+		for (int i = 0; i < 10_000; i++) {
+			limiter.recordFailure("again-" + i);
+		}
+		assertThat(limiter.size()).isEqualTo(10_001);
+		clock.advance(Duration.ofMinutes(6));
+		limiter.recordFailure("b");
+		assertThat(limiter.size()).isEqualTo(1);
+	}
+
+	@Test
+	void 몇_번_더_틀리면_잠기는지_알려준다() {
+		assertThat(limiter.remainingAttempts("k")).isEqualTo(5);
+		limiter.recordFailure("k");
+		limiter.recordFailure("k");
+		assertThat(limiter.remainingAttempts("k")).isEqualTo(3);
+		assertThat(limiter.remainingAttempts("ip", 20)).isEqualTo(20);
+
+		clock.advance(Duration.ofMinutes(6)); // 마지막으로 틀린 뒤 5분이 지나면 처음부터
+		assertThat(limiter.remainingAttempts("k")).isEqualTo(5);
+	}
+
 	private static class MovableClock extends Clock {
 		private Instant now = Instant.parse("2026-11-09T00:00:00Z");
 

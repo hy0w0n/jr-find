@@ -455,8 +455,8 @@
 	        body: new URLSearchParams({ password: password })
 	    })
 	    .then(response => {
-	        // 연속으로 틀려서 일정 시간 잠긴 경우
-	        if (response.status === 429) return 'locked';
+	        // 연속으로 틀려서 일정 시간 잠긴 경우 ({ ok: false, remaining: 0, lockMinutes })
+	        if (response.status === 429) return response.json().then(body => ({ ...body, locked: true }));
 	        // 화면을 오래 열어 둬서 세션이 끝난 경우 (CSRF 토큰이 맞지 않음)
 	        if (response.status === 403) return 'expired';
 	        // 다른 탭 등에서 이미 삭제된 글
@@ -474,14 +474,15 @@
 	            afterMessage = (result === 'expired') ? () => location.reload() : () => { location.href = '/items'; };
 	            return;
 	        }
-	        if (result === 'locked') {
-	            errorMsgDiv.innerText = "入力回数の上限を超えました。\nしばらくしてから再度お試しください。";
+	        if (result.locked) {
+	            errorMsgDiv.innerText = `入力回数の上限を超えました。\n${result.lockMinutes}分ほど経ってから再度お試しください。`;
 	            errorMsgDiv.style.display = 'block';
 	            pwInput.value = '';
 	            return;
 	        }
 
-	        if (result === true) {
+	        // { ok, remaining: 몇 번 더 틀리면 잠기는지, lockMinutes }
+	        if (result.ok) {
 	            // 일치: 모달 닫고 다음 단계
 	            closePwModal(); 
 
@@ -493,7 +494,9 @@
 	        } else {
 	            // 불일치: 입력값 비우고 에러 메시지 표시
 	            // [요청 반영] "비밀번호가 틀렸습니다. 다시 입력해주세요."
-	            errorMsgDiv.innerText = "パスワードが間違っています。\nもう一度入力してください。";
+	            // 잠기기까지 얼마 남지 않았으면 미리 알린다
+	            errorMsgDiv.innerText = "パスワードが間違っています。\nもう一度入力してください。"
+	                + ((result.remaining <= 3) ? `\n(あと${result.remaining}回間違えると、${result.lockMinutes}分間入力できなくなります。)` : '');
 	            errorMsgDiv.style.display = 'block';
 	            pwInput.value = ''; // 입력창 초기화
 	            pwInput.focus();

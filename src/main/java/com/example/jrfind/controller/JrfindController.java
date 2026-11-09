@@ -28,6 +28,7 @@ import com.example.jrfind.service.CommentService;
 import com.example.jrfind.service.InvalidPostException;
 import com.example.jrfind.service.JrfindService;
 import com.example.jrfind.service.JrfindService.PasswordCheck;
+import com.example.jrfind.service.PasswordAttemptLimiter;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -164,23 +165,34 @@ public class JrfindController {
         return "itemDetail"; // templates/itemDetail.html 호출
     }
 
+    // 비밀번호 확인 결과 (화면의 JS 가 읽는다)
+    // remaining: 몇 번 더 틀리면 잠기는지, lockMinutes: 잠기는 시간(분)
+    public record PasswordCheckResponse(boolean ok, int remaining, long lockMinutes) {
+    }
+
     // 비밀번호 확인 API (AJAX용, 비회원 글 전용)
     // 맞으면 세션에 "확인 완료"로 기록해 두고, 이후 수정·삭제 요청에서 서버가 이 기록을 확인한다.
+    // 없는 글·삭제된 글·회원 글은 404, 연속으로 틀려서 잠기면 429
     @PostMapping("/items/{id}/check-password")
     @ResponseBody
-    public ResponseEntity<Boolean> checkPassword(
+    public ResponseEntity<PasswordCheckResponse> checkPassword(
             @PathVariable("id") Long id,
             @RequestParam("password") String password,
             HttpServletRequest request) {
-        PasswordCheck result = service.checkPassword(id, password, id + "@" + request.getRemoteAddr());
+        String clientKey = id + "@" + request.getRemoteAddr();
+        PasswordCheck result = service.checkPassword(id, password, clientKey);
+        long lockMinutes = PasswordAttemptLimiter.LOCK_TIME.toMinutes();
 
+        if (result == PasswordCheck.NOT_FOUND) {
+            return ResponseEntity.notFound().build();
+        }
         if (result == PasswordCheck.LOCKED) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(false);
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(new PasswordCheckResponse(false, 0, lockMinutes));
         }
         if (result == PasswordCheck.OK) {
             verifiedItems.add(id);
         }
-        return ResponseEntity.ok(result == PasswordCheck.OK);
+        return ResponseEntity.ok(new PasswordCheckResponse(result == PasswordCheck.OK, service.remainingPasswordAttempts(clientKey), lockMinutes));
     }
 
     // 삭제 처리

@@ -74,6 +74,11 @@ public class LoginAttemptGuard extends OncePerRequestFilter implements Authentic
 		backToLoginPage(request, response, locked ? "locked" : "error");
 	}
 
+	// 몇 번 더 틀리면 잠기는지 (로그인 화면에서 얼마 남지 않았으면 안내)
+	private int remainingAttempts(HttpServletRequest request) {
+		return memberService.remainingLoginAttempts(request.getParameter(LOGIN_ID_PARAMETER), request.getRemoteAddr());
+	}
+
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
 			throws IOException, ServletException {
@@ -91,6 +96,7 @@ public class LoginAttemptGuard extends OncePerRequestFilter implements Authentic
 	private void backToLoginPage(HttpServletRequest request, HttpServletResponse response, String result) throws IOException {
 		FlashMap flashMap = new FlashMap();
 		flashMap.put("loginId", request.getParameter(LOGIN_ID_PARAMETER));
+		flashMap.put("remainingAttempts", remainingAttempts(request));
 		flashMapManager.saveOutputFlashMap(flashMap, request, response);
 
 		String next = safeNext(request);

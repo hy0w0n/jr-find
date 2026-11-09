@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -80,7 +81,7 @@ class JrfindControllerTest {
 		MockHttpSession session = new MockHttpSession();
 
 		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).session(session).param("password", "0000"))
-			.andExpect(content().string("false"));
+			.andExpect(jsonPath("$.ok").value(false));
 		mockMvc.perform(post("/items/{id}/delete", id).with(csrf()).session(session))
 			.andExpect(status().isForbidden());
 	}
@@ -91,12 +92,17 @@ class JrfindControllerTest {
 		MockHttpSession session = new MockHttpSession();
 
 		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).session(session).param("password", PASSWORD))
-			.andExpect(content().string("true"));
+			.andExpect(jsonPath("$.ok").value(true));
 		mockMvc.perform(post("/items/{id}/delete", id).with(csrf()).session(session))
 			.andExpect(redirectedUrl("/items"));
 
 		mockMvc.perform(get("/items/{id}", id))
 			.andExpect(status().isNotFound());
+		// 다른 탭에 남아 있던 화면에서 비밀번호를 넣어도 「틀렸다」가 아니라 없는 글 (틀린 횟수로 세지 않아 잠기지도 않는다)
+		for (int i = 0; i < 6; i++) {
+			mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).param("password", PASSWORD))
+				.andExpect(status().isNotFound());
+		}
 	}
 
 	@Test
@@ -168,13 +174,18 @@ class JrfindControllerTest {
 	}
 
 	@Test
-	void 비밀번호를_연속으로_틀리면_잠긴다() throws Exception {
+	void 비밀번호를_연속으로_틀리면_잠기고_잠기기_전에_남은_횟수를_알려준다() throws Exception {
 		long id = createItem();
 
-		for (int i = 0; i < 5; i++) {
+		for (int remaining = 4; remaining >= 1; remaining--) {
 			mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).param("password", "0000"))
-				.andExpect(content().string("false"));
+				.andExpect(jsonPath("$.ok").value(false))
+				.andExpect(jsonPath("$.remaining").value(remaining))
+				.andExpect(jsonPath("$.lockMinutes").value(5));
 		}
+		// 5번째로 틀리면 그 자리에서 잠겼다고 알린다
+		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).param("password", "0000"))
+			.andExpect(status().isTooManyRequests());
 		// 잠긴 동안에는 맞는 비밀번호도 거부
 		mockMvc.perform(post("/items/{id}/check-password", id).with(csrf()).param("password", PASSWORD))
 			.andExpect(status().isTooManyRequests());
