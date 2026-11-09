@@ -81,7 +81,7 @@
                         <h3>見つけた<span class="result-count" th:text="|${foundCount}件|">0件</span></h3>
                         <a class="more-link" th:if="${foundCount > 0}" th:href="@{/items(q=${keyword})}">すべて見る &gt;</a>
                     </div>
-                    <p class="result-empty" th:if="${foundItems.isEmpty()}">見つかった投稿はありません。</p>
+                    <p class="result-empty" th:if="${foundItems.isEmpty()}">該当する投稿はありません。</p>
                     <table class="result-table" th:unless="${foundItems.isEmpty()}">
                         <colgroup>
                             <col style="width: 12%;"> <col style="width: 13%;"> <col style="width: 13%;"> <col style="width: auto;"> <col style="width: 15%;"> <col style="width: 15%;">
@@ -101,7 +101,7 @@
                                     <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span>
                                 </td>
                                 <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
-                                <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
+                                <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd')}" th:title="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
                             </tr>
                         </tbody>
                     </table>
@@ -113,7 +113,7 @@
                         <h3>探しています<span class="result-count" th:text="|${lostCount}件|">0件</span></h3>
                         <a class="more-link" th:if="${lostCount > 0}" th:href="@{/lost-items(q=${keyword})}">すべて見る &gt;</a>
                     </div>
-                    <p class="result-empty" th:if="${lostItems.isEmpty()}">見つかった投稿はありません。</p>
+                    <p class="result-empty" th:if="${lostItems.isEmpty()}">該当する投稿はありません。</p>
                     <table class="result-table" th:unless="${lostItems.isEmpty()}">
                         <colgroup>
                             <col style="width: 12%;"> <col style="width: 13%;"> <col style="width: 13%;"> <col style="width: auto;"> <col style="width: 15%;"> <col style="width: 15%;">
@@ -136,7 +136,7 @@
                                     <span class="comment-count" th:if="${item.commentCount > 0}" th:text="|[${item.commentCount}]|" title="コメント数"></span>
                                 </td>
                                 <td class="td-center" th:text="${item.author}" th:title="${item.author}"></td>
-                                <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
+                                <td class="td-center" th:text="${#temporals.format(item.registrationDate, 'yyyy-MM-dd')}" th:title="${#temporals.format(item.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
                             </tr>
                         </tbody>
                     </table>
@@ -146,7 +146,7 @@
 
         <aside class="side-section">
             <div class="sidebar-card">
-                <p>忘れ物を拾われましたか？</p>
+                <p>忘れ物を見つけましたか？</p>
                 <a th:href="@{/items}" class="board-link">見つけた 掲示板</a>
             </div>
             <div class="sidebar-card">

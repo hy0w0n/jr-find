@@ -122,7 +122,7 @@
             a.href = href;
             a.append(el('span', null, label));
             const right = el('span');
-            right.append(el('b', null, String(count)), document.createTextNode(' 件'));
+            right.append(el('b', null, String(count)), document.createTextNode('件'));
             a.append(right);
             return a;
         }
@@ -183,7 +183,8 @@
             data.stations.forEach(station => {
                 const total = station.foundCount + station.lostCount;
                 const marker = L.circleMarker([station.lat, station.lng], markerStyle(station, false)).addTo(map);
-                marker.bindTooltip(el('span', null, total > 0 ? `${station.name} (${total}件)` : station.name),
+                // 두 게시판의 건수를 나눠서 보여준다 (합계만 보이면 패널의 건수와 달라 보인다)
+                marker.bindTooltip(el('span', null, total > 0 ? `${station.name} (見つけた ${station.foundCount}件・探しています ${station.lostCount}件)` : station.name),
                     { direction: 'top', offset: [0, -6] });
                 marker.on('click', () => selectStation(station, marker));
                 allPoints.push([station.lat, station.lng]);
@@ -202,7 +203,12 @@
             .then(render)
             .catch(error => {
                 console.error(error);
-                panel.replaceChildren(el('p', 'map-error', '駅の情報を読み込めませんでした。'));
+                // 다시 불러오는 버튼. 역이 없으면 「全体を表示」는 쓸 수 없으므로 막는다
+                const retry = el('button', 'legend-fit', '再読み込み');
+                retry.type = 'button';
+                retry.addEventListener('click', () => location.reload());
+                panel.replaceChildren(el('p', 'map-error', '駅の情報を読み込めませんでした。'), retry);
+                document.getElementById('fitAllBtn').disabled = true;
             });
     </script>
 </body>

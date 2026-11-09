@@ -81,7 +81,7 @@ class SearchControllerTest {
 		Map<String, Object> model = mockMvc.perform(get("/search").param("q", marker))
 			.andExpect(model().attribute("foundCount", 7))
 			.andExpect(model().attribute("lostCount", 0))
-			.andExpect(content().string(containsString("見つかった投稿はありません。"))) // 探しています 쪽
+			.andExpect(content().string(containsString("該当する投稿はありません。"))) // 探しています 쪽
 			.andReturn().getModelAndView().getModel();
 
 		assertThat(foundItems(model.get("foundItems"))).extracting(FoundItem::getItemName)
