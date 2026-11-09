@@ -160,6 +160,7 @@ Java 21 が必要です。
 - 写真を差し替え・削除すると以前の画像ファイルを、投稿を削除するとその投稿の画像ファイルをアップロードフォルダから削除
   （削除した投稿の写真が `/images/ファイル名` で表示され続けないように。DB への反映後に削除し、アップロードフォルダ外のファイルは削除しない）
 - 入力値はサーバーでも再検証（Bean Validation + 路線・駅・カテゴリが実在するか）
+- 同じ利用者が同じ場所に同じ内容を10分以内に再送信した場合は1回だけ保存（投稿登録・コメント。登録後に「戻る」で戻って再送信した場合やボタンの連打）
 - セッションクッキーは `HttpOnly`、`SameSite=Lax`、URL にセッション ID を含めない
 
 ## フォルダ構成
@@ -172,7 +173,8 @@ src/main/java/com/example/jrfind
 ├─ controller/   JrfindController（見つけた）、LostItemController（探しています）、CommentController（コメント）、
 │                SearchController（統合検索）、MemberController、MyPageController（マイページ）、
 │                MapController（駅マップ）、LoginMemberAdvice（ヘッダー用のログイン情報）、
-│                VerifiedItems（パスワード確認状態・セッション）、FormDraft（送信できなかった入力の保管・セッション）
+│                VerifiedItems（パスワード確認状態・セッション）、FormDraft（送信できなかった入力の保管・セッション）、
+│                SubmittedForms（同じ内容の二重登録の防止・セッション）
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
 │                Member, SignupForm, ProfileForm, PasswordForm, WithdrawForm, LoginMember, Category, Station,
 │                StationLocation, MapData, Texts（入力文字列の整理）

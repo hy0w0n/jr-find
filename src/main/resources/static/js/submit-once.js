@@ -12,14 +12,7 @@ document.addEventListener('submit', (e) => {
     setTimeout(() => submitButtons(form).forEach(button => button.disabled = true));
 });
 
-// 뒤로 가기로 돌아온 화면(브라우저가 저장해 둔 화면)에서는 다시 보낼 수 있게 한다
-window.addEventListener('pageshow', (e) => {
-    if (!e.persisted) return;
-    document.querySelectorAll('form[data-submitting]').forEach(form => {
-        delete form.dataset.submitting;
-        submitButtons(form).forEach(button => button.disabled = false);
-    });
-});
+// 뒤로 가기로 돌아온 화면(브라우저가 저장해 둔 화면)은 새로 불러온다 (page-restore.js)
 
 // 폼 안의 제출 버튼 + 폼 밖에서 form 속성으로 연결된 제출 버튼
 function submitButtons(form) {

@@ -38,11 +38,15 @@ public class LostItemController {
 	// 노선·역·카테고리 드롭다운 데이터
 	private final JrfindService masterService;
 	private final CommentService commentService;
+	// 같은 내용을 연달아 두 번 등록해도 한 번만 저장 (세션별)
+	private final SubmittedForms submittedForms;
 
-	public LostItemController(LostItemService service, JrfindService masterService, CommentService commentService) {
+	public LostItemController(LostItemService service, JrfindService masterService, CommentService commentService,
+			SubmittedForms submittedForms) {
 		this.service = service;
 		this.masterService = masterService;
 		this.commentService = commentService;
+		this.submittedForms = submittedForms;
 	}
 
 	@GetMapping
@@ -116,12 +120,20 @@ public class LostItemController {
 			return showFormError(model, null, FormErrors.firstMessage(bindingResult), file, false);
 		}
 
+		// 같은 내용을 방금 보냈으면 다시 저장하지 않고, 처음 보냈을 때와 같이 목록으로
+		String submissionKey = SubmittedForms.key("/lost-items/new", form.getLostDate(), form.getLineName(), form.getStationName(),
+			form.getCategoryName(), form.getItemName(), form.getContents(), JrfindController.imageIdentity(file));
+		if (!submittedForms.begin(submissionKey)) {
+			return "redirect:/lost-items";
+		}
 		try {
 			service.saveItem(form, loginMember, file);
 		} catch (InvalidPostException e) {
+			submittedForms.cancel(submissionKey);
 			return showFormError(model, null, e.getMessage(), file, false);
 		} catch (IOException e) {
 			e.printStackTrace();
+			submittedForms.cancel(submissionKey);
 			return showFormError(model, null, "画像の保存に失敗しました。", file, false);
 		}
 		return "redirect:/lost-items";

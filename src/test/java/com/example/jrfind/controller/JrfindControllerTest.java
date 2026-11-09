@@ -243,6 +243,26 @@ class JrfindControllerTest {
 	}
 
 	@Test
+	void 같은_내용을_연달아_두_번_등록해도_한_번만_저장한다() throws Exception {
+		MockHttpSession session = new MockHttpSession();
+		String itemName = "二度押しの財布" + System.nanoTime() % 10000;
+		int before = countItems();
+
+		// 저장하지 못한 경우(목록에 없는 역)는 고쳐서 다시 보낼 수 있다
+		mockMvc.perform(newItemRequest("itemName", itemName, "stationName", "横浜").session(session)).andExpect(status().isOk());
+		mockMvc.perform(newItemRequest("itemName", itemName, "stationName", "横浜").session(session)).andExpect(status().isOk());
+		// 등록 → 「뒤로」로 돌아온 폼(브라우저가 입력한 내용을 다시 채운다)을 그대로 다시 보냄: 처음처럼 목록으로 가지만 저장은 한 번
+		mockMvc.perform(newItemRequest("itemName", itemName).session(session)).andExpect(redirectedUrl("/items"));
+		mockMvc.perform(newItemRequest("itemName", itemName).session(session)).andExpect(redirectedUrl("/items"));
+		assertThat(countItems()).isEqualTo(before + 1);
+
+		// 내용이 다르거나, 다른 접속자면 저장한다
+		mockMvc.perform(newItemRequest("itemName", itemName, "contents", "別の本文").session(session)).andExpect(redirectedUrl("/items"));
+		mockMvc.perform(newItemRequest("itemName", itemName)).andExpect(redirectedUrl("/items"));
+		assertThat(countItems()).isEqualTo(before + 3);
+	}
+
+	@Test
 	void 잘못된_페이지_번호도_목록을_보여준다() throws Exception {
 		createItem();
 

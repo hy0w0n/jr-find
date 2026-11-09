@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -171,6 +172,25 @@ class CommentControllerTest {
 			.andExpect(status().isNotFound());
 
 		assertThat(countComments()).isEqualTo(before);
+	}
+
+	@Test
+	void 같은_댓글을_연달아_두_번_보내도_한_번만_저장한다() throws Exception {
+		LoginMember member = newMember();
+		long postId = createFoundPost(null);
+		MockHttpSession session = new MockHttpSession();
+		int before = countComments();
+
+		// 댓글 등록 → 「뒤로」로 돌아온 화면(브라우저가 입력 칸을 다시 채운다)에서 그대로 다시 보냄
+		mockMvc.perform(commentRequest("/items/{id}/comments", postId, "一度だけ").session(session).with(user(member)))
+			.andExpect(redirectedUrl("/items/" + postId + "#comment-" + latestComment().get("ID")));
+		mockMvc.perform(commentRequest("/items/{id}/comments", postId, "一度だけ").session(session).with(user(member)))
+			.andExpect(redirectedUrl("/items/" + postId + "#comments"));
+		assertThat(countComments()).isEqualTo(before + 1);
+
+		// 다른 내용이면 저장한다
+		mockMvc.perform(commentRequest("/items/{id}/comments", postId, "二つ目").session(session).with(user(member)));
+		assertThat(countComments()).isEqualTo(before + 2);
 	}
 
 	@Test

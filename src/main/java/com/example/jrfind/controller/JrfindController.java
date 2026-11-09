@@ -38,11 +38,14 @@ public class JrfindController {
 	// 비밀번호 확인을 통과한 비회원 게시글 (세션별)
 	private final VerifiedItems verifiedItems;
 	private final CommentService commentService;
+	// 같은 내용을 연달아 두 번 등록해도 한 번만 저장 (세션별)
+	private final SubmittedForms submittedForms;
 
-	public JrfindController(JrfindService service, VerifiedItems verifiedItems, CommentService commentService) {
+	public JrfindController(JrfindService service, VerifiedItems verifiedItems, CommentService commentService, SubmittedForms submittedForms) {
 		this.service = service;
 		this.verifiedItems = verifiedItems;
 		this.commentService = commentService;
+		this.submittedForms = submittedForms;
 	}
 
     // 1. 홈 화면 연결: http://localhost:8080/
@@ -124,13 +127,21 @@ public class JrfindController {
             return showRegisterForm(model, FormErrors.withImageNotice("パスワードは半角数字4桁で入力してください。", file));
         }
 
+        // 같은 내용을 방금 보냈으면 다시 저장하지 않고, 처음 보냈을 때와 같이 목록으로
+        String submissionKey = SubmittedForms.key("/items/new", form.getFoundDate(), form.getLineName(), form.getStationName(),
+                form.getCategoryName(), form.getItemName(), form.getContents(), imageIdentity(file));
+        if (!submittedForms.begin(submissionKey)) {
+            return "redirect:/items";
+        }
         try {
             // 서비스에게 데이터와 파일을 넘겨서 저장하라고 시킴
             service.saveItem(form, password, loginMember, file);
         } catch (InvalidPostException e) {
+            submittedForms.cancel(submissionKey);
             return showRegisterForm(model, FormErrors.withImageNotice(e.getMessage(), file));
         } catch (IOException e) {
             e.printStackTrace(); // 파일 저장 실패 시 에러 로그 출력
+            submittedForms.cancel(submissionKey);
             return showRegisterForm(model, FormErrors.withImageNotice("画像の保存に失敗しました。", file));
         }
 
@@ -284,6 +295,11 @@ public class JrfindController {
             model.addAttribute("isImageDeleted", true);
         }
         return showEditForm(model, item, FormErrors.withImageNotice(errorMessage, file));
+    }
+
+    // 같은 내용인지 비교할 때의 사진 (사진만 바꿔서 다시 올리는 경우는 다른 내용으로 본다)
+    static String imageIdentity(MultipartFile file) {
+        return (file == null || file.isEmpty()) ? "" : file.getOriginalFilename() + ":" + file.getSize();
     }
 
     private static String editUrl(Long id) {

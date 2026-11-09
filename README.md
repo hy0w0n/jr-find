@@ -160,6 +160,7 @@ Java 21이 필요합니다.
 - 사진을 바꾸거나 지우면 이전 이미지 파일을, 게시글을 삭제하면 그 글의 이미지 파일을 업로드 폴더에서 삭제
   (삭제한 글의 사진이 `/images/파일명` 주소로 계속 보이지 않도록. DB 반영 후에 지우고, 업로드 폴더 밖의 파일은 지우지 않음)
 - 입력값은 서버에서도 다시 검증 (Bean Validation + 노선·역·카테고리 실존 여부)
+- 같은 접속자가 같은 곳에 같은 내용을 10분 안에 다시 보내면 한 번만 저장 (게시글 등록·댓글. 등록 후 「뒤로」로 돌아와 다시 보내거나 버튼을 연달아 누른 경우)
 - 세션 쿠키 `HttpOnly`, `SameSite=Lax`, URL에 세션 ID 노출 안 함
 
 ## 폴더 구조
@@ -172,7 +173,8 @@ src/main/java/com/example/jrfind
 ├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
 │                SearchController (통합 검색), MemberController, MyPageController (마이페이지),
 │                MapController (駅マップ), LoginMemberAdvice (헤더용 로그인 정보),
-│                VerifiedItems (비밀번호 확인 상태 · 세션), FormDraft (보내지 못한 입력 보관 · 세션)
+│                VerifiedItems (비밀번호 확인 상태 · 세션), FormDraft (보내지 못한 입력 보관 · 세션),
+│                SubmittedForms (같은 내용 중복 등록 방지 · 세션)
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
 │                Member, SignupForm, ProfileForm, PasswordForm, WithdrawForm, LoginMember, Category, Station,
 │                StationLocation, MapData, Texts (입력 문자열 정리)

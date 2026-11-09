@@ -32,11 +32,15 @@ public class CommentController {
 	// 게시글이 있는지 확인용
 	private final JrfindService foundService;
 	private final LostItemService lostService;
+	// 같은 댓글을 연달아 두 번 보내도 한 번만 저장 (세션별)
+	private final SubmittedForms submittedForms;
 
-	public CommentController(CommentService commentService, JrfindService foundService, LostItemService lostService) {
+	public CommentController(CommentService commentService, JrfindService foundService, LostItemService lostService,
+			SubmittedForms submittedForms) {
 		this.commentService = commentService;
 		this.foundService = foundService;
 		this.lostService = lostService;
+		this.submittedForms = submittedForms;
 	}
 
 	// ---------- 見つけた 게시판 ----------
@@ -104,6 +108,10 @@ public class CommentController {
 			redirectAttributes.addFlashAttribute("commentError", FormErrors.firstMessage(bindingResult));
 			redirectAttributes.addFlashAttribute("commentDraft", form.getContents());
 			return "redirect:" + board.postUrl(postId) + "#commentForm";
+		}
+		// 같은 댓글을 방금 보냈으면 다시 저장하지 않는다 (댓글 영역으로. 먼저 보낸 댓글이 보인다)
+		if (!submittedForms.begin(SubmittedForms.key(board.postUrl(postId) + "/comments", form.getContents()))) {
+			return backToPost(board, postId);
 		}
 		// 등록한 댓글 위치로 (댓글 영역 맨 위로 가면 댓글이 많을 때 새 댓글이 화면 밖에 있다)
 		Long commentId = commentService.addComment(board, postId, form, loginMember);
