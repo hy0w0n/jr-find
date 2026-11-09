@@ -5,6 +5,11 @@
 // - 폼을 보낸 화면 (submit-once.js 의 표시): 등록한 뒤 「뒤로」로 돌아오면 입력한 내용이 그대로 남아 있어서 같은 글을 또 등록할 수 있었다
 //   (서버도 같은 내용을 연달아 두 번 저장하지 않는다. SubmittedForms)
 // 주소는 그대로 GET 으로 다시 연다 (POST 결과 화면이었어도 다시 보내지 않도록 reload 는 쓰지 않음)
+// 입력 오류로 다시 그린 화면(POST 의 응답)도 방문 기록을 주소창의 주소로 바꿔 둔다
+// → 새로고침·뒤로·앞으로 할 때 폼을 다시 보내지 않고(「フォーム再送信の確認」 없이) 그 주소를 새로 연다.
+//   입력한 내용이 있으면 나가기 전에 확인한다 (post-form.js 의 beforeunload)
+history.replaceState(history.state, '', location.href);
+
 window.addEventListener('pageshow', (e) => {
     if (!e.persisted) return;
     if (document.querySelector('form[action="/logout"]') || document.querySelector('form[data-submitting]')) {
