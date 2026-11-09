@@ -62,7 +62,7 @@ public class MyPageController {
 	// tab: found(見つけた) / lost(探しています) / comments(コメント)
 	@GetMapping
 	public String myPage(
-			@RequestParam(name = "tab", defaultValue = "found") String tab,
+			@RequestParam(name = "tab", required = false) String tab,
 			@RequestParam(name = "page", defaultValue = "1") int page,
 			@AuthenticationPrincipal LoginMember loginMember,
 			Model model) {
@@ -76,7 +76,10 @@ public class MyPageController {
 		model.addAttribute("lostCount", lostCount);
 		model.addAttribute("commentCount", commentCount);
 
-		// 정해진 값 외에는 첫 번째 탭
+		// 탭을 고르지 않고 열면 글·댓글이 있는 첫 번째 탭 (見つけた 가 0건이면 빈 목록부터 보이지 않게). 정해진 값 외에는 첫 번째 탭
+		if (tab == null) {
+			tab = (foundCount == 0 && lostCount > 0) ? "lost" : (foundCount == 0 && commentCount > 0) ? "comments" : "found";
+		}
 		String currentTab = switch (tab) {
 			case "lost", "comments" -> tab;
 			default -> "found";
@@ -118,6 +121,7 @@ public class MyPageController {
 		if (memberService.isReservedName(memberService.displayNameOf(form.getRealName(), form.getNickname()))) {
 			bindingResult.rejectValue("nickname", "reserved", MemberController.RESERVED_NAME_MESSAGE);
 		}
+		MemberController.checkBirthDate(form.getBirthDate(), bindingResult);
 		if (bindingResult.hasErrors()) {
 			return "profileEdit"; // 입력값과 에러 메시지를 그대로 다시 보여줌
 		}

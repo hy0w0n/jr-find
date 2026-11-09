@@ -1,6 +1,8 @@
 package com.example.jrfind.domain;
 
-// 입력 문자열 정리 (회원 이름, 댓글·게시글 본문)
+import java.text.Normalizer;
+
+// 입력 문자열 정리 (회원 이름·전화번호, 댓글·게시글 본문)
 public final class Texts {
 	private Texts() {
 	}
@@ -32,6 +34,15 @@ public final class Texts {
 		StringBuilder visible = new StringBuilder();
 		text.codePoints().filter(c -> !isInvisible(c)).forEach(visible::appendCodePoint);
 		return visible.toString();
+	}
+
+	// 전화번호: 일본어 입력기로 치기 쉬운 전각 숫자(０９０)는 반각으로, 하이픈처럼 보이는 글자(－ ー ‐ −)는 '-' 로
+	public static String normalizePhone(String phone) {
+		if (phone == null) {
+			return null;
+		}
+		String halfWidth = Normalizer.normalize(strip(phone), Normalizer.Form.NFKC);
+		return halfWidth.replaceAll("[\u2010-\u2015\u2212\u30FC]", "-");
 	}
 
 	// 공백(전각 공백·NBSP 포함)과 폭 없는 글자

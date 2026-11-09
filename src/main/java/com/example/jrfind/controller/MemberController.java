@@ -1,5 +1,7 @@
 package com.example.jrfind.controller;
 
+import java.time.LocalDate;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
@@ -25,6 +27,9 @@ public class MemberController {
 	static final String RESERVED_NAME_MESSAGE = "「" + MemberService.RESERVED_NAME_PREFIX + "」で始まる名前や「"
 			+ MemberService.WITHDRAWN_NAME + "」は使用できません。";
 
+	// 生年月日 하한 (@Past 는 아주 오래된 날짜를 막지 않는다. 0001-01-01 같은 입력 실수 방지)
+	static final LocalDate MIN_BIRTH_DATE = LocalDate.of(1900, 1, 1);
+
 	private final MemberService memberService;
 	// 로그인이 필요한 화면에서 로그인 화면으로 올 때 Spring Security 가 원래 화면을 저장해 두는 곳 (기본 설정과 같음)
 	private final RequestCache requestCache = new HttpSessionRequestCache();
@@ -40,10 +45,10 @@ public class MemberController {
 		if (loginMember != null) {
 			return "redirect:/"; // 이미 로그인 상태
 		}
-		// 헤더의 「ログイン」 등으로 직접 연 경우: 예전에 로그인이 필요해서 막혔던 화면은 잊는다
-		// (남겨 두면 한참 뒤에 로그인했을 때 그 화면, 예를 들어 탈퇴 화면으로 이동해 버린다)
+		// 헤더의 「ログイン」 등으로 직접 연 경우(?next=보던 화면 만 있거나 아무것도 없음):
+		// 예전에 로그인이 필요해서 막혔던 화면은 잊는다 (남겨 두면 한참 뒤에 로그인했을 때 그 화면, 예를 들어 탈퇴 화면으로 이동해 버린다)
 		// 로그인이 필요한 화면에서 넘어온 경우(?required)와 그 뒤의 실패·가입 완료(?error 등)는 원래 화면으로 돌아가도록 남긴다
-		if (request.getParameterMap().isEmpty()) {
+		if (request.getParameterMap().keySet().stream().allMatch("next"::equals)) {
 			requestCache.removeRequest(request, response);
 		}
 		return "login";
@@ -71,6 +76,7 @@ public class MemberController {
 		if (memberService.isReservedName(memberService.displayNameOf(form))) {
 			bindingResult.rejectValue("nickname", "reserved", RESERVED_NAME_MESSAGE);
 		}
+		checkBirthDate(form.getBirthDate(), bindingResult);
 		if (bindingResult.hasErrors()) {
 			return "signup"; // 입력값과 에러 메시지를 그대로 다시 보여줌
 		}
@@ -83,5 +89,12 @@ public class MemberController {
 			return "signup";
 		}
 		return "redirect:/login?registered";
+	}
+
+	// 회원가입, 회원정보 변경(MyPageController) 공통
+	static void checkBirthDate(LocalDate birthDate, BindingResult bindingResult) {
+		if (birthDate != null && birthDate.isBefore(MIN_BIRTH_DATE) && !bindingResult.hasFieldErrors("birthDate")) {
+			bindingResult.rejectValue("birthDate", "tooOld", "生年月日を正しく入力してください。");
+		}
 	}
 }

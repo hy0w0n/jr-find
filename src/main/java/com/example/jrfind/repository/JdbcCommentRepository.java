@@ -71,7 +71,7 @@ public class JdbcCommentRepository implements CommentRepository {
 
 	@Override
 	public List<Comment> findByMember(Long memberId, int page, int size) {
-		String sql = "SELECT c.*, f.Title AS FoundTitle, l.Title AS LostTitle" + MEMBER_COMMENTS_FROM
+		String sql = "SELECT c.*, f.Title AS FoundTitle, l.Title AS LostTitle, f.ItemName AS FoundItemName, l.ItemName AS LostItemName" + MEMBER_COMMENTS_FROM
 				+ " ORDER BY c.RegistrationDate DESC, c.ID DESC LIMIT ? OFFSET ?";
 		return jdbcTemplate.query(sql, (rs, rowNum) -> {
 			Comment comment = commentRowMapper().mapRow(rs, rowNum);
@@ -79,10 +79,12 @@ public class JdbcCommentRepository implements CommentRepository {
 				comment.setBoard(Board.FOUND);
 				comment.setPostId(rs.getLong("FoundItemId"));
 				comment.setPostTitle(rs.getString("FoundTitle"));
+				comment.setPostItemName(rs.getString("FoundItemName"));
 			} else {
 				comment.setBoard(Board.LOST);
 				comment.setPostId(rs.getLong("LostItemId"));
 				comment.setPostTitle(rs.getString("LostTitle"));
+				comment.setPostItemName(rs.getString("LostItemName"));
 			}
 			return comment;
 		}, memberId, size, (page - 1) * size);

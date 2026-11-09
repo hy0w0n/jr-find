@@ -55,9 +55,11 @@
 
         <!-- POST /login 은 Spring Security 가 처리 (SecurityConfig) -->
         <form id="loginForm" th:action="@{/login}" method="post" novalidate>
+            <!-- 헤더의 「ログイン」으로 온 경우: 로그인 후 돌아갈 화면 (LoginAttemptGuard 에서 이 사이트 안의 주소인지 확인) -->
+            <input type="hidden" name="next" th:if="${param.next != null}" th:value="${param.next[0]}">
             <div class="field">
                 <label for="loginId">ID</label>
-                <input type="text" id="loginId" name="loginId" maxlength="20" autocomplete="username">
+                <input type="text" id="loginId" name="loginId" maxlength="20" autocomplete="username" th:value="${loginId}"> <!-- 로그인에 실패해도 입력한 ID 는 남긴다 -->
             </div>
             <div class="field">
                 <label for="password">パスワード</label>

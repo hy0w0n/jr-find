@@ -30,6 +30,7 @@
         .main-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 10vh; }
         
         .notice { margin-bottom: 30px; padding: 12px 25px; border-radius: 6px; font-size: 14px; background: #e8f5e9; color: #2e7d32; }
+        .notice-warn { background: #fff8e1; color: #7a5b00; }
 
         /* 로고 영역 */
 		.main-logo { 
@@ -68,6 +69,9 @@
     <main class="main-container">
         <!-- 탈퇴 직후 (MyPageController), 다른 기기에서 탈퇴해 이 브라우저의 로그인이 끝난 경우 (SecurityConfig) -->
         <div class="notice" th:if="${param.withdrawn}">退会が完了しました。ご利用ありがとうございました。</div>
+        <div class="notice" th:if="${param.logout}">ログアウトしました。</div>
+        <!-- 폼을 오래 열어 둬서 보내지 못하고 돌아갈 화면을 알 수 없는 경우 (ExpiredFormHandler) -->
+        <div class="notice notice-warn" th:if="${param.expired}">時間が経過したため、送信できませんでした。お手数ですが、もう一度お試しください。</div>
 		<a th:href="@{/}" class="main-logo">
 			<img th:src="@{/logo/logo3_1.png}" alt="JR Find Logo">
 		</a>

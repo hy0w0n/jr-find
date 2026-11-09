@@ -14,12 +14,13 @@ import jakarta.validation.constraints.Size;
 // 회원가입 화면 입력값
 // 비밀번호 확인 일치, ID 중복 등 DB나 다른 항목이 필요한 검사는 컨트롤러에서 한다.
 public class SignupForm {
-	@NotNull(message = "IDを入力してください。")
-	@Pattern(regexp = "[A-Za-z0-9_]{4,20}", message = "IDは半角英数字と _ で4〜20文字で入力してください。")
+	// 빈 칸이면 형식 오류가 아니라 「入力してください」만 보이도록, 형식 검사(@Pattern)는 빈 칸을 통과시킨다 (ID・パスワード・電話番号)
+	@NotBlank(message = "IDを入力してください。")
+	@Pattern(regexp = "\\s*|[A-Za-z0-9_]{4,20}", message = "IDは半角英数字と _ で4〜20文字で入力してください。")
 	private String loginId;
 
-	@NotNull(message = "パスワードを入力してください。")
-	@Pattern(regexp = "(?=.*[A-Za-z])(?=.*[0-9])[\\x21-\\x7E]{8,64}", message = "パスワードは英字と数字を含む8〜64文字(半角)で入力してください。")
+	@NotBlank(message = "パスワードを入力してください。")
+	@Pattern(regexp = "\\s*|(?=.*[A-Za-z])(?=.*[0-9])[\\x21-\\x7E]{8,64}", message = "パスワードは英字と数字を含む8〜64文字(半角)で入力してください。")
 	private String password;
 
 	private String passwordConfirm;
@@ -37,8 +38,9 @@ public class SignupForm {
 	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
 	private LocalDate birthDate;
 
-	@NotNull(message = "電話番号を入力してください。")
-	@Pattern(regexp = "[0-9]{2,4}-?[0-9]{2,4}-?[0-9]{3,4}", message = "電話番号の形式が正しくありません。(例: 090-1234-5678)")
+	// 0 으로 시작하는 10~11자리. 전각 숫자·하이픈은 setPhone 에서 반각으로 바꾼 뒤 검사한다
+	@NotBlank(message = "電話番号を入力してください。")
+	@Pattern(regexp = "\\s*|(?=(?:-?\\d){10,11}$)0\\d{1,4}-?\\d{1,4}-?\\d{3,4}", message = "電話番号の形式が正しくありません。(例: 090-1234-5678)")
 	private String phone;
 
 	@AssertTrue(message = "個人情報の取り扱いに同意してください。")
@@ -85,7 +87,7 @@ public class SignupForm {
 		return phone;
 	}
 	public void setPhone(String phone) {
-		this.phone = phone;
+		this.phone = Texts.normalizePhone(phone);
 	}
 	public boolean isAgree() {
 		return agree;

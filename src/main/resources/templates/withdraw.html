@@ -57,7 +57,7 @@
 
         <!-- 지금 남아 있는 내 글·댓글 (마이페이지 탭으로 이동해서 지울 수 있음) -->
         <section class="my-posts">
-            <p class="my-posts-title">現在の投稿</p>
+            <p class="my-posts-title">現在の投稿・コメント</p>
             <a th:href="@{/mypage(tab='found')}">見つけた <strong th:text="${foundCount}">0</strong>件</a>
             <a th:href="@{/mypage(tab='lost')}">探しています <strong th:text="${lostCount}">0</strong>件</a>
             <a th:href="@{/mypage(tab='comments')}">コメント <strong th:text="${commentCount}">0</strong>件</a>
@@ -66,7 +66,7 @@
         <!-- 비밀번호는 에러가 나도 다시 채워 넣지 않는다 -->
         <form id="withdrawForm" th:action="@{/mypage/withdraw}" th:object="${withdrawForm}" method="post" novalidate>
             <div class="form-row">
-                <div class="form-label">パスワード</div>
+                <div class="form-label">現在のパスワード</div>
                 <div class="form-input">
                     <input type="password" id="currentPassword" name="currentPassword" maxlength="64" autocomplete="current-password"
                            th:classappend="${#fields.hasErrors('currentPassword')} ? 'input-error'">
@@ -88,8 +88,10 @@
 
     <script>
         // 되돌릴 수 없으므로 한 번 더 확인 (입력값 확인은 서버에서)
+        // 비밀번호가 비었거나 확인에 체크하지 않았으면 확인창 없이 보내서 서버의 안내를 먼저 보여준다
         document.getElementById('withdrawForm').addEventListener('submit', function(e) {
-            if (!confirm('本当に退会しますか？\nこの操作は取り消せません。')) {
+            const filled = document.getElementById('currentPassword').value !== '' && document.getElementById('agree').checked;
+            if (filled && !confirm('本当に退会しますか？\nこの操作は取り消せません。')) {
                 e.preventDefault();
             }
         });

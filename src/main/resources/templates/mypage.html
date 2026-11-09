@@ -18,7 +18,7 @@
         /* 회원정보 */
         .profile-card { margin-top: 25px; border: 1px solid #ddd; border-radius: 12px; padding: 25px 30px; }
         .profile-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .profile-name { font-size: 20px; font-weight: bold; }
+        .profile-name { font-size: 20px; font-weight: bold; min-width: 0; overflow-wrap: anywhere; } /* 긴 닉네임·ID 도 버튼과 겹치지 않게 */
         .profile-id { margin-left: 8px; font-size: 13px; color: #999; font-weight: normal; }
         .profile-btns { display: flex; gap: 10px; }
         .btn { padding: 7px 20px; border-radius: 20px; border: 1px solid #ccc; background: #f0f0f0; color: #333; font-size: 13px; text-decoration: none; transition: background 0.2s; }
@@ -94,7 +94,7 @@
                     <tr><th>氏名</th><td th:text="${member.realName}"></td></tr>
                     <tr><th>生年月日</th><td th:text="${#temporals.format(member.birthDate, 'yyyy年M月d日')}"></td></tr>
                     <tr><th>電話番号</th><td th:text="${member.phone}"></td></tr>
-                    <tr><th>登録日</th><td th:text="${#temporals.format(member.registrationDate, 'yyyy-MM-dd')}"></td></tr>
+                    <tr><th>登録日</th><td th:text="${#temporals.format(member.registrationDate, 'yyyy年M月d日')}"></td></tr>
                 </table>
                 <p class="withdraw-link"><a th:href="@{/mypage/withdraw}">退会する</a></p>
             </section>
@@ -169,7 +169,7 @@
                             <td th:text="${comment.contents}" th:title="${comment.contents}"></td>
                             <td th:title="${comment.postTitle}">
                                 <span class="board-label" th:text="${comment.board.name() == 'FOUND'} ? '見つけた' : '探しています'"></span>
-                                <span th:text="${comment.postTitle}"></span>
+                                <span th:text="${comment.postItemName}"></span> <!-- 제목은 날짜·노선부터 시작해서 물건 이름이 잘리므로 물건 이름만 (전체 제목은 마우스를 올리면) -->
                             </td>
                             <td class="td-center" th:text="${#temporals.format(comment.registrationDate, 'yyyy-MM-dd HH:mm')}"></td>
                         </tr>
@@ -191,12 +191,12 @@
 
         <aside class="side-section">
             <div class="sidebar-card">
-                <p>忘れ物を拾われましたか？</p>
-                <a th:href="@{/items/new}" class="write-btn-link">見つけた に投稿</a>
+                <p>忘れ物を見つけましたか？</p>
+                <a th:href="@{/items/new}" class="write-btn-link">「見つけた」に投稿</a>
             </div>
             <div class="sidebar-card">
                 <p>忘れ物をお探しですか？</p>
-                <a th:href="@{/lost-items/new}" class="write-btn-link">探しています に投稿</a>
+                <a th:href="@{/lost-items/new}" class="write-btn-link">「探しています」に投稿</a>
             </div>
         </aside>
     </div>

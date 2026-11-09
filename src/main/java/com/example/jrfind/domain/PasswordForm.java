@@ -1,7 +1,6 @@
 package com.example.jrfind.domain;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 // パスワード変更 화면 입력값
@@ -11,8 +10,9 @@ public class PasswordForm {
 	private String currentPassword;
 
 	// 규칙은 회원가입과 같다
-	@NotNull(message = "新しいパスワードを入力してください。")
-	@Pattern(regexp = "(?=.*[A-Za-z])(?=.*[0-9])[\\x21-\\x7E]{8,64}", message = "パスワードは英字と数字を含む8〜64文字(半角)で入力してください。")
+	// 빈 칸이면 「入力してください」만 보이도록 형식 검사는 빈 칸을 통과시킨다
+	@NotBlank(message = "新しいパスワードを入力してください。")
+	@Pattern(regexp = "\\s*|(?=.*[A-Za-z])(?=.*[0-9])[\\x21-\\x7E]{8,64}", message = "パスワードは英字と数字を含む8〜64文字(半角)で入力してください。")
 	private String newPassword;
 
 	private String newPasswordConfirm;

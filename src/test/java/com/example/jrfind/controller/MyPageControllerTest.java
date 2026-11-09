@@ -384,6 +384,40 @@ class MyPageControllerTest {
 	}
 
 	@Test
+	void 탭을_고르지_않고_열면_글이_있는_첫_번째_탭을_보여준다() throws Exception {
+		String loginId = signup();
+		LoginMember member = loginMember(loginId);
+		insertLost(member, "黒い長財布", false);
+
+		mockMvc.perform(get("/mypage").with(user(member)))
+			.andExpect(model().attribute("tab", "lost"));
+		// 직접 고른 탭은 그대로
+		mockMvc.perform(get("/mypage").param("tab", "found").with(user(member)))
+			.andExpect(model().attribute("tab", "found"));
+		// 아무것도 없으면 첫 번째 탭
+		mockMvc.perform(get("/mypage").with(user(loginMember(signup()))))
+			.andExpect(model().attribute("tab", "found"));
+	}
+
+	@Test
+	void 댓글_탭에는_댓글을_단_게시글의_물건_이름을_보여준다() throws Exception {
+		LoginMember member = loginMember(signup());
+		long postId = insertFound(loginMember(signup()), "青い折りたたみ傘", false);
+		comment(member, "/items/" + postId, "私の傘かもしれません。");
+
+		// 제목은 [날짜][노선][역][카테고리] 로 시작해서 물건 이름이 잘리므로 물건 이름을 따로 보여준다
+		mockMvc.perform(get("/mypage").param("tab", "comments").with(user(member)))
+			.andExpect(content().string(containsString("<span>青い折りたたみ傘</span>")));
+	}
+
+	@Test
+	void 회원정보_변경에서도_너무_오래된_생년월일은_안내한다() throws Exception {
+		MockHttpSession session = login(signup());
+		mockMvc.perform(profileRequest("山田太郎", "さがす人", "0001-01-01", "090-1234-5678").session(session))
+			.andExpect(model().attributeHasFieldErrorCode("profileForm", "birthDate", "tooOld"));
+	}
+
+	@Test
 	void 탈퇴하면_다른_브라우저에_로그인해_둔_세션도_끝난다() throws Exception {
 		String loginId = signup();
 		MockHttpSession pc = login(loginId);

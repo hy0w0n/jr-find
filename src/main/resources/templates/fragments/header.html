@@ -120,7 +120,8 @@
         }
         .auth-icon:hover { background-color: #f0f0f0; }
         .auth-icon svg { width: 24px; height: 24px; }
-        .auth-name { font-size: 14px; font-weight: 500; white-space: nowrap; color: #333; text-decoration: none; }
+        /* 긴 닉네임(최대 20자)은 줄여서 보여주고, 전체는 마우스를 올리면 (title) */
+        .auth-name { max-width: 12em; overflow: hidden; text-overflow: ellipsis; font-size: 14px; font-weight: 500; white-space: nowrap; color: #333; text-decoration: none; }
         .auth-name:hover { text-decoration: underline; }
         .auth-btn {
             padding: 8px 25px; border-radius: 25px; border: 1px solid #333;
@@ -132,12 +133,12 @@
         .auth-btn:hover { background: #f5f5f5; }
     </style>
 
-    <!-- 로그인 전: 유저 아이콘·로그인 버튼 → 로그인 화면 -->
+    <!-- 로그인 전: 유저 아이콘·로그인 버튼 → 로그인 화면 (로그인 후 지금 화면으로 돌아오도록 next 를 붙인다) -->
     <th:block th:if="${loginMember == null}">
-        <a th:href="@{/login}" class="auth-icon" title="ログイン">
+        <a th:href="${currentPath != null} ? @{/login(next=${currentPath})} : @{/login}" class="auth-icon" title="ログイン">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22C4 17.5817 7.58172 14 12 14C16.4183 14 20 17.5817 20 22H18C18 18.6863 15.3137 16 12 16C8.68629 16 6 18.6863 6 22H4ZM12 13C8.685 13 6 10.315 6 7C6 3.685 8.685 1 12 1C15.315 1 18 3.685 18 7C18 10.315 15.315 13 12 13ZM12 11C14.21 11 16 9.21 16 7C16 4.79 14.21 3 12 3C9.79 3 8 4.79 8 7C8 9.21 9.79 11 12 11Z"></path></svg>
         </a>
-        <a th:href="@{/login}" class="auth-btn">ログイン</a>
+        <a th:href="${currentPath != null} ? @{/login(next=${currentPath})} : @{/login}" class="auth-btn">ログイン</a>
     </th:block>
 
     <!-- 로그인 후: 유저 아이콘·닉네임 → 마이페이지, 로그아웃 (POST /logout. CSRF 토큰은 th:action 이 자동으로 넣어줌) -->
@@ -145,7 +146,7 @@
         <a th:href="@{/mypage}" class="auth-icon" title="マイページ">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22C4 17.5817 7.58172 14 12 14C16.4183 14 20 17.5817 20 22H18C18 18.6863 15.3137 16 12 16C8.68629 16 6 18.6863 6 22H4ZM12 13C8.685 13 6 10.315 6 7C6 3.685 8.685 1 12 1C15.315 1 18 3.685 18 7C18 10.315 15.315 13 12 13ZM12 11C14.21 11 16 9.21 16 7C16 4.79 14.21 3 12 3C9.79 3 8 4.79 8 7C8 9.21 9.79 11 12 11Z"></path></svg>
         </a>
-        <a th:href="@{/mypage}" class="auth-name" th:text="|${loginMember.nickname} さん|">ニックネーム さん</a>
+        <a th:href="@{/mypage}" class="auth-name" th:text="|${loginMember.nickname} さん|" th:title="|${loginMember.nickname} さん|">ニックネーム さん</a>
         <form th:action="@{/logout}" method="post">
             <button type="submit" class="auth-btn">ログアウト</button>
         </form>

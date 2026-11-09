@@ -166,8 +166,10 @@ class MemberControllerTest {
 			.andExpect(redirectedUrl("/"));
 
 		mockMvc.perform(post("/logout").with(user(member)).with(csrf()))
-			.andExpect(redirectedUrl("/"))
+			.andExpect(redirectedUrl("/?logout"))
 			.andExpect(unauthenticated());
+		mockMvc.perform(get("/").param("logout", ""))
+			.andExpect(content().string(containsString("ログアウトしました。")));
 	}
 
 	// ---------- 로그인 연속 실패 제한 ----------
@@ -274,7 +276,7 @@ class MemberControllerTest {
 
 		mockMvc.perform(loginRequest(loginId, PASSWORD, newIp()).session(session))
 			.andExpect(authenticated())
-			.andExpect(redirectedUrl("http://localhost/mypage?continue"));
+			.andExpect(redirectedUrl("http://localhost/mypage"));
 	}
 
 	@Test
@@ -288,7 +290,7 @@ class MemberControllerTest {
 		mockMvc.perform(loginRequest(loginId, "wrong1234", ip).session(session)).andExpect(redirectedUrl("/login?error"));
 		mockMvc.perform(get("/login").param("error", "").session(session)).andExpect(status().isOk());
 		mockMvc.perform(loginRequest(loginId, PASSWORD, ip).session(session))
-			.andExpect(redirectedUrl("http://localhost/mypage?continue"));
+			.andExpect(redirectedUrl("http://localhost/mypage"));
 	}
 
 	@Test
@@ -304,6 +306,85 @@ class MemberControllerTest {
 		mockMvc.perform(loginRequest(loginId, PASSWORD, newIp()).session(session))
 			.andExpect(authenticated())
 			.andExpect(redirectedUrl("/"));
+	}
+
+	@Test
+	void 헤더의_ログイン으로_로그인하면_보던_화면으로_돌아간다() throws Exception {
+		String loginId = signup();
+		String ip = newIp();
+
+		// 헤더의 링크에는 지금 화면 주소가 붙는다 (로그인·가입 화면에서는 붙이지 않음)
+		mockMvc.perform(get("/items/{id}", 1))
+			.andExpect(content().string(containsString("href=\"/login?next=")));
+		mockMvc.perform(get("/signup"))
+			.andExpect(content().string(not(containsString("/login?next="))));
+		mockMvc.perform(get("/login").param("next", "/items/1"))
+			.andExpect(content().string(containsString("name=\"next\" value=\"/items/1\"")));
+
+		// 틀리면 돌아갈 화면을 넘긴 채 로그인 화면으로, 맞으면 그 화면으로
+		mockMvc.perform(loginRequest(loginId, "wrong1234", ip).param("next", "/items/1"))
+			.andExpect(redirectedUrl("/login?error&next=%2Fitems%2F1"));
+		mockMvc.perform(loginRequest(loginId, PASSWORD, ip).param("next", "/items/1"))
+			.andExpect(authenticated())
+			.andExpect(redirectedUrl("/items/1"));
+	}
+
+	@Test
+	void 돌아갈_화면이_이_사이트_밖이거나_로그인_화면이면_홈으로_간다() throws Exception {
+		String loginId = signup();
+		for (String next : List.of("https://example.com/", "//example.com/", "/\\example.com", "/login?error", "/logout")) {
+			mockMvc.perform(loginRequest(loginId, PASSWORD, newIp()).param("next", next))
+				.andExpect(authenticated())
+				.andExpect(redirectedUrl("/"));
+		}
+	}
+
+	@Test
+	void 로그인에_실패해도_입력한_ID는_다시_채운다() throws Exception {
+		String loginId = signup();
+
+		MockHttpSession session = (MockHttpSession) mockMvc.perform(loginRequest(loginId, "wrong1234", newIp()))
+			.andExpect(redirectedUrl("/login?error"))
+			.andReturn().getRequest().getSession();
+		mockMvc.perform(get("/login").param("error", "").session(session))
+			.andExpect(content().string(containsString("value=\"" + loginId + "\"")));
+	}
+
+	@Test
+	void 빈_칸에는_형식_오류가_아니라_입력_안내만_보여준다() throws Exception {
+		mockMvc.perform(signupRequest("loginId", "", "password", " ", "phone", ""))
+			.andExpect(model().attributeHasFieldErrorCode("signupForm", "loginId", "NotBlank"))
+			.andExpect(model().attributeHasFieldErrorCode("signupForm", "password", "NotBlank"))
+			.andExpect(model().attributeHasFieldErrorCode("signupForm", "phone", "NotBlank"))
+			.andExpect(content().string(containsString("IDを入力してください。")))
+			.andExpect(content().string(not(containsString("IDは半角英数字と _ で4〜20文字"))))
+			.andExpect(content().string(not(containsString("電話番号の形式が正しくありません"))));
+	}
+
+	@Test
+	void 전화번호는_전각으로_입력해도_받고_자리수가_맞지_않으면_안내한다() throws Exception {
+		String loginId = newLoginId();
+		mockMvc.perform(signupRequest("loginId", loginId, "phone", "０９０－１２３４－５６７８"))
+			.andExpect(redirectedUrl("/login?registered"));
+		assertThat(jdbcTemplate.queryForObject("SELECT PHONE FROM MEMBER WHERE LOGINID = ?", String.class, loginId))
+			.isEqualTo("090-1234-5678");
+
+		mockMvc.perform(signupRequest("phone", "03ー1234ー5678")) // 하이픈 대신 장음 기호(ー)
+			.andExpect(redirectedUrl("/login?registered"));
+		for (String phone : List.of("12-34-567", "090-1234-56789", "1234567890")) {
+			mockMvc.perform(signupRequest("phone", phone))
+				.andExpect(model().attributeHasFieldErrors("signupForm", "phone"));
+		}
+	}
+
+	@Test
+	void 생년월일이_너무_오래되었거나_날짜가_아니면_안내한다() throws Exception {
+		mockMvc.perform(signupRequest("birthDate", "0001-01-01"))
+			.andExpect(model().attributeHasFieldErrorCode("signupForm", "birthDate", "tooOld"));
+		// 날짜로 바꿀 수 없는 값: Spring 의 영어 원문 대신 일본어 안내 (messages.properties)
+		mockMvc.perform(signupRequest("birthDate", "1990/01/01"))
+			.andExpect(content().string(containsString("日付を正しく入力してください。")))
+			.andExpect(content().string(not(containsString("Failed to convert"))));
 	}
 
 	// ---------- 회원 글 ----------

@@ -13,6 +13,7 @@ public class Comment {
 	private Board board;
 	private Long postId;
 	private String postTitle;
+	private String postItemName; // 게시글의 물건 이름 (마이페이지)
 
 	public Long getId() {
 		return id;
@@ -61,6 +62,12 @@ public class Comment {
 	}
 	public void setPostTitle(String postTitle) {
 		this.postTitle = postTitle;
+	}
+	public String getPostItemName() {
+		return postItemName;
+	}
+	public void setPostItemName(String postItemName) {
+		this.postItemName = postItemName;
 	}
 
 	// 댓글이 달린 게시글의 댓글 위치 (마이페이지 링크)

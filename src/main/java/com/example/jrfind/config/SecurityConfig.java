@@ -12,6 +12,7 @@ import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import com.example.jrfind.domain.LoginMember;
@@ -22,7 +23,11 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, MemberService memberService, SessionRegistry sessionRegistry) throws Exception {
-		LoginAttemptGuard loginAttemptGuard = new LoginAttemptGuard(memberService);
+		// 로그인이 필요한 화면에서 로그인 화면으로 갈 때 원래 화면을 저장해 두는 곳.
+		// 로그인 후 그 화면으로 돌아갈 때 주소에 ?continue 를 붙이지 않는다 (Spring Security 기본값은 붙인다)
+		HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
+		requestCache.setMatchingRequestParameterName(null);
+		LoginAttemptGuard loginAttemptGuard = new LoginAttemptGuard(memberService, requestCache);
 		RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 		http
 			// 探しています 게시판의 작성·수정·삭제, 댓글(두 게시판), 마이페이지(탈퇴 포함)는 회원만 가능
@@ -46,8 +51,11 @@ public class SecurityConfig {
 				.successHandler(loginAttemptGuard)
 				.failureHandler(loginAttemptGuard))
 			.addFilterBefore(loginAttemptGuard, UsernamePasswordAuthenticationFilter.class)
+			.requestCache(cache -> cache
+				.requestCache(requestCache))
+			// 로그아웃하면 홈에서 「ログアウトしました」 안내
 			.logout(logout -> logout
-				.logoutSuccessUrl("/"))
+				.logoutSuccessUrl("/?logout"))
 			// 회원별 로그인 세션 목록. 탈퇴·비밀번호 변경 때 다른 브라우저·기기의 로그인도 끝낸다
 			// → 그쪽은 다음 요청 때 로그아웃되고, 탈퇴면 홈(탈퇴 안내), 비밀번호 변경이면 로그인 화면(다시 로그인 안내)으로
 			.sessionManagement(session -> session
