@@ -156,7 +156,7 @@ class LostItemControllerTest {
 
 		mockMvc.perform(newItemRequest("contents", contents).with(user(member)))
 			.andExpect(redirectedUrl("/lost-items"));
-		assertThat(latestRow().get("CONTENTS")).isEqualTo(contents.replace("\r\n", "\n"));
+		assertThat(latestRow().get("CONTENTS")).isEqualTo(contents.replace("\r\n", "\n").strip()); // 끝의 줄바꿈은 지운다
 	}
 
 	@Test

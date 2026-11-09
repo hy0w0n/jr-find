@@ -98,7 +98,7 @@ class MemberControllerTest {
 
 	@Test
 	void 사용할_수_없는_이름은_공백이나_보이지_않는_글자를_섞어도_쓸_수_없다() throws Exception {
-		for (String nickname : List.of("　退会したユーザー", "退会したユーザー　", "退会した　ユーザー", "退会した\u200bユーザー", "\u00a0匿名の天使 1")) {
+		for (String nickname : List.of("退会したﾕｰｻﾞｰ", "　退会したユーザー", "退会したユーザー　", "退会した　ユーザー", "退会した\u200bユーザー", "\u00a0匿名の天使 1")) {
 			mockMvc.perform(signupRequest("nickname", nickname))
 				.andExpect(status().isOk())
 				.andExpect(model().attributeHasFieldErrorCode("signupForm", "nickname", "reserved"));
@@ -333,6 +333,9 @@ class MemberControllerTest {
 		// 헤더의 링크에는 지금 화면 주소가 붙는다 (로그인·가입 화면에서는 붙이지 않음)
 		mockMvc.perform(get("/items/{id}", 1))
 			.andExpect(content().string(containsString("href=\"/login?next=")));
+		// 「ログアウトしました」 안내는 붙이지 않는다 (다시 로그인한 뒤에도 안내가 남아 있었다)
+		mockMvc.perform(get("/").param("logout", ""))
+			.andExpect(content().string(containsString("href=\"/login?next=/\"")));
 		mockMvc.perform(get("/signup"))
 			.andExpect(content().string(not(containsString("/login?next="))));
 		mockMvc.perform(get("/login").param("next", "/items/1"))

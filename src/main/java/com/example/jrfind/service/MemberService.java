@@ -1,5 +1,6 @@
 package com.example.jrfind.service;
 
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 
 import org.springframework.security.core.userdetails.UserDetails;
@@ -63,8 +64,9 @@ public class MemberService implements UserDetailsService {
 	}
 
 	// 사이에 공백이나 폭 없는 글자를 넣어 비슷하게 보이게 만든 이름도 막는다 (예: 「退会した　ユーザー」)
+	// 반각 카나(ﾕｰｻﾞｰ)·전각 영숫자도 같은 글자로 본다 (NFKC)
 	public boolean isReservedName(String name) {
-		String visible = Texts.removeInvisible(name);
+		String visible = Normalizer.normalize(Texts.removeInvisible(name), Normalizer.Form.NFKC);
 		return visible.startsWith(RESERVED_NAME_PREFIX) || visible.equals(WITHDRAWN_NAME);
 	}
 

@@ -14,10 +14,12 @@ public final class Texts {
 	}
 
 	// 앞뒤 공백 제거. String.strip() 이 지우지 않는 NBSP, 폭 없는 공백(U+200B 등)까지 지운다
+	// 글자 방향을 바꾸는 제어 문자는 어디에 있든 지운다 (removeDirectionControls)
 	public static String strip(String text) {
 		if (text == null) {
 			return null;
 		}
+		text = removeDirectionControls(text);
 		int start = 0;
 		int end = text.length();
 		while (start < end && isInvisible(text.codePointAt(start))) {
@@ -27,6 +29,12 @@ public final class Texts {
 			end -= Character.charCount(text.codePointBefore(end));
 		}
 		return text.substring(start, end);
+	}
+
+	// 글자 방향을 바꾸는 제어 문자 (U+202A~202E, U+2066~2069) 를 지운다
+	// 물건 이름에 U+202E 를 넣으면 목록에서 글자가 거꾸로 보이고, 옆의 댓글 수 [2] 가 이름 앞으로 옮겨 갔다 (일본어 글에는 필요 없음)
+	public static String removeDirectionControls(String text) {
+		return (text == null) ? null : text.replaceAll("[\u202A-\u202E\u2066-\u2069]", "");
 	}
 
 	// 공백과 보이지 않는 글자를 모두 뺀 문자열 (사용할 수 없는 이름인지 비교할 때)

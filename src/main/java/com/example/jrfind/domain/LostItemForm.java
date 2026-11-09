@@ -80,14 +80,16 @@ public class LostItemForm {
 	public String getItemName() {
 		return itemName;
 	}
+	// 앞뒤 공백·보이지 않는 글자는 지운다 (보이지 않는 글자만 있으면 빈 값 → 「具体的な物を入力してください」)
 	public void setItemName(String itemName) {
-		this.itemName = itemName;
+		this.itemName = Texts.strip(itemName);
 	}
 	public String getContents() {
 		return contents;
 	}
 	// 줄바꿈은 LF 로 맞춘다 (브라우저는 CRLF 로 보내서, 화면에서는 500자 이내여도 서버에서 넘칠 수 있다)
+	// 앞뒤 공백·보이지 않는 글자도 지운다
 	public void setContents(String contents) {
-		this.contents = Texts.normalizeNewlines(contents);
+		this.contents = Texts.strip(Texts.normalizeNewlines(contents));
 	}
 }

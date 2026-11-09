@@ -286,6 +286,23 @@ class JrfindControllerTest {
 	}
 
 	@Test
+	void 보이지_않는_글자만_있는_물건_이름은_받지_않고_글자_방향을_바꾸는_문자는_지운다() throws Exception {
+		int before = countItems();
+		for (String invisible : List.of("\u200b", "\u00a0\u3000", "\u202e")) {
+			mockMvc.perform(newItemRequest("itemName", invisible))
+				.andExpect(model().attribute("errorMessage", "具体的な物を入力してください。"));
+			mockMvc.perform(newItemRequest("contents", invisible))
+				.andExpect(model().attribute("errorMessage", "詳細を入力してください。"));
+		}
+		assertThat(countItems()).isEqualTo(before);
+
+		// U+202E 를 넣으면 목록에서 글자가 거꾸로 보였다
+		mockMvc.perform(newItemRequest("itemName", "\u202eレイフサ", "contents", "本文\u2066です")).andExpect(redirectedUrl("/items"));
+		assertThat(latestRow().get("ITEMNAME")).isEqualTo("レイフサ");
+		assertThat(latestRow().get("CONTENTS")).isEqualTo("本文です");
+	}
+
+	@Test
 	void 잘못된_페이지_번호도_목록을_보여준다() throws Exception {
 		createItem();
 

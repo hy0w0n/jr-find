@@ -29,7 +29,10 @@ public class LoginMemberAdvice {
 		}
 		String query = request.getQueryString();
 		return UriComponentsBuilder.fromUriString((query == null) ? uri : uri + "?" + query)
-			.replaceQueryParam("expired") // 보내지 못했다는 안내는 로그인 후에는 다시 보여주지 않는다
+			// 보내지 못했다·로그아웃했다·탈퇴했다는 안내는 로그인 후에는 다시 보여주지 않는다
+			.replaceQueryParam("expired")
+			.replaceQueryParam("logout")
+			.replaceQueryParam("withdrawn")
 			.build()
 			.toUriString();
 	}
