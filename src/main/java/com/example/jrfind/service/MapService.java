@@ -17,7 +17,7 @@ import com.example.jrfind.repository.LostItemRepository;
 // 駅マップ: 역 위치, 노선(노선도), 역별 게시글 수
 @Service
 public class MapService {
-	// JR東日本 お忘れ物承り所가 있는 역 (2026년 11월 JR東日本 공식 사이트 안내 기준. 시간은 fragments/lostCenter.html)
+	// JR東日本 お忘れ物承り所가 있는 역 (JR東日本 공식 사이트 안내 기준. 시간은 fragments/lostCenter.html)
 	static final Set<String> LOST_CENTER_STATIONS = Set.of("東京", "大宮");
 
 	private final JrfindRepository repository;

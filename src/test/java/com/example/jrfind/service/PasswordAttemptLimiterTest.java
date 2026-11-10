@@ -117,7 +117,7 @@ class PasswordAttemptLimiterTest {
 	}
 
 	private static class MovableClock extends Clock {
-		private Instant now = Instant.parse("2026-11-09T00:00:00Z");
+		private Instant now = Instant.parse("2026-02-01T00:00:00Z");
 
 		void advance(Duration duration) {
 			now = now.plus(duration);
