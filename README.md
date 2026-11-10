@@ -100,6 +100,7 @@ Java 21이 필요합니다.
 - 댓글을 쓴 본인만 삭제 가능 (논리 삭제). 게시글 작성자가 쓴 댓글에는 「投稿者」 표시
 - 최대 500자, 빈 댓글은 화면과 서버 양쪽에서 막고, 오류가 나도 입력한 내용은 유지
 - 목록 화면의 물건 이름 옆에 댓글 수 표시
+- 댓글이 많은 글은 최근 50건만 보여 주고, 그 위의 「以前のコメント(N件)をすべて表示」로 모두 보기 (마이페이지의 내 댓글 링크는 모두 보는 주소로)
 - 댓글 테이블 하나를 두 게시판이 같이 사용 (`FOUNDITEMID` / `LOSTITEMID` 중 하나에만 값이 들어가도록 CHECK 제약)
 
 ## 검색
@@ -109,7 +110,8 @@ Java 21이 필요합니다.
 - 게시판 목록에서는 검색어(`?q=`)와 노선·역·카테고리 필터, 정렬, 페이지 이동을 함께 사용 (「検索をやめる」로 검색어만 해제)
 - 제목(날짜·노선·역·카테고리·물건 이름 포함)과 본문에서 찾음. 공백(전각 포함)으로 나눈 단어는 모두 포함하는 글만 (최대 5단어, 넘으면 화면에 안내)
 - 대소문자 구분 없음, `%` `_` 는 와일드카드가 아니라 글자 그대로 검색 (LIKE 이스케이프)
-- 전각·반각 구분 없음: 검색어는 NFKC 로 맞추고(ｽﾏﾎ → スマホ, Ｓｕｉｃａ → Suica), 글의 전각 영숫자는 `TRANSLATE` 로 반각으로 바꿔 비교
+- 전각·반각 구분 없음 (ｽﾏﾎ ↔ スマホ, Ｓｕｉｃａ ↔ suica, （予定） ↔ (予定)): 글을 저장할 때 제목+본문을 NFKC·소문자로 맞춘 검색용 컬럼(`SEARCHTEXT`)을
+  함께 저장하고, 검색어도 같은 방법으로 맞춰 그 컬럼 하나만 비교 (검색할 때마다 모든 글을 변환하지 않음). 이 컬럼이 없던 DB 의 글은 서버를 켤 때 채움
 
 ## 회원가입·로그인
 
@@ -170,6 +172,8 @@ Java 21이 필요합니다.
 - 콘텐츠 보안 정책(CSP): 스크립트는 이 사이트의 파일만 (`script-src 'self'`). 화면에 인라인 스크립트·`on…` 속성이 없어서
   게시글 등에 스크립트가 끼어들어도 실행되지 않음 (테스트가 모든 화면을 검사). 다른 사이트의 iframe 에는 넣지 못하게(`frame-ancestors 'none'`)
 - 모든 POST 요청에 CSRF 토큰 확인 (폼은 hidden 값, fetch 는 헤더로 전송)
+  - 로그인하지 않고 글을 보기만 할 때는 토큰을 만들지 않아 세션도 생기지 않음 (방문자·검색 로봇마다 세션이 쌓이지 않도록).
+    비회원 글의 비밀번호 확인은 보내기 직전에 `GET /csrf` 로 토큰을 받음
   - 화면을 오래 열어 둬서 토큰이 맞지 않으면 403 대신 보던 화면으로 돌아가 안내. 등록·수정·댓글은 입력한 내용을 보관했다가
     같은 폼을 다시 열 때 채움 (로그인이 끝났으면 다시 로그인한 뒤, 비회원 글은 비밀번호를 다시 확인한 뒤). 보관은 한 세션에 하나, 2,000자까지
 - 수정·삭제 권한은 서버에서 검사: 회원 글은 작성자 본인, 비회원 글은 "비밀번호 확인을 통과한 세션", 댓글은 쓴 본인 (화면 JS 검사만으로 막지 않음)
@@ -181,8 +185,11 @@ Java 21이 필요합니다.
   - ID 만으로 잠그지 않고 접속 IP 와 묶어서 세므로, 다른 사람이 일부러 틀려도 다른 곳의 주인은 계속 로그인할 수 있음
   - 없는 ID 도 똑같이 세고 똑같이 잠그므로 잠금 여부로 ID 가 있는지 알 수 없음
 - 업로드 파일은 파일 앞부분(매직 넘버)으로 실제 이미지인지 확인하고, 원본 파일명 대신 서버에서 만든 이름으로 저장 (경로 조작 방지)
+- JPG 사진은 다시 저장해서 촬영 정보(EXIF: 촬영 위치 GPS·기종 등)를 지움. 휴대폰 사진의 회전 정보는 지우기 전에 픽셀에 반영
+- 해상도가 5,000만 화소를 넘는 그림은 크기만 읽고 거부 (작은 파일로 서버 메모리를 다 쓰게 하는 그림)
 - 사진을 바꾸거나 지우면 이전 이미지 파일을, 게시글을 삭제하면 그 글의 이미지 파일을 업로드 폴더에서 삭제
-  (삭제한 글의 사진이 `/images/파일명` 주소로 계속 보이지 않도록. DB 반영 후에 지우고, 업로드 폴더 밖의 파일은 지우지 않음)
+  (삭제한 글의 사진이 `/images/파일명` 주소로 계속 보이지 않도록. DB 반영 후에 지우고, 업로드 폴더 밖의 파일은 지우지 않음).
+  저장 도중 서버가 멈추는 등으로 남은 파일은 매일 새벽 4시에 정리 (어느 글도 쓰지 않고 1시간 이상 지난 파일)
 - 같은 글을 동시에 수정·삭제해도 한쪽만 반영: 수정·삭제는 "삭제되지 않았고 사진이 읽었을 때 그대로"인 경우만 반영하는 조건부 UPDATE.
   늦은 쪽의 수정은 안내 후 다시 하도록 하고 새로 저장한 사진은 지움 (지운 글에 사진이 공개된 채 남거나, 쓰이지 않는 파일이 쌓이지 않도록)
 - 댓글은 게시글이 삭제되지 않았을 때만 넣음 (확인과 저장을 INSERT … SELECT 한 문장으로)
@@ -192,26 +199,51 @@ Java 21이 필요합니다.
 - 같은 접속자가 같은 곳에 같은 내용을 10분 안에 다시 보내면 한 번만 저장 (게시글 등록·댓글. 등록 후 「뒤로」로 돌아와 다시 보내거나 버튼을 연달아 누른 경우)
 - 세션 쿠키 `HttpOnly`, `SameSite=Lax`, URL에 세션 ID 노출 안 함
 
+## 성능
+
+글 1만 건(見つけた 10,000 · 探しています 3,400)과 댓글 300건이 달린 글이 있는 DB 로, 개선 전후의 서버를 같은 PC 에서 번갈아 요청해 비교한 값 (중앙값, 3회 측정).
+글·댓글이 계속 쓰이는 게시판과 같은 조건이 되도록 H2 가 같은 조회 결과를 다시 쓰지 않게 했고, 절대값은 PC 상태에 따라 달라지므로 배수로 보는 것이 정확함.
+
+| 화면 | 개선 전 | 개선 후 | |
+|---|---:|---:|---:|
+| 게시판 검색 (`/items?q=財布`) | 271 ms | 36 ms | 7.6배 |
+| 게시판 검색 (반각 카나 `ｽｲｶ`) | 497 ms | 36 ms | 14배 |
+| 통합 검색 (전각 5단어) | 984 ms | 43 ms | 23배 |
+| 통합 검색 (가장 느린 경우: `ｰ` 5단어) | 2,891 ms | 38 ms | 76배 |
+| 見つけた 목록 1페이지 | 63 ms | 33 ms | 1.9배 |
+| 댓글 300건인 글의 상세 (HTML) | 274 KB | 66 KB | |
+| 목록 첫 방문 전송량 (HTML·CSS·JS·로고) | 316 KB | 26 KB | |
+| 같은 화면 두 번째 방문 | CSS·JS·로고 다시 받음 | HTML 만 받음 | |
+| 휴대폰 사진(4032×3024, 9.4MB) 업로드 후 상세에서 받는 크기 | 9.4 MB | 273 KB | |
+
+- 검색: 검색용 컬럼(`SEARCHTEXT`) 하나만 비교. 예전에는 검색할 때마다 모든 글의 제목·본문을 `LOWER(TRANSLATE(…))` 로 바꾸고, 단어마다 조건이 2~4개였음
+- 목록: 작성일·발견일 + ID 인덱스로 한 페이지만 읽음 (예전에는 모든 글의 댓글 수를 센 뒤 정렬). 노선·역·카테고리는 처음 한 번만 읽어 둠
+- 정적 파일: 응답 압축(gzip), CSS·JS·로고는 주소에 파일 내용의 해시를 붙이고(`mobile-<해시>.css`) 1년 동안 캐시. 로고는 표시 크기에 맞춘 파일(265KB → 10KB)
+- 사진: 긴 변 1,280px 로 줄여 저장 (업로드 처리는 1200만 화소 사진에서 약 0.9초 늘어남)
+- 상세 화면: 최근 댓글 50건만
+
 ## 폴더 구조
 
 ```
 src/main/java/com/example/jrfind
 ├─ JrFindApplication.java
 ├─ config/       SecurityConfig (로그인·CSRF), LoginAttemptGuard (로그인 연속 실패 제한),
-│                ExpiredFormHandler (오래 열어 둔 폼을 보냈을 때 안내), WebMvcConfig (업로드 이미지·로고 경로)
+│                ExpiredFormHandler (오래 열어 둔 폼을 보냈을 때 안내), WebMvcConfig (업로드 이미지·로고 경로·캐시),
+│                CacheConfig (노선·역·카테고리를 메모리에)
 ├─ controller/   JrfindController (見つけた), LostItemController (探しています), CommentController (댓글),
 │                SearchController (통합 검색), MemberController, MyPageController (마이페이지),
 │                MapController (駅マップ), LoginMemberAdvice (헤더용 로그인 정보),
 │                BoardQuery (목록 조건을 유지한 링크 주소),
 │                VerifiedItems (비밀번호 확인 상태 · 세션), FormDraft (보내지 못한 입력 보관 · 세션),
-│                SubmittedForms (같은 내용 중복 등록 방지 · 세션)
+│                SubmittedForms (같은 내용 중복 등록 방지 · 세션), CsrfController (JS 가 보내기 직전에 받는 CSRF 토큰)
 ├─ domain/       FoundItem, FoundItemForm, LostItem, LostItemForm, Comment, CommentForm, Board,
 │                Member, SignupForm, ProfileForm, PasswordForm, WithdrawForm, LoginMember, Category, Station,
 │                StationLocation, MapData, Texts (입력 문자열 정리)
 ├─ repository/   JrfindRepository, LostItemRepository, CommentRepository, MemberRepository (+ JdbcTemplate 구현),
-│                KeywordCondition (검색어 SQL 조건)
+│                KeywordCondition (검색어 SQL 조건·검색용 값), SearchTextBackfill (비어 있는 검색용 컬럼 채우기)
 └─ service/      JrfindService, LostItemService, CommentService, MemberService, MapService,
-                 ImageStorage, PasswordAttemptLimiter
+                 ImageStorage, ImageResizer (사진 축소·촬영 정보 삭제), OrphanImageCleaner (쓰이지 않는 사진 정리),
+                 PasswordAttemptLimiter
 src/main/resources
 ├─ schema.sql, data.sql, messages.properties (입력 형식 오류 문구)
 ├─ static/       css/mobile.css (휴대폰 화면), css/board-list.css · js/board-list.js (두 게시판 목록 공통),
