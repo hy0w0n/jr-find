@@ -53,6 +53,12 @@ class MemberControllerTest {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
+	private long insertFoundItem() {
+		jdbcTemplate.update("INSERT INTO FOUND_ITEM (TITLE, FOUNDDATE, LINENAME, STATIONNAME, CATEGORYNAME, ITEMNAME, CONTENTS, AUTHOR, REGISTRATIONDATE)"
+				+ " VALUES ('[2026-01-08][山手線][新宿][その他] 傘', '2026-01-08', '山手線', '新宿', 'その他', '傘', '本文', '匿名の天使001', CURRENT_TIMESTAMP)");
+		return jdbcTemplate.queryForObject("SELECT max(ID) FROM FOUND_ITEM", Long.class);
+	}
+
 	@Autowired
 	private MemberService memberService;
 
@@ -345,7 +351,7 @@ class MemberControllerTest {
 		String ip = newIp();
 
 		// 헤더의 링크에는 지금 화면 주소가 붙는다 (로그인·가입 화면에서는 붙이지 않음)
-		mockMvc.perform(get("/items/{id}", 1))
+		mockMvc.perform(get("/items/{id}", insertFoundItem()))
 			.andExpect(content().string(containsString("href=\"/login?next=")));
 		// 「ログアウトしました」 안내는 붙이지 않는다 (다시 로그인한 뒤에도 안내가 남아 있었다)
 		mockMvc.perform(get("/").param("logout", ""))

@@ -228,7 +228,9 @@ class LostItemControllerTest {
 			.andExpect(content().string(containsString("<html lang=\"ja\"")));
 		mockMvc.perform(get("/lost-items/{id}", id))
 			.andExpect(content().string(containsString(share))); // 로그인하지 않아도
-		mockMvc.perform(get("/items/{id}", 1))
+		jdbcTemplate.update("INSERT INTO FOUND_ITEM (TITLE, FOUNDDATE, LINENAME, STATIONNAME, CATEGORYNAME, ITEMNAME, CONTENTS, AUTHOR, REGISTRATIONDATE)"
+				+ " VALUES ('[2026-01-08][山手線][新宿][その他] 傘', '2026-01-08', '山手線', '新宿', 'その他', '傘', '本文', '匿名の天使001', CURRENT_TIMESTAMP)");
+		mockMvc.perform(get("/items/{id}", jdbcTemplate.queryForObject("SELECT max(ID) FROM FOUND_ITEM", Long.class)))
 			.andExpect(content().string(containsString(share)))
 			.andExpect(content().string(not(containsString("(予定)"))));
 	}

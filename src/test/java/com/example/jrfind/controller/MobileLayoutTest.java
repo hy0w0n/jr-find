@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
@@ -36,9 +37,18 @@ class MobileLayoutTest {
 	@Autowired
 	private MemberService memberService;
 
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+
+	private long insertFoundItem() {
+		jdbcTemplate.update("INSERT INTO FOUND_ITEM (TITLE, FOUNDDATE, LINENAME, STATIONNAME, CATEGORYNAME, ITEMNAME, CONTENTS, AUTHOR, REGISTRATIONDATE)"
+				+ " VALUES ('[2026-01-08][山手線][新宿][その他] 傘', '2026-01-08', '山手線', '新宿', 'その他', '傘', '本文', '匿名の天使001', CURRENT_TIMESTAMP)");
+		return jdbcTemplate.queryForObject("SELECT max(ID) FROM FOUND_ITEM", Long.class);
+	}
+
 	@Test
 	void 모든_화면은_기기_폭에_맞추고_휴대폰_스타일을_불러온다() throws Exception {
-		for (String url : List.of("/", "/items", "/items/1", "/items/new", "/lost-items", "/search?q=財布", "/map", "/login", "/signup")) {
+		for (String url : List.of("/", "/items", "/items/" + insertFoundItem(), "/items/new", "/lost-items", "/search?q=財布", "/map", "/login", "/signup")) {
 			expectMobileReady(url, null);
 		}
 		LoginMember member = newMember();

@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- fetch 로 POST 할 때 헤더에 넣을 CSRF 토큰 (비회원 글 비밀번호 확인) -->
-    <meta name="_csrf" th:content="${_csrf.token}">
-    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title th:text="${item.itemName} + ' | 見つけた | JR-Find'">JR-Find | 詳細</title>
     <!-- 상세 화면 공통 스타일 (探しています 상세와 같이 사용) -->
     <link rel="stylesheet" th:href="@{/css/post-detail.css}">
@@ -107,12 +104,15 @@
     </div>
 
     <!-- 비회원 글의 비밀번호 확인 창
-         JS 가 있으면 화면 안에서 확인하고(fetch → /check-password), 없으면 폼으로 보낸다(/verify → 결과 화면) -->
+         JS 가 있으면 화면 안에서 확인하고(fetch → /check-password), 없으면 폼으로 보낸다(/verify → 결과 화면)
+         CSRF 토큰: 토큰을 만들면 세션이 생기므로, 글을 보기만 하는 화면에는 넣지 않는다 (th:action 은 토큰을 자동으로 넣으므로 th:attr).
+         JS 는 보내기 직전에 /csrf 에서 받고, JS 없이 서버가 이 창을 연 화면(?verify=)에만 토큰을 넣는다 -->
     <div id="passwordModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pwModalTitle" aria-describedby="pwModalDesc"
          th:if="${item.memberId == null}" th:classappend="${verifyAction != null} ? 'open'">
-        <form class="modal-box" id="pwForm" method="post" th:action="@{/items/{id}/verify(id=${item.id})}"
+        <form class="modal-box" id="pwForm" method="post" th:attr="action=@{/items/{id}/verify(id=${item.id})}"
               th:data-check-url="@{/items/{id}/check-password(id=${item.id})}" th:data-edit-url="@{/items/{id}/edit(id=${item.id})}"
-              th:data-list-url="@{/items}">
+              th:data-list-url="@{/items}" th:data-csrf-url="@{/csrf}">
+            <input type="hidden" th:if="${verifyAction != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <svg class="modal-icon-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>
             <h2 class="modal-title-text" id="pwModalTitle">パスワード確認</h2>
             <!-- 수정을 보냈는데 비밀번호 확인이 풀려 있던 경우는 다른 설명 (입력한 내용은 보관돼 있다) -->
@@ -130,10 +130,12 @@
         </form>
     </div>
 
-    <!-- 삭제 확인 창 (회원 글의 작성자, 비밀번호를 확인한 비회원) -->
+    <!-- 삭제 확인 창 (회원 글의 작성자, 비밀번호를 확인한 비회원)
+         CSRF 토큰: 작성자 본인·서버가 이 창을 연 화면(?confirmDelete)에만 넣는다. 비회원이 JS 로 비밀번호를 확인했으면 JS 가 넣는다 -->
     <div id="deleteModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="deleteTitle" aria-describedby="deleteDesc"
          th:if="${item.memberId == null or isOwner}" th:classappend="${confirmDelete} ? 'open'">
-        <form class="modal-box" method="post" th:action="@{/items/{id}/delete(id=${item.id})}">
+        <form class="modal-box" id="deleteForm" method="post" th:attr="action=@{/items/{id}/delete(id=${item.id})}">
+            <input type="hidden" th:if="${isOwner or confirmDelete}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <svg class="modal-icon-svg modal-icon-danger" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>
             <h2 class="modal-title-text" id="deleteTitle">削除の確認</h2>
             <p class="modal-desc-text" id="deleteDesc">本当に削除しますか？

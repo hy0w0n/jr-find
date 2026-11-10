@@ -42,6 +42,34 @@
         pwInput.removeAttribute('aria-invalid');
         afterMessage = null;
     }
+    // CSRF 토큰: 비회원이 글을 보기만 할 때는 세션을 만들지 않도록 화면에는 넣지 않고, 처음 보낼 때 받아 온다 (/csrf)
+    let csrf = null;
+    function csrfToken() {
+        if (!csrf) {
+            csrf = fetch(pwForm.dataset.csrfUrl, { headers: { Accept: 'application/json' } })
+                .then(response => {
+                    if (!response.ok) throw new Error(response.status);
+                    return response.json(); // { headerName, parameterName, token }
+                })
+                .catch(error => {
+                    csrf = null;
+                    throw error;
+                });
+        }
+        return csrf;
+    }
+    // 폼으로 보낼 때 (삭제 확인 창)
+    function setFormToken(form, token) {
+        let input = form.querySelector(`input[name="${token.parameterName}"]`);
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = token.parameterName;
+            form.append(input);
+        }
+        input.value = token.token;
+    }
+
     function showPasswordError(message) {
         pwError.textContent = message;
         pwInput.setAttribute('aria-invalid', 'true');
@@ -62,13 +90,18 @@
                 showPasswordError(password ? 'パスワードは半角数字4桁で入力してください。' : 'パスワードを入力してください。');
                 return;
             }
-            // 비밀번호는 URL 이 아니라 요청 본문으로, CSRF 토큰은 <meta> 에서 읽어서 헤더로 보낸다
-            const csrfToken = document.querySelector('meta[name="_csrf"]').content;
-            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
-            fetch(pwForm.dataset.checkUrl, {
+            // 비밀번호는 URL 이 아니라 요청 본문으로, CSRF 토큰은 헤더로 보낸다
+            const send = () => csrfToken().then(token => fetch(pwForm.dataset.checkUrl, {
                 method: 'POST',
-                headers: { [csrfHeader]: csrfToken },
+                headers: { [token.headerName]: token.token },
                 body: new URLSearchParams({ password })
+            }));
+            send()
+            .then(response => {
+                // 토큰을 받아 둔 뒤 세션이 끝난 경우: 토큰을 새로 받아서 한 번만 다시 보낸다 (틀린 횟수로 세지 않는 거부)
+                if (response.status !== 403) return response;
+                csrf = null;
+                return send();
             })
             .then(response => {
                 // 연속으로 틀려서 잠긴 경우 ({ ok: false, remaining: 0, lockMinutes })
@@ -96,8 +129,11 @@
                 // { ok, remaining: 몇 번 더 틀리면 잠기는지, lockMinutes }
                 if (result.ok) {
                     if ($('pwAction').value === 'delete') {
-                        Dialog.close(pwModal, { restoreFocus: false });
-                        openDialog($('deleteModal'));
+                        return csrfToken().then(token => {
+                            setFormToken($('deleteForm'), token);
+                            Dialog.close(pwModal, { restoreFocus: false });
+                            openDialog($('deleteModal'));
+                        });
                     } else {
                         location.href = pwForm.dataset.editUrl;
                     }
