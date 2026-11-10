@@ -11,6 +11,11 @@ public interface CommentRepository {
 	// 오래된 댓글부터
 	List<Comment> findByPost(Board board, Long postId);
 
+	// 최근 limit 건 (오래된 댓글부터)
+	List<Comment> findRecentByPost(Board board, Long postId, int limit);
+
+	int countByPost(Board board, Long postId);
+
 	// 그 게시글의 댓글이 아니거나 삭제됐으면 null
 	Comment findById(Board board, Long postId, Long id);
 

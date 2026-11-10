@@ -71,7 +71,8 @@ public class Comment {
 	}
 
 	// 댓글이 달린 게시글의 댓글 위치 (마이페이지 링크)
+	// 오래된 댓글은 상세 화면에 처음부터 보이지 않으므로(최근 것만), 모든 댓글을 보여 주는 주소로
 	public String getPostUrl() {
-		return board.postUrl(postId) + "#comment-" + id;
+		return board.postUrl(postId) + "?allComments#comment-" + id;
 	}
 }

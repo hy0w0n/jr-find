@@ -160,12 +160,13 @@ public class JrfindController {
             @RequestParam(name = "verify", required = false) String verify,
             @RequestParam(name = "reverify", required = false) String reverify,
             @RequestParam(name = "confirmDelete", required = false) String confirmDelete,
+            @RequestParam(name = "allComments", required = false) String allComments,
             @AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request, Model model) {
         FoundItem item = findItemOrThrow(id);
         model.addAttribute("item", item);
         // 회원 글이면 작성자 본인에게만 수정·삭제 버튼을 보여준다
         model.addAttribute("isOwner", isOwner(item, loginMember));
-        model.addAttribute("comments", commentService.getComments(Board.FOUND, id));
+        model.addAttribute("commentView", commentService.getComments(Board.FOUND, id, allComments != null));
         CommentController.restoreCommentDraft(Board.FOUND, id, loginMember, request, model);
         model.addAttribute("listUrl", BoardQuery.listUrlFrom(request, "/items")); // 「一覧」: 보던 목록으로
         // 비회원 글 수정을 보냈는데 비밀번호 확인이 끝나 있었으면, 비밀번호 창을 바로 열어서 다시 묻는다 (입력한 내용은 보관돼 있다)

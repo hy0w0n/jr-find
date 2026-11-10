@@ -51,6 +51,20 @@ public class JdbcCommentRepository implements CommentRepository {
 	}
 
 	@Override
+	public List<Comment> findRecentByPost(Board board, Long postId, int limit) {
+		// 최신 순으로 limit 건을 고른 뒤, 화면에 보여 줄 순서(오래된 것부터)로 다시 정렬
+		String sql = "SELECT * FROM (SELECT * FROM Post_Comment WHERE " + board.getCommentColumn() + " = ? AND DEL_FLG = FALSE"
+				+ " ORDER BY RegistrationDate DESC, ID DESC LIMIT ?) c ORDER BY RegistrationDate ASC, ID ASC";
+		return jdbcTemplate.query(sql, commentRowMapper(), postId, limit);
+	}
+
+	@Override
+	public int countByPost(Board board, Long postId) {
+		String sql = "SELECT count(*) FROM Post_Comment WHERE " + board.getCommentColumn() + " = ? AND DEL_FLG = FALSE";
+		return jdbcTemplate.queryForObject(sql, Integer.class, postId);
+	}
+
+	@Override
 	public Comment findById(Board board, Long postId, Long id) {
 		String sql = "SELECT * FROM Post_Comment WHERE ID = ? AND " + board.getCommentColumn() + " = ? AND DEL_FLG = FALSE";
 		try {

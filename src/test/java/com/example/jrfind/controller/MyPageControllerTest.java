@@ -117,13 +117,13 @@ class MyPageControllerTest {
 		assertThat((List<LostItem>) model.get("lostItems")).extracting(LostItem::getId).containsExactly(myLost);
 
 		model = mockMvc.perform(get("/mypage").param("tab", "comments").with(user(me)))
-			.andExpect(content().string(containsString("href=\"/items/" + othersFound + "#comment-")))
+			.andExpect(content().string(containsString("href=\"/items/" + othersFound + "?allComments#comment-")))
 			.andReturn().getModelAndView().getModel();
 		List<Comment> comments = (List<Comment>) model.get("comments");
 		assertThat(comments).extracting(Comment::getContents)
 			.containsExactly("自分の投稿へのコメント", "他人の投稿へのコメント"); // 최신 순
 		assertThat(comments.get(0).getPostTitle()).contains("私の財布");
-		assertThat(comments.get(1).getPostUrl()).startsWith("/items/" + othersFound + "#comment-");
+		assertThat(comments.get(1).getPostUrl()).startsWith("/items/" + othersFound + "?allComments#comment-");
 
 		// 정해진 값이 아닌 탭은 見つけた
 		mockMvc.perform(get("/mypage").param("tab", "<script>").with(user(me)))

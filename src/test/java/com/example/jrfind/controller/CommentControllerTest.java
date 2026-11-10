@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -299,6 +300,32 @@ class CommentControllerTest {
 		form.setAgree(true);
 		memberService.register(form);
 		return (LoginMember) memberService.loadUserByUsername(form.getLoginId());
+	}
+
+	@Test
+	void 댓글이_많으면_최근_50건만_보여_주고_이전_댓글은_링크로_모두_볼_수_있다() throws Exception {
+		LoginMember writer = newMember();
+		long postId = createFoundPost(null);
+		LocalDateTime base = LocalDateTime.now().minusDays(1);
+		for (int i = 1; i <= 55; i++) {
+			jdbcTemplate.update("INSERT INTO POST_COMMENT (FOUNDITEMID, CONTENTS, AUTHOR, MEMBERID, REGISTRATIONDATE) VALUES (?, ?, ?, ?, ?)",
+				postId, "コメント" + i + "番", writer.getNickname(), writer.getId(), base.plusMinutes(i));
+		}
+
+		String recent = html(get("/items/{id}", postId));
+		assertThat(recent.split("class=\"comment-item\"", -1)).hasSize(50 + 1);
+		assertThat(recent).contains("class=\"comment-heading-count\">55<") // 제목 옆 숫자는 전체 댓글 수
+			.contains("href=\"/items/" + postId + "?allComments#comments\">以前のコメント(5件)をすべて表示<")
+			.doesNotContain(">コメント5番<");
+		assertThat(recent.indexOf(">コメント6番<")).isPositive().isLessThan(recent.indexOf(">コメント55番<")); // 오래된 것부터
+
+		String all = html(get("/items/{id}", postId).param("allComments", ""));
+		assertThat(all.split("class=\"comment-item\"", -1)).hasSize(55 + 1);
+		assertThat(all).contains(">コメント1番<").doesNotContain("以前のコメント");
+	}
+
+	private String html(MockHttpServletRequestBuilder request) throws Exception {
+		return mockMvc.perform(request).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 	}
 
 	private MockHttpServletRequestBuilder commentRequest(String url, long postId, String contents) {

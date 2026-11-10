@@ -4,7 +4,9 @@
   댓글 영역 (見つけた / 探しています 상세 화면 공통)
   postUrl      : 게시글 주소 (예: /items/3)
   postMemberId : 게시글을 쓴 회원 ID (비회원 글이면 null). 이 회원의 댓글에 「投稿者」 표시
-  모델에 comments(댓글 목록)가 필요하다. commentError / commentDraft 는 댓글 등록에 실패했을 때만 들어온다.
+  모델에 commentView(보여 줄 댓글·전체 댓글 수, CommentService.CommentView)가 필요하다.
+  댓글이 많으면 최근 것만 오고, 그 위에 「以前のコメントをすべて表示」(?allComments) 링크를 둔다.
+  commentError / commentDraft 는 댓글 등록에 실패했을 때만 들어온다.
 -->
 <section th:fragment="commentSection(postUrl, postMemberId)" id="comments" class="comment-section">
     <style>
@@ -14,6 +16,8 @@
         .comment-empty { padding: 25px 10px; font-size: 14px; color: #767676; border-bottom: 1px solid #eee; }
 
         .comment-list { list-style: none; margin: 0; padding: 0; }
+        .comment-more { display: block; padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 14px; color: #1a5fb4; text-align: center; }
+        .comment-more:hover { background-color: #f9f9f9; }
         .comment-item { padding: 18px 10px; border-bottom: 1px solid #eee; }
         .comment-author { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 6px; }
         .comment-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; background: #fdecee; color: #b71c1c; font-size: 11px; font-weight: bold; vertical-align: middle; }
@@ -44,12 +48,16 @@
         .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     </style>
 
-    <h3 class="comment-heading">コメント<span class="comment-heading-count" th:text="${#lists.size(comments)}">0</span></h3>
+    <h3 class="comment-heading">コメント<span class="comment-heading-count" th:text="${commentView.total}">0</span></h3>
 
-    <p class="comment-empty" th:if="${#lists.isEmpty(comments)}">まだコメントはありません。</p>
+    <p class="comment-empty" th:if="${commentView.total == 0}">まだコメントはありません。</p>
 
-    <ul class="comment-list" th:unless="${#lists.isEmpty(comments)}">
-        <li class="comment-item" th:each="comment : ${comments}" th:id="|comment-${comment.id}|">
+    <!-- 이전 댓글: 누르면 모든 댓글을 보여 주는 화면으로 (보던 위치는 댓글 처음) -->
+    <a class="comment-more" th:if="${commentView.hidden > 0}" th:href="@{|${postUrl}?allComments#comments|}"
+       th:text="|以前のコメント(${commentView.hidden}件)をすべて表示|">以前のコメントをすべて表示</a>
+
+    <ul class="comment-list" th:unless="${#lists.isEmpty(commentView.comments)}">
+        <li class="comment-item" th:each="comment : ${commentView.comments}" th:id="|comment-${comment.id}|">
             <div class="comment-author">
                 <span th:text="${comment.author}">ニックネーム</span>
                 <span class="comment-badge" th:if="${postMemberId != null and comment.memberId == postMemberId}">投稿者</span>
