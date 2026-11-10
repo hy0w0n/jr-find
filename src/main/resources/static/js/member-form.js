@@ -5,12 +5,41 @@
     const invalid = document.querySelector('[aria-invalid="true"]');
     if (invalid) invalid.focus();
 
-    // 생년월일은 오늘 이후를 고를 수 없게
+    // 생년월일: 일본어 달력 (브라우저 기본 날짜 칸은 브라우저 언어로 표시된다). 1900-01-01 ~ 오늘, 직접 입력도 가능
     const birthDate = document.getElementById('birthDate');
-    if (birthDate) {
-        const today = new Date();
-        const pad = n => String(n).padStart(2, '0');
-        birthDate.max = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    if (birthDate && window.flatpickr) {
+        flatpickr(birthDate, {
+            ...strictDateOptions(message => showFieldError(birthDate, message), '1900-01-01'),
+            locale: 'ja',
+            dateFormat: 'Y-m-d',
+            maxDate: 'today',
+            onChange: (selectedDates) => {
+                if (selectedDates.length) clearFieldError(birthDate);
+            }
+        });
+    }
+
+    // 칸 아래의 오류 문구 (서버 검증 문구와 같은 자리·같은 모양). 스크린리더가 바로 읽도록 role="alert"
+    function showFieldError(input, message) {
+        const id = input.id + '-error';
+        let error = document.getElementById(id);
+        if (!error) {
+            error = document.createElement('span');
+            error.className = 'field-error';
+            error.id = id;
+            input.parentElement.append(error);
+        }
+        error.setAttribute('role', 'alert');
+        error.textContent = message.replace('\n', ' ');
+        input.setAttribute('aria-invalid', 'true');
+        const described = (input.getAttribute('aria-describedby') || '').split(' ').filter(Boolean);
+        if (!described.includes(id)) input.setAttribute('aria-describedby', [...described, id].join(' '));
+        input.focus();
+    }
+    function clearFieldError(input) {
+        const error = document.getElementById(input.id + '-error');
+        if (error) error.textContent = '';
+        input.removeAttribute('aria-invalid');
     }
 
     // 탈퇴: 되돌릴 수 없으므로 한 번 더 확인 (입력값 확인은 서버에서)

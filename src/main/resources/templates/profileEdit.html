@@ -29,6 +29,7 @@
         .field-error { font-size: 13px; color: #c62828; }
     </style>
     <!-- 휴대폰 화면(폭 768px 이하) 공통 스타일. 이 화면의 <style> 뒤에 두어서 같은 선택자는 이쪽이 우선 -->
+    <link rel="stylesheet" th:href="@{/webjars/flatpickr/dist/flatpickr.min.css}">
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
 </head>
 <body>
@@ -69,7 +70,9 @@
             <div class="form-row">
                 <label class="form-label" for="birthDate">生年月日</label>
                 <div class="form-input">
-                    <input type="date" th:field="*{birthDate}" id="birthDate" min="1900-01-01" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('birthDate')} ? 'birthDate-error' : null" th:aria-invalid="${#fields.hasErrors('birthDate')} ? 'true' : null">
+                    <!-- 브라우저 기본 날짜 칸은 브라우저 언어로 표시되므로(한국어 브라우저면 「연도-월-일」), 다른 날짜 칸과 같은 일본어 달력 + 직접 입력 -->
+                    <input type="text" th:field="*{birthDate}" id="birthDate" placeholder="年-月-日" maxlength="10" inputmode="numeric" th:errorclass="input-error" th:aria-describedby="${#fields.hasErrors('birthDate')} ? 'birthDate-note birthDate-error' : 'birthDate-note'" th:aria-invalid="${#fields.hasErrors('birthDate')} ? 'true' : null">
+                    <span class="field-note" id="birthDate-note">カレンダーから選ぶか、直接入力してください (例: 1998-05-05)</span>
                     <span class="field-error" id="birthDate-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
                 </div>
             </div>
@@ -90,6 +93,10 @@
     </main>
 
     <!-- 오류 칸으로 포커스, 생년월일 상한, 탈퇴 확인, 로그인 빈 칸 안내 -->
+    <!-- 생년월일 달력 (일본어). 불러오지 못해도 직접 입력은 된다 -->
+    <script th:src="@{/webjars/flatpickr/dist/flatpickr.min.js}"></script>
+    <script th:src="@{/webjars/flatpickr/dist/l10n/ja.js}"></script>
+    <script th:src="@{/js/date-input.js}"></script>
     <script th:src="@{/js/member-form.js}"></script>
 </body>
 </html>
