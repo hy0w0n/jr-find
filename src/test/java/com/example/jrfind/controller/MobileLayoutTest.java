@@ -1,9 +1,11 @@
 package com.example.jrfind.controller;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
@@ -49,7 +51,8 @@ class MobileLayoutTest {
 	void 휴대폰_스타일은_폭_768px_이하에서만_적용된다() throws Exception {
 		mockMvc.perform(get("/css/mobile.css"))
 			.andExpect(status().isOk())
-			.andExpect(content().string(containsString("@media (max-width: 768px)")));
+			.andExpect(content().string(containsString("@media (max-width: 768px)")))
+			.andExpect(header().string("Cache-Control", "max-age=31536000, public")); // 정적 파일은 1년 동안 다시 받지 않는다
 	}
 
 	private void expectMobileReady(String url, LoginMember member) throws Exception {
@@ -60,7 +63,8 @@ class MobileLayoutTest {
 		mockMvc.perform(request)
 			.andExpect(status().isOk())
 			.andExpect(content().string(containsString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">")))
-			.andExpect(content().string(containsString("<link rel=\"stylesheet\" href=\"/css/mobile.css\">")));
+			// 주소에는 파일 내용의 해시가 붙는다 (/css/mobile-<해시>.css. 고치면 주소가 바뀌어 브라우저가 새로 받는다)
+			.andExpect(content().string(matchesPattern("(?s).*<link rel=\"stylesheet\" href=\"/css/mobile-[0-9a-f]{32}\\.css\">.*")));
 	}
 
 	private LoginMember newMember() {
