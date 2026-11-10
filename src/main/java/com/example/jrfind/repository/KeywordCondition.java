@@ -1,59 +1,43 @@
 package com.example.jrfind.repository;
 
 import java.text.Normalizer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Locale;
+import java.util.Set;
 
 // 검색어 조건 (見つけた / 探しています 게시판 공통)
 // 제목(날짜·노선·역·카테고리·물건 이름이 들어 있음)이나 본문에 검색어가 들어 있는 글.
 // 공백(전각 공백 포함)으로 나눈 단어는 모두 포함해야 한다 (AND). 대소문자는 구분하지 않는다.
-// 전각·반각도 구분하지 않는다: 검색어는 NFKC 로 맞추고(ｽﾏﾎ → スマホ, Ｓｕｉｃａ → Suica),
-// 글 쪽의 전각 영숫자는 TRANSLATE 로 반각으로 바꿔서 비교한다.
+// 전각·반각도 구분하지 않는다: 글은 저장할 때 제목+본문을 NFKC·소문자로 맞춰 SEARCHTEXT 에 넣어 두고(ｽﾏﾎ → スマホ, Ｓｕｉｃａ → suica),
+// 검색어도 같은 방법으로 맞춰서 비교한다. (예전에는 검색할 때마다 모든 글의 제목·본문을 변환해서 느렸다)
 public final class KeywordCondition {
 	// 단어가 너무 많으면 앞에서부터 이 개수까지만 사용 (화면에서 안내: isTruncated)
 	public static final int MAX_WORDS = 5;
 
-	private static final String FULL_WIDTH_ALNUM = "ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ０１２３４５６７８９";
-	private static final String HALF_WIDTH_ALNUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-	private static final String TITLE = "LOWER(TRANSLATE(Title, '" + FULL_WIDTH_ALNUM + "', '" + HALF_WIDTH_ALNUM + "'))";
-	private static final String CONTENTS = "LOWER(TRANSLATE(Contents, '" + FULL_WIDTH_ALNUM + "', '" + HALF_WIDTH_ALNUM + "'))";
-
 	private KeywordCondition() {
 	}
 
+	// SEARCHTEXT 에 저장할 값. 줄바꿈으로 이으므로 (검색어에는 공백이 없다) 제목 끝과 본문 앞이 이어져 찾아지는 일은 없다
+	public static String searchText(String title, String contents) {
+		return normalize(title + "\n" + contents);
+	}
+
 	static void append(StringBuilder sql, List<Object> params, String keyword) {
+		// 맞춘 뒤 같은 단어는 한 번만 (「ｽﾏﾎ スマホ」)
+		Set<String> normalizedWords = new LinkedHashSet<>();
 		for (String word : words(keyword)) {
-			// ① 영숫자만 반각으로 바꾼 단어: 「（予定）」처럼 전각 기호가 들어 있는 글도 그대로 찾는다
-			// ② NFKC 로 바꾼 단어: 반각 카나(ｽﾏﾎ) 등 (NFKC 는 전각 기호도 반각으로 바꾸므로 ①과 함께 쓴다)
-			Set<String> patterns = new LinkedHashSet<>();
-			patterns.add(likePattern(toHalfWidthAlnum(word)));
-			patterns.add(likePattern(Normalizer.normalize(word, Normalizer.Form.NFKC)));
-			List<String> conditions = new ArrayList<>();
-			for (String pattern : patterns) {
-				conditions.add(TITLE + " LIKE ? ESCAPE '\\' OR " + CONTENTS + " LIKE ? ESCAPE '\\'");
-				params.add(pattern);
-				params.add(pattern);
-			}
-			sql.append(" AND (" + String.join(" OR ", conditions) + ")");
+			normalizedWords.add(normalize(word));
+		}
+		for (String word : normalizedWords) {
+			sql.append(" AND SearchText LIKE ? ESCAPE '\\'");
+			params.add("%" + escapeLike(word) + "%");
 		}
 	}
 
-	private static String likePattern(String word) {
-		return "%" + escapeLike(word.toLowerCase(Locale.ROOT)) + "%";
-	}
-
-	// 글 쪽의 TRANSLATE 와 같은 변환
-	private static String toHalfWidthAlnum(String word) {
-		StringBuilder result = new StringBuilder(word.length());
-		for (char c : word.toCharArray()) {
-			int index = FULL_WIDTH_ALNUM.indexOf(c);
-			result.append(index >= 0 ? HALF_WIDTH_ALNUM.charAt(index) : c);
-		}
-		return result.toString();
+	private static String normalize(String text) {
+		return Normalizer.normalize(text, Normalizer.Form.NFKC).toLowerCase(Locale.ROOT);
 	}
 
 	static List<String> words(String keyword) {

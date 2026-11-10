@@ -29,6 +29,10 @@ import com.example.jrfind.domain.FoundItem;
 import com.example.jrfind.domain.LoginMember;
 import com.example.jrfind.domain.LostItem;
 import com.example.jrfind.domain.SignupForm;
+import com.example.jrfind.repository.JrfindRepository;
+import com.example.jrfind.repository.KeywordCondition;
+import com.example.jrfind.repository.LostItemRepository;
+import com.example.jrfind.repository.SearchTextBackfill;
 import com.example.jrfind.service.MemberService;
 
 // 검색: 두 게시판의 제목·본문, 공백으로 나눈 단어는 모두 포함, 대소문자 무시, % _ 는 글자 그대로
@@ -45,6 +49,16 @@ class SearchControllerTest {
 
 	@Autowired
 	private MemberService memberService;
+
+	// SQL 로 직접 넣은 글은 검색용 컬럼이 비어 있으므로 채운다 (예전 DB 의 글을 서버를 켤 때 채우는 것과 같은 처리)
+	@Autowired
+	private SearchTextBackfill searchTextBackfill;
+
+	@Autowired
+	private JrfindRepository foundRepository;
+
+	@Autowired
+	private LostItemRepository lostRepository;
 
 	// 테스트마다 다른 단어를 넣어서 다른 테스트의 글과 섞이지 않게 한다
 	private final String marker = "srch" + UUID.randomUUID().toString().substring(0, 8);
@@ -127,14 +141,72 @@ class SearchControllerTest {
 		long iphone = insertFound("iPhone 15", "新宿", marker, false);
 		long suica = insertFound("ＳＵＩＣＡカード", "新宿", marker + " （予定）", false);
 		long smartphone = insertFound("スマホ", "新宿", marker, false);
+		long gum = insertFound("ｶﾞﾑ ｲﾔﾎﾝ", "新宿", marker, false);
 
 		// 검색어가 전각 영숫자 / 반각 카나 (일본어 입력기에서 흔히 그대로 입력된다)
 		assertThat(foundIds(searchFound(toFullWidth(marker) + " ｉＰｈｏｎｅ"))).containsExactly(iphone);
 		assertThat(foundIds(searchFound(marker + " ｽﾏﾎ"))).containsExactly(smartphone);
-		// 글이 전각 영숫자, 검색어는 반각
+		// 글이 전각 영숫자 / 반각 카나(탁점 포함), 검색어는 반각 / 전각
 		assertThat(foundIds(searchFound(marker + " suica"))).containsExactly(suica);
-		// 전각 기호가 들어 있는 글은 전각 기호 그대로 찾는다
+		assertThat(foundIds(searchFound(marker + " ガム イヤホン"))).containsExactly(gum);
+		// 전각 기호가 들어 있는 글은 전각·반각 어느 기호로도 찾는다
 		assertThat(foundIds(searchFound(marker + " （予定）"))).containsExactly(suica);
+		assertThat(foundIds(searchFound(marker + " (予定)"))).containsExactly(suica);
+		// 맞추면 같은 단어가 되는 검색어 (ｽﾏﾎ スマホ)
+		assertThat(foundIds(searchFound(marker + " ｽﾏﾎ スマホ"))).containsExactly(smartphone);
+	}
+
+	@Test
+	void 검색용_값은_제목과_본문을_줄바꿈으로_이어서_맞춘다() {
+		assertThat(KeywordCondition.searchText("[2026-01-08][山手線][新宿][その他] ｽﾏﾎ", "Ｓｕｉｃａ（予定）"))
+			.isEqualTo("[2026-01-08][山手線][新宿][その他] スマホ\nsuica(予定)");
+	}
+
+	@Test
+	void 저장하거나_수정한_글은_바로_새_내용으로_찾는다() throws Exception {
+		FoundItem found = new FoundItem();
+		found.setTitle("[2026-01-08][山手線][新宿][その他] ｽﾏﾎ");
+		found.setFoundDate(LocalDate.of(2026, 1, 8));
+		found.setLineName("山手線");
+		found.setStationName("新宿");
+		found.setCategoryName("その他");
+		found.setItemName("ｽﾏﾎ");
+		found.setContents(marker + " 古い本文");
+		found.setAuthor("匿名の天使001");
+		found.setRegistrationDate(nextTime());
+		foundRepository.save(found);
+		long foundId = jdbcTemplate.queryForObject("SELECT max(ID) FROM FOUND_ITEM", Long.class);
+
+		LoginMember owner = newMember();
+		LostItem lost = new LostItem();
+		lost.setTitle("[2026-01-12][山手線][駅不明][その他] Ｓｕｉｃａ");
+		lost.setLostDate(LocalDate.of(2026, 1, 12));
+		lost.setLineName("山手線");
+		lost.setCategoryName("その他");
+		lost.setItemName("Ｓｕｉｃａ");
+		lost.setContents(marker + " 古い本文");
+		lost.setAuthor(owner.getNickname());
+		lost.setMemberId(owner.getId());
+		lost.setRegistrationDate(nextTime());
+		lostRepository.save(lost);
+		long lostId = jdbcTemplate.queryForObject("SELECT max(ID) FROM LOST_ITEM", Long.class);
+
+		assertThat(foundIds(searchFound(marker + " スマホ 古い"))).containsExactly(foundId);
+		assertThat(lostIds(searchLost(marker + " suica 古い"))).containsExactly(lostId);
+
+		found = foundRepository.findById(foundId);
+		found.setContents(marker + " 新しい本文");
+		found.setModifiedDate(nextTime());
+		assertThat(foundRepository.update(found, null)).isTrue();
+		lost = lostRepository.findById(lostId);
+		lost.setContents(marker + " 新しい本文");
+		lost.setModifiedDate(nextTime());
+		assertThat(lostRepository.update(lost, null)).isTrue();
+
+		assertThat(foundIds(searchFound(marker + " 古い"))).isEmpty();
+		assertThat(foundIds(searchFound(marker + " スマホ 新しい"))).containsExactly(foundId);
+		assertThat(lostIds(searchLost(marker + " 古い"))).isEmpty();
+		assertThat(lostIds(searchLost(marker + " suica 新しい"))).containsExactly(lostId);
 	}
 
 	@Test
@@ -265,6 +337,7 @@ class SearchControllerTest {
 					+ " VALUES ('[2026-01-12][山手線][渋谷][その他] 傘', '2026-01-12', '山手線', '渋谷', 'その他', '傘', ?, ?, ?, ?)",
 				marker, owner.getNickname(), owner.getId(), sameTime);
 		}
+		searchTextBackfill.fillMissing();
 
 		for (String board : List.of("/items", "/lost-items")) {
 			for (String sort : List.of("latest", "reg_asc", "date_desc", "date_asc")) {
@@ -284,6 +357,11 @@ class SearchControllerTest {
 	// 통합 검색의 見つけた 결과 (최신 5건)
 	private Object searchFound(String q) throws Exception {
 		return mockMvc.perform(get("/search").param("q", q)).andReturn().getModelAndView().getModel().get("foundItems");
+	}
+
+	// 통합 검색의 探しています 결과 (최신 5건)
+	private Object searchLost(String q) throws Exception {
+		return mockMvc.perform(get("/search").param("q", q)).andReturn().getModelAndView().getModel().get("lostItems");
 	}
 
 	// 반각 영숫자 → 전각 (A → Ａ)
@@ -307,6 +385,7 @@ class SearchControllerTest {
 		jdbcTemplate.update("INSERT INTO FOUND_ITEM (TITLE, FOUNDDATE, LINENAME, STATIONNAME, CATEGORYNAME, ITEMNAME, CONTENTS, AUTHOR, DEL_FLG, REGISTRATIONDATE)"
 				+ " VALUES (?, '2026-01-08', '山手線', ?, 'その他', ?, ?, '匿名の天使001', ?, ?)",
 			"[2026-01-08][山手線][" + station + "][その他] " + itemName, station, itemName, contents, deleted, nextTime());
+		searchTextBackfill.fillMissing();
 		return jdbcTemplate.queryForObject("SELECT max(ID) FROM FOUND_ITEM", Long.class);
 	}
 
@@ -316,6 +395,7 @@ class SearchControllerTest {
 				+ " VALUES (?, '2026-01-12', '山手線', ?, 'その他', ?, ?, ?, ?, ?)",
 			"[2026-01-12][山手線][" + (station != null ? station : "駅不明") + "][その他] " + itemName,
 			station, itemName, contents, owner.getNickname(), owner.getId(), nextTime());
+		searchTextBackfill.fillMissing();
 		return jdbcTemplate.queryForObject("SELECT max(ID) FROM LOST_ITEM", Long.class);
 	}
 

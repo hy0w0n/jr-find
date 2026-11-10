@@ -26,7 +26,7 @@ public class JdbcLostItemRepository implements LostItemRepository {
 
 	@Override
 	public void save(LostItem item) {
-		String sql = "INSERT INTO Lost_Item (Title, LostDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Author, MemberId, RegistrationDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		String sql = "INSERT INTO Lost_Item (Title, LostDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Author, MemberId, RegistrationDate, SearchText) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		jdbcTemplate.update(sql,
 			item.getTitle(),
 			item.getLostDate(),
@@ -38,14 +38,15 @@ public class JdbcLostItemRepository implements LostItemRepository {
 			item.getImgPath(),
 			item.getAuthor(),
 			item.getMemberId(),
-			item.getRegistrationDate()
+			item.getRegistrationDate(),
+			KeywordCondition.searchText(item.getTitle(), item.getContents())
 		);
 	}
 
 	// 작성자, 등록일, 찾음 여부, 삭제플래그는 수정하지 않는다
 	@Override
 	public boolean update(LostItem item, String expectedImgPath) {
-		String sql = "UPDATE Lost_Item SET Title=?, LostDate=?, LineName=?, StationName=?, CategoryName=?, ItemName=?, Contents=?, ImgPath=?, ModifiedDate=?"
+		String sql = "UPDATE Lost_Item SET Title=?, LostDate=?, LineName=?, StationName=?, CategoryName=?, ItemName=?, Contents=?, ImgPath=?, ModifiedDate=?, SearchText=?"
 			+ " WHERE ID=? AND DEL_FLG = FALSE AND ImgPath IS NOT DISTINCT FROM ?";
 		return jdbcTemplate.update(sql,
 			item.getTitle(),
@@ -57,6 +58,7 @@ public class JdbcLostItemRepository implements LostItemRepository {
 			item.getContents(),
 			item.getImgPath(),
 			item.getModifiedDate(),
+			KeywordCondition.searchText(item.getTitle(), item.getContents()),
 			item.getId(),
 			expectedImgPath
 		) == 1;

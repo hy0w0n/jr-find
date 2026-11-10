@@ -7,11 +7,13 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.EmptyResultDataAccessException; //예외 처리용
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
+import com.example.jrfind.config.CacheConfig;
 import com.example.jrfind.domain.Category;
 import com.example.jrfind.domain.FoundItem;
 import com.example.jrfind.domain.Station;
@@ -25,26 +27,31 @@ public class JdbcJrfindRepository implements JrfindRepository {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
+    // 마스터 데이터 4개는 실행 중에 바뀌지 않으므로 처음 한 번만 읽는다 (CacheConfig). 여럿이 같은 목록을 쓰므로 바꿀 수 없는 List 로 돌려준다
     @Override
+    @Cacheable(cacheNames = CacheConfig.MASTER_DATA, key = "'categories'")
     public List<Category> findAllCategories() {
-        return jdbcTemplate.query("select * from category order by id", categoryRowMapper());
+        return List.copyOf(jdbcTemplate.query("select * from category order by id", categoryRowMapper()));
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.MASTER_DATA, key = "'lines'")
     public List<String> findAllLines() {
         // distinct 만 쓰면 순서가 보장되지 않으므로 등록 순서(ID)대로 정렬
-        return jdbcTemplate.queryForList("select linename from station group by linename order by min(id)", String.class);
+        return List.copyOf(jdbcTemplate.queryForList("select linename from station group by linename order by min(id)", String.class));
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.MASTER_DATA, key = "'stations'")
     public List<Station> findAllStations() {
-        return jdbcTemplate.query("select * from station order by id", stationRowMapper());
+        return List.copyOf(jdbcTemplate.query("select * from station order by id", stationRowMapper()));
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.MASTER_DATA, key = "'stationLocations'")
     public List<StationLocation> findAllStationLocations() {
-        return jdbcTemplate.query("SELECT * FROM Station_Location",
-            (rs, rowNum) -> new StationLocation(rs.getString("StationName"), rs.getDouble("Latitude"), rs.getDouble("Longitude")));
+        return List.copyOf(jdbcTemplate.query("SELECT * FROM Station_Location",
+            (rs, rowNum) -> new StationLocation(rs.getString("StationName"), rs.getDouble("Latitude"), rs.getDouble("Longitude"))));
     }
 
     @Override
@@ -70,8 +77,8 @@ public class JdbcJrfindRepository implements JrfindRepository {
 
     @Override
     public void save(FoundItem item) {
-        // DB 컬럼 순서: Title, FoundDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Password, Author, RegistrationDate, MemberId
-        String sql = "INSERT INTO Found_Item (Title, FoundDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Password, Author, RegistrationDate, MemberId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // DB 컬럼 순서: Title, FoundDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Password, Author, RegistrationDate, MemberId, SearchText
+        String sql = "INSERT INTO Found_Item (Title, FoundDate, LineName, StationName, CategoryName, ItemName, Contents, ImgPath, Password, Author, RegistrationDate, MemberId, SearchText) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         jdbcTemplate.update(sql,
             item.getTitle(),
@@ -85,7 +92,8 @@ public class JdbcJrfindRepository implements JrfindRepository {
             item.getPassword(), // 비회원 글: BCrypt 해시 / 회원 글: null
             item.getAuthor(),
             item.getRegistrationDate(),
-            item.getMemberId() // 비회원 글이면 null
+            item.getMemberId(), // 비회원 글이면 null
+            KeywordCondition.searchText(item.getTitle(), item.getContents())
         );
     }
 
@@ -93,7 +101,7 @@ public class JdbcJrfindRepository implements JrfindRepository {
     // 비밀번호, 작성자, 등록일, 삭제플래그는 수정하지 않습니다.
     @Override
     public boolean update(FoundItem item, String expectedImgPath) {
-        String sql = "UPDATE Found_Item SET Title=?, FoundDate=?, LineName=?, StationName=?, CategoryName=?, ItemName=?, Contents=?, ImgPath=?, ModifiedDate=?"
+        String sql = "UPDATE Found_Item SET Title=?, FoundDate=?, LineName=?, StationName=?, CategoryName=?, ItemName=?, Contents=?, ImgPath=?, ModifiedDate=?, SearchText=?"
                 + " WHERE ID=? AND DEL_FLG = FALSE AND ImgPath IS NOT DISTINCT FROM ?";
 
         return jdbcTemplate.update(sql,
@@ -106,6 +114,7 @@ public class JdbcJrfindRepository implements JrfindRepository {
             item.getContents(),
             item.getImgPath(), // null이면 이미지 삭제, 값이 있으면 변경/유지
             item.getModifiedDate(),
+            KeywordCondition.searchText(item.getTitle(), item.getContents()),
             item.getId(),
             expectedImgPath
         ) == 1;
