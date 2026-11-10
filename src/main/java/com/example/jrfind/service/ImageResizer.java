@@ -18,6 +18,8 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
 
 // 업로드 사진을 화면에 맞는 크기로 줄인다 (ImageStorage 에서 사용)
 // - 긴 변이 MAX_EDGE 를 넘으면 줄인다 (상세 화면은 최대 666px. 고해상도 화면 2배까지). 9.4MB 사진을 그대로 보내던 문제
@@ -38,7 +40,8 @@ final class ImageResizer {
 		if (!"jpg".equals(extension) && !"png".equals(extension)) {
 			return original;
 		}
-		try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(original))) {
+		// 메모리에서만 읽고 쓴다 (ImageIO 기본값은 임시 파일을 거쳐서 느리고, 올린 사진이 임시 폴더에 남는다)
+		try (ImageInputStream input = new MemoryCacheImageInputStream(new ByteArrayInputStream(original))) {
 			Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
 			if (!readers.hasNext()) {
 				return original;
@@ -77,6 +80,7 @@ final class ImageResizer {
 	}
 
 	// 긴 변을 MAX_EDGE 이하로. 한 번에 크게 줄이면 거칠어지므로 반씩 줄인 뒤 마지막에 맞춘다
+	// (반씩 줄이면 쌍선형 보간으로도 충분히 매끄럽다. 쌍삼차 보간은 1200만 화소 사진에서 몇 배 느렸다)
 	private static BufferedImage scaleDown(BufferedImage image, boolean opaque) {
 		int type = opaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB;
 		int longEdge = Math.max(image.getWidth(), image.getHeight());
@@ -97,7 +101,7 @@ final class ImageResizer {
 		BufferedImage target = new BufferedImage(width, height, type);
 		Graphics2D g = target.createGraphics();
 		try {
-			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 			g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 			g.drawImage(source, 0, 0, width, height, null);
 		} finally {
@@ -182,7 +186,7 @@ final class ImageResizer {
 	private static byte[] writeJpeg(BufferedImage image) throws IOException {
 		ImageWriter writer = ImageIO.getImageWritersByFormatName("jpeg").next();
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		try (ImageOutputStream output = ImageIO.createImageOutputStream(bytes)) {
+		try (ImageOutputStream output = new MemoryCacheImageOutputStream(bytes)) {
 			writer.setOutput(output);
 			ImageWriteParam param = writer.getDefaultWriteParam();
 			param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
@@ -196,7 +200,9 @@ final class ImageResizer {
 
 	private static byte[] writePng(BufferedImage image) throws IOException {
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		ImageIO.write(image, "png", bytes);
+		try (ImageOutputStream output = new MemoryCacheImageOutputStream(bytes)) {
+			ImageIO.write(image, "png", output);
+		}
 		return bytes.toByteArray();
 	}
 }
