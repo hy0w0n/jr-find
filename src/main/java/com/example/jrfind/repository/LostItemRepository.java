@@ -33,4 +33,7 @@ public interface LostItemRepository {
 	void updateResolved(Long id, boolean resolved);
 
 	boolean delete(Long id, String expectedImgPath);
+
+	// 게시글이 쓰고 있는 사진 파일명 (쓰지 않는 파일 정리용)
+	List<String> findImagePaths();
 }

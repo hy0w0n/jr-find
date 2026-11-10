@@ -1,7 +1,6 @@
 package com.example.jrfind.service;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -33,15 +32,18 @@ public class ImageStorage {
 	}
 
 	// 이미지를 저장하고 저장된 파일명을 반환한다. 파일이 없으면 null
+	// 큰 사진은 줄이고, JPG 의 촬영 정보(위치 등)는 지운 뒤 저장한다 (ImageResizer)
 	public String store(MultipartFile file) throws IOException {
 		if (file == null || file.isEmpty()) {
 			return null;
 		}
 
-		String extension = detectImageExtension(file);
+		byte[] original = file.getBytes();
+		String extension = detectImageExtension(original);
 		if (extension == null) {
 			throw new InvalidPostException("画像ファイル(JPG・PNG・GIF・WEBP)のみアップロードできます。");
 		}
+		byte[] content = ImageResizer.process(original, extension);
 
 		// 저장 파일명: {날짜시간}_{랜덤8자}.{확장자} (예: 20260119153012_1a2b3c4d.jpg)
 		// 원본 파일명은 "../" 같은 경로 조작에 쓰일 수 있으므로 사용하지 않는다.
@@ -49,9 +51,7 @@ public class ImageStorage {
 		String storeFilename = timestamp + "_" + UUID.randomUUID().toString().substring(0, 8) + "." + extension;
 
 		Files.createDirectories(uploadDir);
-		try (InputStream in = file.getInputStream()) {
-			Files.copy(in, uploadDir.resolve(storeFilename));
-		}
+		Files.write(uploadDir.resolve(storeFilename), content);
 		return storeFilename;
 	}
 
@@ -76,11 +76,8 @@ public class ImageStorage {
 
 	// 파일 앞부분(매직 넘버)으로 실제 이미지 형식을 판별한다.
 	// 확장자나 Content-Type 은 클라이언트가 마음대로 바꿀 수 있으므로 믿지 않는다.
-	private String detectImageExtension(MultipartFile file) throws IOException {
-		byte[] header;
-		try (InputStream in = file.getInputStream()) {
-			header = in.readNBytes(12);
-		}
+	private String detectImageExtension(byte[] data) {
+		byte[] header = Arrays.copyOf(data, Math.min(data.length, 12));
 
 		if (startsWith(header, 0xFF, 0xD8, 0xFF)) {
 			return "jpg";

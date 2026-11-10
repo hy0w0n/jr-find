@@ -154,6 +154,11 @@ public class JdbcLostItemRepository implements LostItemRepository {
 		jdbcTemplate.update("UPDATE Lost_Item SET Resolved = ? WHERE ID = ?", resolved, id);
 	}
 
+	@Override
+	public List<String> findImagePaths() {
+		return jdbcTemplate.queryForList("SELECT ImgPath FROM Lost_Item WHERE ImgPath IS NOT NULL", String.class);
+	}
+
 	// 논리 삭제
 	@Override
 	public boolean delete(Long id, String expectedImgPath) {

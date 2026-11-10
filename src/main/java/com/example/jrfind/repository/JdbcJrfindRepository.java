@@ -112,6 +112,11 @@ public class JdbcJrfindRepository implements JrfindRepository {
     }
 
     @Override
+    public List<String> findImagePaths() {
+        return jdbcTemplate.queryForList("SELECT ImgPath FROM Found_Item WHERE ImgPath IS NOT NULL", String.class);
+    }
+
+    @Override
     public List<String> findAllAuthors() {
         // '匿名の天使'로 시작하는 작성자 명 (삭제된 글의 번호는 다시 쓸 수 있다)
         String sql = "SELECT Author FROM Found_Item WHERE Author LIKE '匿名の天使%' AND DEL_FLG = FALSE";
