@@ -10,6 +10,26 @@
 - **探しています** 게시판: 잃어버린 물건을 찾는 게시판. 회원만 글을 쓸 수 있습니다.
 - 두 게시판 모두 회원은 댓글을 달 수 있습니다. (감사 인사, "분실물 센터에 맡겼어요" 같은 후속 소식)
 
+## 개요
+
+| | |
+|---|---|
+| 기간 | 기업 단기 인턴십 2026.01.05~01.30 (4주) → 개선 개발 2026.02~11 |
+| 인원 | 1명 (개인 프로젝트) |
+| 담당 | 기획, 설계(기본설계서·화면 전이도), 구현, 테스트(단위 테스트 사양서), 발표 |
+| 범위 | 설계한 19화면 중 인턴십 동안 7화면 구현, 개선 개발에서 19화면 모두 구현 |
+| AI 활용 | 인턴십 때는 구현에 AI 도움을 받되 코드를 이해한 뒤 작성. 개선 개발은 Claude Code와 함께 구현하고 변경마다 직접 검토·수정 |
+| 저장소 | 개선 개발을 마친 코드를 2026년 11월에 정리해 올린 것 (인턴십 당시 코드와 설계 문서는 포함하지 않음) |
+
+![데모](docs/demo/demo.gif)
+
+먼저 볼 곳
+
+- 검색: 저장할 때 NFKC·소문자로 맞춘 검색용 컬럼만 비교 → [KeywordCondition.java](src/main/java/com/example/jrfind/repository/KeywordCondition.java), [성능](#성능)
+- 삭제·권한: 없는 글·삭제된 글은 404, 권한 없는 수정·삭제는 403 → [JrfindController.java](src/main/java/com/example/jrfind/controller/JrfindController.java), 동시 수정·삭제에 대비한 조건부 UPDATE → [JdbcJrfindRepository.java](src/main/java/com/example/jrfind/repository/JdbcJrfindRepository.java)
+- 시도 횟수 제한: 4자리 비밀번호와 로그인은 5번 틀리면 5분 잠금 (ID를 바꿔도 같은 IP에서 20번이면 그 IP를 잠금) → [PasswordAttemptLimiter.java](src/main/java/com/example/jrfind/service/PasswordAttemptLimiter.java), [LoginAttemptGuard.java](src/main/java/com/example/jrfind/config/LoginAttemptGuard.java)
+- 테스트: 화면을 거치지 않는 직접 요청까지 MockMvc로 확인 → [JrfindControllerTest.java](src/test/java/com/example/jrfind/controller/JrfindControllerTest.java)
+
 ## 화면
 
 <table>
